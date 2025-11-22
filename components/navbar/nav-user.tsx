@@ -1,8 +1,9 @@
 "use client";
 
-import { MoreVertical, LogOut } from "lucide-react";
+import { MoreVertical, LogOut, Shield, User } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,12 +18,13 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { logout } from "@/lib/utils/auth";
 
 interface User {
   name?: string;
   email?: string;
   avatar?: string;
-  image?: string;
+  role?: string;
 }
 
 interface NavUserProps {
@@ -36,15 +38,7 @@ export function NavUser({ user }: NavUserProps) {
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
-
-      // TODO: Add Firebase auth signout here
-      console.log("Signing out...");
-
-      // Simulate loading time
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // TODO: Add redirect logic here
-      console.log("Signed out successfully");
+      await logout();
     } catch (error) {
       console.error("Error signing out:", error);
     } finally {
@@ -52,8 +46,27 @@ export function NavUser({ user }: NavUserProps) {
     }
   };
 
-  // Use avatar from user.avatar or user.image (fallback)
-  const avatarSrc = user.avatar || user.image;
+  const getRoleIcon = (role?: string) => {
+    switch (role) {
+      case "admin":
+        return <Shield className="h-3 w-3" />;
+      case "organization":
+        return <User className="h-3 w-3" />;
+      default:
+        return <User className="h-3 w-3" />;
+    }
+  };
+
+  const getRoleBadgeVariant = (role?: string) => {
+    switch (role) {
+      case "admin":
+        return "destructive";
+      case "organization":
+        return "secondary";
+      default:
+        return "outline";
+    }
+  };
 
   return (
     <SidebarMenu>
@@ -65,15 +78,26 @@ export function NavUser({ user }: NavUserProps) {
               className="bg-primary-foreground text-primary hover:bg-primary/10 transition-all data-[state=open]:bg-primary/20 data-[state=open]:text-primary"
             >
               <Avatar className="h-8 w-8 rounded-lg border border-primary/20">
-                <AvatarImage src={avatarSrc} alt={user.name} />
+                <AvatarImage src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-lg bg-primary/20 text-primary">
                   {user.name?.[0]?.toUpperCase() ?? "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium text-muted-foreground">
-                  {user.name}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span className="truncate font-medium text-muted-foreground">
+                    {user.name}
+                  </span>
+                  {user.role && (
+                    <Badge
+                      variant={getRoleBadgeVariant(user.role)}
+                      className="text-[10px] h-4 px-1"
+                    >
+                      {getRoleIcon(user.role)}
+                      <span className="ml-1 capitalize">{user.role}</span>
+                    </Badge>
+                  )}
+                </div>
                 <span className="truncate text-xs text-muted-foreground/70">
                   {user.email}
                 </span>
@@ -90,15 +114,26 @@ export function NavUser({ user }: NavUserProps) {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-2 py-2 text-left text-sm bg-primary/10 rounded-t-md">
                 <Avatar className="h-8 w-8 rounded-lg border border-primary/20">
-                  <AvatarImage src={avatarSrc} alt={user.name} />
+                  <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
                     {user.name?.[0]?.toUpperCase() ?? "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium text-muted-foreground">
-                    {user.name}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="truncate font-medium text-muted-foreground">
+                      {user.name}
+                    </span>
+                    {user.role && (
+                      <Badge
+                        variant={getRoleBadgeVariant(user.role)}
+                        className="text-[10px] h-4 px-1"
+                      >
+                        {getRoleIcon(user.role)}
+                        <span className="ml-1 capitalize">{user.role}</span>
+                      </Badge>
+                    )}
+                  </div>
                   <span className="text-muted-foreground/70 truncate text-xs">
                     {user.email}
                   </span>

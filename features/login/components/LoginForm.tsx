@@ -12,43 +12,32 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Mail, Lock, Info } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Info, AlertCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLogin } from "@/features/login/hooks/useLogin";
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+
+  const { loginWithEmail, isLoading, error, clearError, validation } =
+    useLogin();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-
-    // TODO: Add authentication logic here
-    console.log("Email login:", { email, password });
-
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    await loginWithEmail({ email, password });
   };
 
   const handleGoogleLogin = async () => {
-    setIsLoading(true);
-
-    // TODO: Add Google authentication logic here
-    console.log("Google login");
-
-    // Simulate loading
-    setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
+    // TODO: Implement Google authentication
+    console.log("Google login - Coming soon!");
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 my-10 lg:p-0">
+    <div className="w-full max-w-xl mx-auto p-4 lg:p-0">
       <Card className="border-0 shadow-none lg:border lg:shadow-lg bg-card">
         <CardHeader className="text-center space-y-4 pb-4">
           {/* Logo - Mobile Only */}
@@ -73,6 +62,14 @@ export function LoginForm() {
         </CardHeader>
 
         <CardContent className="space-y-6">
+          {/* Error Display */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Google Sign In - Primary Method */}
           <div className="space-y-3">
             <Button
@@ -99,16 +96,16 @@ export function LoginForm() {
                   d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                 />
               </svg>
-              {isLoading ? "Signing in..." : "Continue with Google"}
+              Continue with Google
             </Button>
 
             {/* Info about Google Auth */}
             <div className="flex items-start space-x-2 p-3 bg-accent/10 rounded-lg border border-accent/20">
               <Info className="h-4 w-4 text-accent mt-0.5 flex-shrink-0" />
               <p className="text-xs text-muted-foreground">
-                <strong className="text-foreground">For Students:</strong> Use
-                your Google account to sign in and start shopping from VSU
-                student organizations.
+                <strong className="text-foreground">For Users:</strong> Use your
+                Google account to sign in and start shopping from VSU student
+                organizations.
               </p>
             </div>
           </div>
@@ -124,7 +121,7 @@ export function LoginForm() {
             </div>
           </div>
 
-          {/* Email/Password Form - For Organizations Only */}
+          {/* Email/Password Form - For Organizations/Admin Only */}
           <form onSubmit={handleEmailLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Organization Email</Label>
@@ -135,11 +132,29 @@ export function LoginForm() {
                   type="email"
                   placeholder="Enter your organization email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-12"
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    validation.handleFieldChange("email", e.target.value);
+                    clearError();
+                  }}
+                  onBlur={(e) => {
+                    validation.handleFieldBlur("email", e.target.value);
+                  }}
+                  className={`pl-10 h-12 ${
+                    validation.errors.email
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }`}
                   required
+                  disabled={isLoading}
                 />
               </div>
+              {validation.errors.email && validation.touched.email && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {validation.errors.email}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -151,14 +166,27 @@ export function LoginForm() {
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-12"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    validation.handleFieldChange("password", e.target.value);
+                    clearError();
+                  }}
+                  onBlur={(e) => {
+                    validation.handleFieldBlur("password", e.target.value);
+                  }}
+                  className={`pl-10 pr-10 h-12 ${
+                    validation.errors.password
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }`}
                   required
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  disabled={isLoading}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
@@ -167,6 +195,12 @@ export function LoginForm() {
                   )}
                 </button>
               </div>
+              {validation.errors.password && validation.touched.password && (
+                <p className="text-sm text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {validation.errors.password}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center justify-between text-sm">
@@ -182,7 +216,7 @@ export function LoginForm() {
               type="submit"
               variant="outline"
               className="w-full h-12 text-base font-medium"
-              disabled={isLoading}
+              disabled={isLoading || validation.hasErrors}
             >
               {isLoading ? "Signing in..." : "Sign In as Organization"}
             </Button>

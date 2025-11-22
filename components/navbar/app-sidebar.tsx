@@ -2,6 +2,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import { LayoutDashboard, List, ChartBar } from "lucide-react";
 import { NavUser } from "./nav-user";
 import { NavMain } from "./nav-main";
@@ -39,6 +40,8 @@ interface AppSidebarProps {
   user: User;
   navMain: NavItem[];
   iconMap?: IconMap;
+  homeUrl?: string;
+  brandName?: string;
   className?: string; // Add className prop
 }
 
@@ -54,6 +57,8 @@ export function AppSidebar({
   navMain,
   iconMap = defaultIconMap,
   className,
+  homeUrl = "/",
+  brandName = "Verch",
   ...props
 }: AppSidebarProps) {
   return (
@@ -69,16 +74,19 @@ export function AppSidebar({
               asChild
               className="hover:bg-sidebar-accent/20 transition-colors"
             >
-              <Link href="/" className="flex items-center gap-2 p-4 py-6.5">
-                {/* <Image
-                  src="/enhanced-logo-final.svg"
+              <Link
+                href={homeUrl}
+                className="flex items-center gap-2 p-4 py-6.5"
+              >
+                <Image
+                  src="/logo-verch.webp"
                   alt=""
                   width={36}
                   height={36}
                   className="text-primary"
-                /> */}
+                />
                 <span className="text-3xl font-semibold text-primary">
-                  Verch
+                  {brandName}
                 </span>
               </Link>
             </SidebarMenuButton>
