@@ -144,8 +144,8 @@ export default function AdminLayout({
         navMain={transformedNavItems}
         iconMap={iconMap}
         homeUrl="/admin/dashboard"
-        brandName="Verch Admin"
-        className="bg-card border-r border-sidebar-border"
+        brandName="Verch"
+        className="border-r border-sidebar-border"
       />
       <SidebarInset>
         {/* Header with breadcrumbs */}
@@ -192,7 +192,7 @@ export default function AdminLayout({
         </header>
 
         {/* Main Content */}
-        <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="flex flex-1 flex-col gap-4 p-8">
           <div className="min-h-[100vh] flex-1 rounded-xl bg-card md:min-h-min p-4 md:p-6 border">
             {children}
           </div>
