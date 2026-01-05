@@ -128,7 +128,7 @@ export default function AdminLayout({
   }, {} as Record<string, React.ComponentType<any>>);
 
   const breadcrumbs = generateBreadcrumbs();
-
+  console.log("User authenticated as admin:", user);
   // Use real user data from Supabase
   const currentUser = {
     name: user.full_name,
@@ -149,10 +149,13 @@ export default function AdminLayout({
       />
       <SidebarInset>
         {/* Header with breadcrumbs */}
-        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 bg-card border-b">
+        <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12 bg-secondary border-b border-border">
           <div className="flex items-center gap-2 px-4">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
+            <SidebarTrigger className="-ml-1 text-secondary-foreground hover:bg-secondary-foreground/10" />
+            <Separator
+              orientation="vertical"
+              className="mr-2 h-4 bg-secondary-foreground/20"
+            />
 
             {/* Mobile Logo */}
             <div className="flex items-center gap-2 md:hidden">
@@ -163,7 +166,9 @@ export default function AdminLayout({
                 height={24}
                 className="object-contain"
               />
-              <span className="font-semibold">Admin Panel</span>
+              <span className="font-semibold text-secondary-foreground">
+                Admin Panel
+              </span>
             </div>
 
             {/* Breadcrumbs - Hidden on mobile */}
@@ -173,15 +178,25 @@ export default function AdminLayout({
                   .map((crumb, index) => [
                     <BreadcrumbItem key={crumb.href}>
                       {crumb.isLast ? (
-                        <BreadcrumbPage>{crumb.title}</BreadcrumbPage>
+                        <BreadcrumbPage className="text-secondary-foreground font-medium">
+                          {crumb.title}
+                        </BreadcrumbPage>
                       ) : (
                         <BreadcrumbLink asChild>
-                          <Link href={crumb.href}>{crumb.title}</Link>
+                          <Link
+                            href={crumb.href}
+                            className="text-secondary-foreground/80 hover:text-secondary-foreground transition-colors"
+                          >
+                            {crumb.title}
+                          </Link>
                         </BreadcrumbLink>
                       )}
                     </BreadcrumbItem>,
                     index < breadcrumbs.length - 1 && (
-                      <BreadcrumbSeparator key={`separator-${index}`} />
+                      <BreadcrumbSeparator
+                        key={`separator-${index}`}
+                        className="text-secondary-foreground/60"
+                      />
                     ),
                   ])
                   .flat()
@@ -190,7 +205,6 @@ export default function AdminLayout({
             </Breadcrumb>
           </div>
         </header>
-
         {/* Main Content */}
         <div className="flex flex-1 flex-col gap-4 p-8">
           <div className="min-h-[100vh] flex-1 rounded-xl bg-card md:min-h-min p-4 md:p-6 border">
