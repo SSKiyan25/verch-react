@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useCallback, useRef } from "react";
@@ -26,17 +27,10 @@ const INITIAL_STATE: EmailVerificationState = {
 
 export function useEmailVerification() {
   const [state, setState] = useState<EmailVerificationState>(INITIAL_STATE);
-  const sentCodeRef = useRef<string | null>(null);
   const resendTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Simple email validation
   const validateEmail = (email: string): boolean => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
-
-  // Generate 6-digit code
-  const generateCode = (): string => {
-    return Math.floor(100000 + Math.random() * 900000).toString();
   };
 
   const setEmail = useCallback((email: string) => {
@@ -58,7 +52,6 @@ export function useEmailVerification() {
     }));
   }, []);
 
-  // Start resend cooldown
   const startCooldown = useCallback(() => {
     setState((prev) => ({ ...prev, canResend: false, resendCooldown: 60 }));
 
@@ -76,7 +69,6 @@ export function useEmailVerification() {
     }, 1000);
   }, []);
 
-  // Send verification code (simulated)
   const sendVerificationCode = useCallback(async (): Promise<boolean> => {
     if (!validateEmail(state.email)) {
       setState((prev) => ({
@@ -89,13 +81,22 @@ export function useEmailVerification() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch("/api/send-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: state.email,
+          type: "organization_verification",
+        }),
+      });
 
-      const newCode = generateCode();
-      sentCodeRef.current = newCode;
+      const data = await response.json();
 
-      console.log(`📧 Verification code sent to ${state.email}: ${newCode}`);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send verification code");
+      }
 
       setState((prev) => ({
         ...prev,
@@ -105,17 +106,18 @@ export function useEmailVerification() {
 
       startCooldown();
       return true;
-    } catch {
+    } catch (error: any) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: "Failed to send verification code. Please try again.",
+        error:
+          error.message ||
+          "Failed to send verification code. Please try again.",
       }));
       return false;
     }
   }, [state.email, startCooldown]);
 
-  // Verify code (simulated)
   const verifyCode = useCallback(async (): Promise<boolean> => {
     if (state.verificationCode.length !== 6) {
       setState((prev) => ({
@@ -128,38 +130,41 @@ export function useEmailVerification() {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const response = await fetch("/api/verify-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: state.email,
+          code: state.verificationCode,
+        }),
+      });
 
-      const isValid = state.verificationCode === sentCodeRef.current;
+      const data = await response.json();
 
-      if (isValid) {
-        setState((prev) => ({
-          ...prev,
-          isVerified: true,
-          isLoading: false,
-          error: null,
-        }));
-        return true;
-      } else {
-        setState((prev) => ({
-          ...prev,
-          isLoading: false,
-          error: "Invalid verification code. Please try again.",
-        }));
-        return false;
+      if (!response.ok) {
+        throw new Error(data.error || "Verification failed");
       }
-    } catch {
+
+      setState((prev) => ({
+        ...prev,
+        isVerified: true,
+        isLoading: false,
+        error: null,
+      }));
+
+      return true;
+    } catch (error: any) {
       setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: "Verification failed. Please try again.",
+        error: error.message || "Verification failed. Please try again.",
       }));
       return false;
     }
-  }, [state.verificationCode]);
+  }, [state.email, state.verificationCode]);
 
-  // Resend code
   const resendCode = useCallback(async (): Promise<boolean> => {
     if (!state.canResend) return false;
 
@@ -167,13 +172,11 @@ export function useEmailVerification() {
     return await sendVerificationCode();
   }, [state.canResend, sendVerificationCode]);
 
-  // Reset state
   const reset = useCallback(() => {
     if (resendTimerRef.current) {
       clearInterval(resendTimerRef.current);
       resendTimerRef.current = null;
     }
-    sentCodeRef.current = null;
     setState(INITIAL_STATE);
   }, []);
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -30,8 +31,6 @@ export function OrganizationFormDialog({
   onSubmit,
 }: OrganizationFormDialogProps) {
   const isEditing = !!organization;
-
-  // Define step arrays as constants with proper typing
   const CREATE_STEPS: FormStep[] = [
     "email",
     "verification",
@@ -43,33 +42,48 @@ export function OrganizationFormDialog({
   const [currentStep, setCurrentStep] = useState<FormStep>(
     isEditing ? "details" : "email"
   );
+
   const [formData, setFormData] = useState({
-    email: organization?.email || "",
+    email: organization?.contact_email || "",
     name: organization?.name || "",
     description: organization?.description || "",
-    logoUrl: organization?.logoUrl || "",
-    contactNumber: organization?.contactNumber || "",
-    commissionRate: organization?.commissionRate || 5.0,
-    status: organization?.status || "pending",
-    isVerified: organization?.isVerified || false,
+    logoUrl: organization?.logo_image_url || "",
+    contactNumber: organization?.phone_number || "",
+    commissionRate: organization?.settings?.commissionRate || 5.0,
+    status: mapOrganizationStatusToFormStatus(organization?.status || "draft"),
+    isVerified: organization?.is_verified || false,
     password: "",
     confirmPassword: "",
   });
 
-  // Reset when dialog closes
+  function mapOrganizationStatusToFormStatus(
+    orgStatus: Organization["status"]
+  ): "active" | "inactive" | "pending" {
+    switch (orgStatus) {
+      case "active":
+        return "active";
+      case "suspended":
+      case "archived":
+        return "inactive";
+      default:
+        return "pending";
+    }
+  }
+
   const handleDialogClose = (newOpen: boolean) => {
     if (!newOpen) {
-      // Reset state when closing
       setCurrentStep(isEditing ? "details" : "email");
       setFormData({
-        email: organization?.email || "",
+        email: organization?.contact_email || "",
         name: organization?.name || "",
         description: organization?.description || "",
-        logoUrl: organization?.logoUrl || "",
-        contactNumber: organization?.contactNumber || "",
-        commissionRate: organization?.commissionRate || 5.0,
-        status: organization?.status || "pending",
-        isVerified: organization?.isVerified || false,
+        logoUrl: organization?.logo_image_url || "",
+        contactNumber: organization?.phone_number || "",
+        commissionRate: organization?.settings?.commissionRate || 5.0,
+        status: mapOrganizationStatusToFormStatus(
+          organization?.status || "draft"
+        ),
+        isVerified: organization?.is_verified || false,
         password: "",
         confirmPassword: "",
       });
@@ -77,7 +91,6 @@ export function OrganizationFormDialog({
     onOpenChange(newOpen);
   };
 
-  // Simple step management
   const nextStep = () => {
     const steps = isEditing ? EDIT_STEPS : CREATE_STEPS;
     const currentIndex = steps.indexOf(currentStep);
@@ -94,12 +107,54 @@ export function OrganizationFormDialog({
     }
   };
 
-  // Handle form submission
-  const handleFormSubmit = (
-    data: CreateOrganizationData | Partial<Organization>
-  ) => {
-    onSubmit(data);
-    handleDialogClose(false);
+  const handleFormSubmit = async () => {
+    try {
+      if (isEditing) {
+        // Handle editing
+        const transformedData = {
+          name: formData.name,
+          description: formData.description,
+          phone_number: formData.contactNumber,
+          logo_image_url: formData.logoUrl,
+          settings: {
+            businessHours: organization?.settings?.businessHours || {},
+            commissionRate: formData.commissionRate,
+            autoAcceptOrders: organization?.settings?.autoAcceptOrders || false,
+            requireOrderApproval:
+              organization?.settings?.requireOrderApproval || true,
+          },
+          status: organization?.status || "draft",
+          is_verified: formData.isVerified,
+        };
+
+        onSubmit(transformedData);
+        setCurrentStep("complete");
+      } else {
+        // Handle creation - call API
+        const response = await fetch("/api/organizations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formData),
+        });
+
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error);
+
+        // Transform for parent
+        const transformedData: CreateOrganizationData = {
+          name: result.organization.name,
+          contact_email: result.organization.contact_email,
+          phone_number: result.organization.phone_number,
+          description: result.organization.description,
+          settings: result.organization.settings,
+        };
+
+        onSubmit(transformedData);
+        setCurrentStep("complete");
+      }
+    } catch (error: any) {
+      console.error("Error:", error.message);
+    }
   };
 
   const renderCurrentStep = () => {
@@ -112,7 +167,6 @@ export function OrganizationFormDialog({
             onNext={nextStep}
           />
         );
-
       case "verification":
         return (
           <VerificationStep
@@ -122,7 +176,6 @@ export function OrganizationFormDialog({
             onPrev={prevStep}
           />
         );
-
       case "details":
         return (
           <DetailsStep
@@ -133,7 +186,6 @@ export function OrganizationFormDialog({
             onPrev={isEditing ? undefined : prevStep}
           />
         );
-
       case "complete":
         return (
           <CompleteStep
@@ -142,13 +194,11 @@ export function OrganizationFormDialog({
             onClose={() => handleDialogClose(false)}
           />
         );
-
       default:
         return null;
     }
   };
 
-  // Progress steps
   const steps = isEditing ? EDIT_STEPS : CREATE_STEPS;
   const currentStepIndex = steps.indexOf(currentStep);
 
@@ -176,9 +226,8 @@ export function OrganizationFormDialog({
           {steps.map((step, index) => {
             const isActive = currentStep === step;
             const isCompleted = currentStepIndex > index;
-
             return (
-              <div key={step} className="flex items-center mx-auto pt-4">
+              <div key={step} className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                     isActive
@@ -192,7 +241,7 @@ export function OrganizationFormDialog({
                 </div>
                 {index < steps.length - 1 && (
                   <div
-                    className={`w-16 h-0.5 mx-2 ${
+                    className={`w-12 h-0.5 mx-2 ${
                       isCompleted ? "bg-primary/20" : "bg-muted"
                     }`}
                   />
@@ -202,7 +251,6 @@ export function OrganizationFormDialog({
           })}
         </div>
 
-        {/* Current step content */}
         {renderCurrentStep()}
       </DialogContent>
     </Dialog>

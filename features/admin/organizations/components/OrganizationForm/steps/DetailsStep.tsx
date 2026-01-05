@@ -5,13 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Building2,
@@ -25,7 +19,6 @@ import {
   Lock,
   Settings,
 } from "lucide-react";
-import { Organization } from "@/lib/types/organization";
 import { validatePassword } from "../../../utils/formValidation";
 
 interface DetailsStepProps {
@@ -100,22 +93,8 @@ export function DetailsStep({
     setIsLoading(true);
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      const submitData = isEditing
-        ? {
-            name: formData.name,
-            description: formData.description,
-            logoUrl: formData.logoUrl,
-            contactNumber: formData.contactNumber,
-            commissionRate: formData.commissionRate,
-            status: formData.status,
-            isVerified: formData.isVerified,
-          }
-        : formData;
-
-      onSubmit(submitData);
+      // Pass the form data to parent - no simulation needed
+      onSubmit(formData);
     } catch (error) {
       console.error("Submit error:", error);
     } finally {
@@ -150,7 +129,7 @@ export function DetailsStep({
               <h4 className="font-medium text-foreground">Basic Information</h4>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Organization Name *</Label>
                 <Input
@@ -166,6 +145,27 @@ export function DetailsStep({
                 />
                 {errors.name && (
                   <p className="text-sm text-destructive">{errors.name}</p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="description">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev: any) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Describe your organization..."
+                  rows={3}
+                />
+                {errors.description && (
+                  <p className="text-sm text-destructive">
+                    {errors.description}
+                  </p>
                 )}
               </div>
             </div>
@@ -192,7 +192,7 @@ export function DetailsStep({
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Email cannot be changed
+                  ✅ Email verified - cannot be changed
                 </p>
               </div>
 
@@ -344,7 +344,7 @@ export function DetailsStep({
               </h4>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="commissionRate">Commission Rate (%)</Label>
                 <Input
@@ -361,25 +361,9 @@ export function DetailsStep({
                     }))
                   }
                 />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="status">Status</Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(value: Organization["status"]) =>
-                    setFormData((prev: any) => ({ ...prev, status: value }))
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="inactive">Inactive</SelectItem>
-                  </SelectContent>
-                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Default commission rate for orders
+                </p>
               </div>
             </div>
           </CardContent>

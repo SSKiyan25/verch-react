@@ -18,8 +18,8 @@ import {
   Eye,
   Mail,
   Phone,
-  Package,
-  DollarSign,
+  PhilippinePeso,
+  Percent,
 } from "lucide-react";
 import { Organization } from "@/lib/types/organization";
 
@@ -39,10 +39,12 @@ export function OrganizationListItem({
     switch (status) {
       case "active":
         return "bg-primary/10 text-primary border-primary/20";
-      case "inactive":
+      case "suspended":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case "pending_verification":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "archived":
         return "bg-muted text-muted-foreground border-border";
-      case "pending":
-        return "bg-accent/10 text-accent-foreground border-accent/20";
       default:
         return "bg-muted text-muted-foreground border-border";
     }
@@ -53,7 +55,8 @@ export function OrganizationListItem({
       .split(" ")
       .map((word) => word[0])
       .join("")
-      .toUpperCase();
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const handleEdit = () => {
@@ -72,7 +75,10 @@ export function OrganizationListItem({
         <div className="flex items-center gap-4">
           {/* Avatar */}
           <Avatar className="w-12 h-12 flex-shrink-0">
-            <AvatarImage src={organization.logoUrl} alt={organization.name} />
+            <AvatarImage
+              src={organization.logo_image_url || undefined}
+              alt={organization.name}
+            />
             <AvatarFallback className="bg-primary/10 text-primary font-semibold">
               {getInitials(organization.name)}
             </AvatarFallback>
@@ -91,9 +97,9 @@ export function OrganizationListItem({
                     variant="outline"
                     className={getStatusColor(organization.status)}
                   >
-                    {organization.status}
+                    {organization.status.replace("_", " ")}
                   </Badge>
-                  {organization.isVerified && (
+                  {organization.is_verified && (
                     <Badge
                       variant="outline"
                       className="bg-primary/10 text-primary border-primary/20"
@@ -106,19 +112,29 @@ export function OrganizationListItem({
 
               {/* Stats - Hidden on mobile */}
               <div className="hidden lg:flex items-center gap-6 text-sm">
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Package className="w-4 h-4" />
-                  <span>{organization.totalOrders} orders</span>
-                </div>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <DollarSign className="w-4 h-4" />
-                  <span>₱{organization.totalRevenue.toLocaleString()}</span>
-                </div>
+                {(organization.total_paid > 0 ||
+                  organization.total_due > 0) && (
+                  <>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <PhilippinePeso className="w-4 h-4" />
+                      <span>
+                        Paid: ₱{organization.total_paid.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-muted-foreground">
+                      <PhilippinePeso className="w-4 h-4" />
+                      <span>
+                        Due: ₱{organization.total_due.toLocaleString()}
+                      </span>
+                    </div>
+                  </>
+                )}
                 <Badge
                   variant="secondary"
                   className="bg-accent/10 text-accent-foreground"
                 >
-                  {organization.commissionRate}% commission
+                  <Percent className="w-3 h-3 mr-1" />
+                  {organization.settings.commissionRate}% commission
                 </Badge>
               </div>
 
@@ -154,34 +170,47 @@ export function OrganizationListItem({
               </DropdownMenu>
             </div>
 
-            {/* Contact Info - Mobile */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 text-sm lg:hidden">
+            {/* Contact Info */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-3 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Mail className="w-4 h-4" />
-                <span className="truncate">{organization.email}</span>
+                <span className="truncate">{organization.contact_email}</span>
               </div>
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Phone className="w-4 h-4" />
-                <span>{organization.contactNumber}</span>
-              </div>
+              {organization.phone_number && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Phone className="w-4 h-4" />
+                  <span>{organization.phone_number}</span>
+                </div>
+              )}
             </div>
 
             {/* Stats - Mobile */}
             <div className="flex items-center gap-4 mt-2 text-sm lg:hidden">
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <Package className="w-4 h-4" />
-                <span>{organization.totalOrders}</span>
-              </div>
-              <div className="flex items-center gap-1 text-muted-foreground">
-                <DollarSign className="w-4 h-4" />
-                <span>₱{organization.totalRevenue.toLocaleString()}</span>
-              </div>
+              {(organization.total_paid > 0 || organization.total_due > 0) && (
+                <>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <PhilippinePeso className="w-4 h-4" />
+                    <span>₱{organization.total_paid.toLocaleString()}</span>
+                  </div>
+                  <div className="text-muted-foreground">|</div>
+                  <div className="flex items-center gap-1 text-muted-foreground">
+                    <span>Due: ₱{organization.total_due.toLocaleString()}</span>
+                  </div>
+                </>
+              )}
               <Badge
                 variant="secondary"
                 className="bg-accent/10 text-accent-foreground"
               >
-                {organization.commissionRate}%
+                <Percent className="w-3 h-3 mr-1" />
+                {organization.settings.commissionRate}%
               </Badge>
+            </div>
+
+            {/* Creation Date */}
+            <div className="text-xs text-muted-foreground mt-2">
+              Created:{" "}
+              {new Date(organization.date_created).toLocaleDateString()}
             </div>
           </div>
         </div>

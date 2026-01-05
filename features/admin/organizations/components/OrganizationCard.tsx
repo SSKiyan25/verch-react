@@ -19,7 +19,7 @@ import {
   Mail,
   Phone,
   PhilippinePeso,
-  Package,
+  Percent,
 } from "lucide-react";
 import { Organization } from "@/lib/types/organization";
 
@@ -39,10 +39,12 @@ export function OrganizationCard({
     switch (status) {
       case "active":
         return "bg-primary/10 text-primary border-primary/20";
-      case "inactive":
+      case "suspended":
+        return "bg-destructive/10 text-destructive border-destructive/20";
+      case "pending_verification":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "archived":
         return "bg-muted text-muted-foreground border-border";
-      case "pending":
-        return "bg-accent/10 text-accent-foreground border-accent/20";
       default:
         return "bg-muted text-muted-foreground border-border";
     }
@@ -53,7 +55,8 @@ export function OrganizationCard({
       .split(" ")
       .map((word) => word[0])
       .join("")
-      .toUpperCase();
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   const handleEdit = () => {
@@ -72,7 +75,10 @@ export function OrganizationCard({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="w-12 h-12">
-              <AvatarImage src={organization.logoUrl} alt={organization.name} />
+              <AvatarImage
+                src={organization.logo_image_url || undefined}
+                alt={organization.name}
+              />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {getInitials(organization.name)}
               </AvatarFallback>
@@ -86,9 +92,9 @@ export function OrganizationCard({
                   variant="outline"
                   className={getStatusColor(organization.status)}
                 >
-                  {organization.status}
+                  {organization.status.replace("_", " ")}
                 </Badge>
-                {organization.isVerified && (
+                {organization.is_verified && (
                   <Badge
                     variant="outline"
                     className="bg-primary/10 text-primary border-primary/20"
@@ -129,47 +135,53 @@ export function OrganizationCard({
 
       <CardContent className="space-y-4">
         {/* Description */}
-        <p className="text-sm text-muted-foreground line-clamp-2">
-          {organization.description}
-        </p>
+        {organization.description && (
+          <p className="text-sm text-muted-foreground line-clamp-2">
+            {organization.description}
+          </p>
+        )}
 
         {/* Contact Info */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <Mail className="w-4 h-4 text-muted-foreground" />
             <span className="text-foreground truncate">
-              {organization.email}
+              {organization.contact_email}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-sm">
-            <Phone className="w-4 h-4 text-muted-foreground" />
-            <span className="text-foreground">
-              {organization.contactNumber}
-            </span>
-          </div>
+          {organization.phone_number && (
+            <div className="flex items-center gap-2 text-sm">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              <span className="text-foreground">
+                {organization.phone_number}
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground mb-1">
-              <Package className="w-3 h-3" />
-              Orders
+        {/* Financial Info - Show if there's any data */}
+        {(organization.total_paid > 0 || organization.total_due > 0) && (
+          <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground mb-1">
+                <PhilippinePeso className="w-3 h-3" />
+                Paid
+              </div>
+              <div className="font-semibold text-foreground">
+                ₱{organization.total_paid.toLocaleString()}
+              </div>
             </div>
-            <div className="font-semibold text-foreground">
-              {organization.totalOrders}
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground mb-1">
+                <PhilippinePeso className="w-3 h-3" />
+                Due
+              </div>
+              <div className="font-semibold text-foreground">
+                ₱{organization.total_due.toLocaleString()}
+              </div>
             </div>
           </div>
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1 text-sm text-muted-foreground mb-1">
-              <PhilippinePeso className="w-3 h-3" />
-              Revenue
-            </div>
-            <div className="font-semibold text-foreground">
-              ₱{organization.totalRevenue.toLocaleString()}
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Commission Rate */}
         <div className="flex items-center justify-between pt-2 border-t border-border">
@@ -178,8 +190,14 @@ export function OrganizationCard({
             variant="secondary"
             className="bg-accent/10 text-accent-foreground"
           >
-            {organization.commissionRate}%
+            <Percent className="w-3 h-3 mr-1" />
+            {organization.settings.commissionRate}%
           </Badge>
+        </div>
+
+        {/* Dates */}
+        <div className="text-xs text-muted-foreground pt-2 border-t border-border">
+          Created: {new Date(organization.date_created).toLocaleDateString()}
         </div>
       </CardContent>
     </Card>

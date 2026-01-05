@@ -44,19 +44,34 @@ export function EmailStep({ formData, setFormData, onNext }: EmailStepProps) {
     setError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Use real API call
+      const response = await fetch("/api/send-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          type: "organization_verification",
+        }),
+      });
 
-      // Simulate success
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to send verification code");
+      }
+
       setIsCodeSent(true);
 
       // Auto proceed to next step after sending
       setTimeout(() => {
         onNext();
-      }, 1000);
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (err) {
-      setError("Failed to send verification code. Please try again.");
+      }, 1500);
+    } catch (err: any) {
+      setError(
+        err.message || "Failed to send verification code. Please try again."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -89,7 +104,7 @@ export function EmailStep({ formData, setFormData, onNext }: EmailStepProps) {
               setFormData((prev: any) => ({ ...prev, email: e.target.value }))
             }
             placeholder="Enter your email address"
-            disabled={isLoading}
+            disabled={isLoading || isCodeSent}
           />
           {!validateEmail(formData.email) && formData.email && (
             <p className="text-sm text-destructive">
@@ -107,19 +122,22 @@ export function EmailStep({ formData, setFormData, onNext }: EmailStepProps) {
         {isCodeSent && (
           <Alert>
             <AlertDescription>
-              Verification code sent! Redirecting to verification step...
+              ✅ Verification code sent to {formData.email}! Check your email
+              and proceed to the next step.
             </AlertDescription>
           </Alert>
         )}
 
         <Button
           onClick={handleSendCode}
-          disabled={!canProceed || isLoading}
+          disabled={!canProceed || isLoading || isCodeSent}
           className="w-full"
           size="lg"
         >
           {isLoading ? (
             "Sending Code..."
+          ) : isCodeSent ? (
+            "Code Sent!"
           ) : (
             <>
               Send Verification Code

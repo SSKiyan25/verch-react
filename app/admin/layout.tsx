@@ -128,7 +128,7 @@ export default function AdminLayout({
   }, {} as Record<string, React.ComponentType<any>>);
 
   const breadcrumbs = generateBreadcrumbs();
-  console.log("User authenticated as admin:", user);
+  // console.log("User authenticated as admin:", user);
   // Use real user data from Supabase
   const currentUser = {
     name: user.full_name,

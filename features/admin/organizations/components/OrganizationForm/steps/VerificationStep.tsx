@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,9 +36,25 @@ export function VerificationStep({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [canResend, setCanResend] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(30);
+  const [resendCooldown, setResendCooldown] = useState(60);
 
   const canProceed = verificationCode.length === 6;
+
+  // Start cooldown on mount
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const handleVerifyCode = async () => {
     if (!canProceed) return;
@@ -48,17 +63,31 @@ export function VerificationStep({
     setError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Use real API call
+      const response = await fetch("/api/verify-code", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          code: verificationCode,
+        }),
+      });
 
-      // Simulate verification (accept any 6-digit code for demo)
-      if (verificationCode.length === 6) {
-        onNext();
-      } else {
-        setError("Invalid verification code. Please try again.");
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Verification failed");
       }
-    } catch (err) {
-      setError("Verification failed. Please try again.");
+
+      // Mark email as verified in form data
+      setFormData((prev: any) => ({ ...prev, isVerified: true }));
+
+      // Proceed to next step
+      onNext();
+    } catch (err: any) {
+      setError(err.message || "Verification failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -69,10 +98,28 @@ export function VerificationStep({
     setError(null);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Use real API call
+      const response = await fetch("/api/send-verification", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          type: "organization_verification",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to resend verification code");
+      }
+
+      // Reset states
+      setVerificationCode("");
       setCanResend(false);
-      setResendCooldown(30);
+      setResendCooldown(60);
 
       // Start cooldown timer
       const timer = setInterval(() => {
@@ -85,8 +132,8 @@ export function VerificationStep({
           return prev - 1;
         });
       }, 1000);
-    } catch (err) {
-      setError("Failed to resend code. Please try again.");
+    } catch (err: any) {
+      setError(err.message || "Failed to resend code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +165,11 @@ export function VerificationStep({
             id="verificationCode"
             type="text"
             value={verificationCode}
-            onChange={(e) => setVerificationCode(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "").slice(0, 6);
+              setVerificationCode(value);
+              setError(null);
+            }}
             placeholder="000000"
             className="text-center text-2xl tracking-widest font-mono py-4"
             maxLength={6}
