@@ -44,6 +44,7 @@ export function useUser() {
               contact_number,
               is_verified,
               has_agreed_to_terms,
+              has_changed_default_password,
               created_at,
               updated_at,
               organization_id

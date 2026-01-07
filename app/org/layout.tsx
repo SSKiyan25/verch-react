@@ -256,7 +256,6 @@ export default function OrganizationLayout({
 
   const breadcrumbs = generateBreadcrumbs();
 
-  // Use real user data from Supabase
   const currentUser = {
     name: user.full_name,
     email: user.email,

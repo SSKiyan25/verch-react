@@ -110,6 +110,7 @@ export async function POST(request: NextRequest) {
         contact_number: formData.contactNumber || null,
         is_verified: formData.isVerified || false,
         has_agreed_to_terms: false,
+        has_changed_default_password: false,
         organization_id: organization.id,
       };
 

@@ -39,7 +39,12 @@ export default function RootLayout({
       >
         <div suppressHydrationWarning style={{ display: "contents" }}>
           <SidebarProvider>{children}</SidebarProvider>
-          <Toaster position="top-right" expand={false} richColors closeButton />
+          <Toaster
+            position="bottom-right"
+            expand={false}
+            richColors
+            closeButton
+          />
         </div>
       </body>
     </html>

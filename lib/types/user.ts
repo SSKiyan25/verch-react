@@ -12,6 +12,7 @@ export interface User {
   contact_number?: string | null;
   is_verified: boolean;
   has_agreed_to_terms: boolean;
+  has_changed_default_password?: boolean;
   created_at: string;
   updated_at: string;
   organization_id?: string | null;
