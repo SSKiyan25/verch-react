@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Organization, CreateOrganizationData } from "@/lib/types/organization";
+import { Organization } from "@/lib/types/organization";
+import { User } from "@/lib/types/user";
 
 export interface OrganizationFormData {
   email: string;
@@ -15,6 +16,10 @@ export interface OrganizationFormData {
   isVerified: boolean;
   password: string;
   confirmPassword: string;
+}
+
+export interface OrganizationWithUser extends Organization {
+  admin_user?: User;
 }
 
 const INITIAL_DATA: OrganizationFormData = {
@@ -146,18 +151,16 @@ export function useOrganizationForm(
     }
   };
 
-  const getCreateData = useCallback((): CreateOrganizationData => {
+  const getCreateData = useCallback(() => {
     return {
       name: formData.name.trim(),
-      contact_email: formData.email.trim(),
-      phone_number: formData.contactNumber.trim(),
+      email: formData.email.trim(),
+      password: formData.password, // Include password for user creation
+      contactNumber: formData.contactNumber.trim(),
       description: formData.description.trim(),
-      settings: {
-        businessHours: {},
-        commissionRate: formData.commissionRate,
-        autoAcceptOrders: false,
-        requireOrderApproval: true,
-      },
+      logoUrl: formData.logoUrl,
+      commissionRate: formData.commissionRate,
+      isVerified: formData.isVerified,
     };
   }, [formData]);
 
@@ -235,11 +238,13 @@ export function useOrganizationForm(
 
         return { success: true, data: result.organization };
       } else {
-        // Create new organization
+        // Create new organization (includes user creation)
+        const createData = getCreateData();
+
         const response = await fetch("/api/organizations", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
+          body: JSON.stringify(createData),
         });
 
         const result = await response.json();
@@ -248,14 +253,20 @@ export function useOrganizationForm(
           throw new Error(result.error || "Failed to create organization");
         }
 
-        return { success: true, data: result.organization };
+        return {
+          success: true,
+          data: {
+            organization: result.organization,
+            user: result.user,
+          },
+        };
       }
     } catch (error: any) {
       return { success: false, error: error.message };
     } finally {
       setIsLoading(false);
     }
-  }, [formData, existingOrganization, validateForm, getUpdateData]);
+  }, [existingOrganization, validateForm, getUpdateData, getCreateData]);
 
   return {
     formData,

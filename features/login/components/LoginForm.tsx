@@ -17,14 +17,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLogin } from "@/features/login/hooks/useLogin";
+import { TermsModal } from "./TermsModal";
 
-export function LoginForm() {
+interface LoginFormProps {
+  onTermsAccept: () => void;
+  onTermsClose: () => void;
+  termsLoading: boolean;
+}
+
+export function LoginForm({
+  onTermsAccept,
+  onTermsClose,
+  termsLoading,
+}: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const { loginWithEmail, isLoading, error, clearError, validation } =
-    useLogin();
+  const {
+    loginWithEmail,
+    isLoading,
+    error,
+    clearError,
+    validation,
+    needsTermsAcceptance,
+  } = useLogin();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +55,14 @@ export function LoginForm() {
 
   return (
     <div className="w-full max-w-xl mx-auto p-4 lg:p-0">
+      {/* Terms Modal - Shows when user needs to accept terms */}
+      <TermsModal
+        isOpen={needsTermsAcceptance}
+        onClose={onTermsClose}
+        onAccept={onTermsAccept}
+        isLoading={termsLoading}
+      />
+
       <Card className="border-0 shadow-none lg:border lg:shadow-lg bg-card">
         <CardHeader className="text-center space-y-4 pb-4">
           {/* Logo - Mobile Only */}
@@ -225,33 +250,9 @@ export function LoginForm() {
 
         <CardFooter className="flex flex-col space-y-4">
           {/* Organization Contact Info */}
-          <div className="w-full p-4 bg-primary/5 rounded-lg border border-primary/20">
-            <div className="text-center space-y-2">
-              <h4 className="font-semibold text-foreground text-sm">
-                Want to sell your organization&apos;s merchandise?
-              </h4>
-              <p className="text-xs text-muted-foreground">
-                Student organizations interested in creating a store should
-                contact us for account setup and onboarding.
-              </p>
-              <Link
-                href="/contact"
-                className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-foreground bg-primary rounded-md hover:bg-primary/90 transition-colors"
-              >
-                Contact Us
-              </Link>
-            </div>
-          </div>
-
-          {/* Back to Home */}
-          <div className="text-center">
-            <Link
-              href="/"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
+          {/* <div className="w-full p-4 bg-primary/5 rounded-lg border border-primary/20">
+            <div className="text-center space-y-2"></div>
+          </div> */}
         </CardFooter>
       </Card>
     </div>

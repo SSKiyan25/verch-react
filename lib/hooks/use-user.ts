@@ -2,22 +2,10 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
-
-interface UserProfile {
-  id: string;
-  full_name: string;
-  email: string;
-  avatar_url?: string;
-  role: "customer" | "organization" | "admin";
-  contact_number?: string;
-  is_verified: boolean;
-  has_agreed_to_terms: boolean;
-  created_at: string;
-  updated_at: string;
-}
+import { User } from "@/lib/types/user";
 
 export function useUser() {
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
@@ -57,20 +45,14 @@ export function useUser() {
               is_verified,
               has_agreed_to_terms,
               created_at,
-              updated_at
+              updated_at,
+              organization_id
             `
             )
             .eq("id", authUser.id);
 
-          //   console.log("Profile fetch result (array):", {
-          //     userProfiles,
-          //     profileError,
-          //     queryUserId: authUser.id,
-          //     resultCount: userProfiles?.length || 0,
-          //   });
-
           if (profileError) {
-            console.error(" Error fetching user profile:", profileError);
+            console.error("Error fetching user profile:", profileError);
             setUser(null);
             setLoading(false);
             return;
@@ -78,7 +60,7 @@ export function useUser() {
 
           const userProfile = userProfiles?.[0];
           if (!userProfile) {
-            console.log(" No user profile found in results");
+            console.log("No user profile found in results");
             setUser(null);
             setLoading(false);
             return;
@@ -86,12 +68,11 @@ export function useUser() {
 
           console.log("User profile loaded:");
 
-          const completeUser: UserProfile = {
+          const completeUser: User = {
             ...userProfile,
             email: authUser.email || "",
           };
 
-          //   console.log("Setting complete user:", completeUser);
           setUser(completeUser);
           setLoading(false);
         } catch (queryError) {
@@ -121,8 +102,6 @@ export function useUser() {
         setUser(null);
         setLoading(false);
       } else if (event === "SIGNED_IN" && session) {
-        // console.log("User signed in, fetching profile for:", session.user.id);
-
         // Small delay to ensure session is ready
         setTimeout(async () => {
           if (!isMounted) return;
@@ -135,18 +114,11 @@ export function useUser() {
               .select(`*`)
               .eq("id", session.user.id);
 
-            // console.log("Auth change profile fetch:", {
-            //   userProfiles,
-            //   error,
-            //   resultCount: userProfiles?.length || 0,
-            // });
-
             if (!error && userProfiles?.[0]) {
-              const completeUser: UserProfile = {
+              const completeUser: User = {
                 ...userProfiles[0],
                 email: session.user.email || "",
               };
-              //   console.log("Setting user from auth change:", completeUser);
               setUser(completeUser);
             } else if (error) {
               console.error("Auth change profile fetch error:", error);

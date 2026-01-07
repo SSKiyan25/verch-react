@@ -1,5 +1,3 @@
-import { validateInputSecurity } from "@/lib/utils/security";
-
 // Define ValidationRule type and export it
 export interface ValidationRule {
   required?: boolean;
@@ -67,17 +65,24 @@ export const emailValidation: ValidationRule = {
   custom: (email: string) => {
     if (!email) return "Email is required";
 
-    // Security validation first
-    const securityCheck = validateInputSecurity(email, {
-      fieldType: "email",
-      maxLength: 255,
-    });
-
-    if (securityCheck.blocked) {
-      return `Security violation: ${securityCheck.threats.join(", ")}`;
+    // Basic length and format validation first
+    if (email.length > 255) {
+      return "Email address is too long";
     }
 
     if (!emailValidation.pattern?.test(email)) {
+      return "Please enter a valid email address";
+    }
+
+    // Light security check - only block obviously malicious patterns
+    const suspiciousPatterns = [
+      /\.\./, // consecutive dots
+      /^\./, // starts with dot
+      /\.$/, // ends with dot
+      /[<>\"'\\]/, // HTML/script tags
+    ];
+
+    if (suspiciousPatterns.some((pattern) => pattern.test(email))) {
       return "Please enter a valid email address";
     }
 
@@ -94,26 +99,29 @@ export const emailValidation: ValidationRule = {
   },
 };
 
-// Updated password validation with security checks
+// Updated password validation with strength requirements
 export const passwordValidation: ValidationRule = {
   required: true,
-  minLength: 8,
   custom: (password: string) => {
     if (!password) return "Password is required";
 
-    // Security validation
-    const securityCheck = validateInputSecurity(password, {
-      maxLength: 128,
-    });
+    if (password.length > 128) {
+      return "Password must be less than 128 characters";
+    }
 
-    if (securityCheck.blocked) {
-      return `Security violation: ${securityCheck.threats.join(", ")}`;
+    // Light security check - only block obviously malicious patterns
+    const suspiciousPatterns = [
+      /[<>\"'\\]/, // HTML/script tags
+      /\s{2,}/, // multiple consecutive spaces
+    ];
+
+    if (suspiciousPatterns.some((pattern) => pattern.test(password))) {
+      return "Password contains invalid characters";
     }
 
     return null;
   },
 };
-
 // Login validation rules object
 export const loginValidationRules = {
   email: emailValidation,
