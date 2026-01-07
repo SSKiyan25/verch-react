@@ -29,12 +29,15 @@ import { useAdminPasswordCheck } from "../hooks/useAdminPasswordCheck";
 
 interface ChangePassModalProps {
   isOpen: boolean;
+  organizationId: string;
   onClose: () => void;
   onSuccess?: () => void;
 }
 
 export function ChangePassModal({
   isOpen,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  organizationId,
   onClose,
   onSuccess,
 }: ChangePassModalProps) {

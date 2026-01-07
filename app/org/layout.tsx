@@ -128,12 +128,12 @@ export default function OrganizationLayout({
 
       try {
         // Fetch organization data to check setup status
-        console.log(
-          "Fetching organization data for user:",
-          user.id,
-          "organization_id:",
-          user.organization_id
-        );
+        // console.log(
+        //   "Fetching organization data for user:",
+        //   user.id,
+        //   "organization_id:",
+        //   user.organization_id
+        // );
 
         const response = await fetch(
           `/api/organizations/${user.organization_id}`
