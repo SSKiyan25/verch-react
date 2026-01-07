@@ -6,11 +6,12 @@ export interface Organization {
   contact_email: string; // matches DB: contact_email
   phone_number: string | null; // matches DB: phone_number
   address: {
-    street?: string;
-    city?: string;
-    state?: string;
-    postalCode?: string;
-    country?: string;
+    faculty?: string;
+    department?: string;
+    building?: string;
+    room?: string;
+    campus?: string;
+    description?: string;
     coordinates?: {
       lat: number;
       lng: number;

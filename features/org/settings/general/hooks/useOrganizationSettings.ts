@@ -152,7 +152,11 @@ export function useOrganizationSettings({
       businessHours:
         Object.keys(organization.settings?.businessHours || {}).length > 0,
       commission: (organization.settings?.commissionRate || 0) > 0,
-      address: !!(organization.address?.street && organization.address?.city),
+      address: !!(
+        organization.address?.faculty &&
+        organization.address?.department &&
+        organization.address?.building
+      ),
       images: !!(organization.logo_image_url || organization.cover_image_url),
     };
 
