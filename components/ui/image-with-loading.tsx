@@ -10,6 +10,7 @@ interface ImageWithLoadingProps {
   height?: number;
   className?: string;
   unoptimized?: boolean;
+  loading?: "lazy" | "eager";
 }
 
 export function ImageWithLoading({
@@ -19,6 +20,7 @@ export function ImageWithLoading({
   height,
   className,
   unoptimized = false,
+  loading,
 }: ImageWithLoadingProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -56,6 +58,7 @@ export function ImageWithLoading({
           isLoading ? "opacity-0" : "opacity-100"
         } transition-opacity duration-300`}
         unoptimized={unoptimized}
+        loading={loading}
         onLoad={handleLoad}
         onError={handleError}
       />

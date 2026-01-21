@@ -21,11 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { X, Plus, AlertCircle, Wand2, Loader2 } from "lucide-react";
 import { CreateProductData } from "@/lib/types/product";
-import { mockCategories } from "@/features/org/products/utils/data";
 import { useState } from "react";
 import { useProductValidation } from "../hooks/useProductValidation";
 import { useProductHelpers } from "../hooks/useProductHelpers";
+import { useCategories } from "../hooks/useCategories";
 import { toast } from "sonner";
+// import { useParams } from "next/navigation";
 
 interface ProductBasicInfoProps {
   data: CreateProductData;
@@ -33,7 +34,19 @@ interface ProductBasicInfoProps {
 }
 
 export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
+  // const params = useParams(); // Add this import if not present
+  // console.log("🔍 ProductBasicInfo params:", params); // Debug log
   const [keywordInput, setKeywordInput] = useState("");
+  const [isCustomCategoryOpen, setIsCustomCategoryOpen] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
+
+  // Use the categories hook
+  const {
+    categories,
+    isLoading: categoriesLoading,
+    isCreating: categoryCreating,
+    createCategory,
+  } = useCategories();
 
   const {
     errors,
@@ -49,15 +62,10 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
     isValidKeyword,
   } = useProductValidation(data);
 
-  const {
-    isCustomCategoryOpen,
-    setIsCustomCategoryOpen,
-    customCategoryName,
-    setCustomCategoryName,
-    handleCreateCustomCategory,
-    isGeneratingKeywords,
-    generateKeywords,
-  } = useProductHelpers(data, onChange);
+  const { isGeneratingKeywords, generateKeywords } = useProductHelpers(
+    data,
+    onChange
+  );
 
   const handleNameChange = (value: string) => {
     const sanitized = sanitizeName(value);
@@ -82,10 +90,32 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
     clearError("category_id");
   };
 
+  const handleCreateCustomCategory = async () => {
+    if (!customCategoryName.trim() || customCategoryName.trim().length < 2) {
+      toast.error("Category name must be at least 2 characters long");
+      return;
+    }
+
+    const newCategory = await createCategory({
+      name: customCategoryName.trim(),
+    });
+
+    if (newCategory) {
+      // Set the newly created category as selected
+      onChange({ category_id: newCategory.id });
+      validateCategory(newCategory.id);
+      clearError("category_id");
+
+      // Close dialog and reset form
+      setIsCustomCategoryOpen(false);
+      setCustomCategoryName("");
+    }
+  };
+
   const handleAddKeyword = () => {
     if (!keywordInput.trim()) return;
 
-    const result = addKeyword(keywordInput, data.search_keywords);
+    const result = addKeyword(keywordInput, data.search_keywords || []);
 
     if (result.success && result.keywords) {
       onChange({ search_keywords: result.keywords });
@@ -96,7 +126,7 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
   };
 
   const handleRemoveKeyword = (keyword: string) => {
-    const newKeywords = removeKeyword(keyword, data.search_keywords);
+    const newKeywords = removeKeyword(keyword, data.search_keywords || []);
     onChange({ search_keywords: newKeywords });
   };
 
@@ -148,7 +178,7 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
             Description
             {data.description && (
               <span className="text-xs text-muted-foreground ml-2">
-                ({data.description.length}/1000)
+                ({data.description.length}/10000)
               </span>
             )}
             {errors.description && (
@@ -166,7 +196,7 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
             className={`resize-none ${
               errors.description ? "border-red-500" : ""
             }`}
-            maxLength={1000}
+            maxLength={10000}
           />
           {errors.description && (
             <div className="flex items-center gap-1 text-xs text-red-500">
@@ -186,14 +216,24 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
               </span>
             )}
           </Label>
-          <Select value={data.category_id} onValueChange={handleCategoryChange}>
+          <Select
+            value={data.category_id ?? undefined}
+            onValueChange={handleCategoryChange}
+            disabled={categoriesLoading}
+          >
             <SelectTrigger
               className={errors.category_id ? "border-red-500" : ""}
             >
-              <SelectValue placeholder="Select category" />
+              <SelectValue
+                placeholder={
+                  categoriesLoading
+                    ? "Loading categories..."
+                    : "Select category"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {mockCategories.map((category) => (
+              {categories.map((category) => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}
                 </SelectItem>
@@ -358,6 +398,7 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
                     setCustomCategoryName("");
                   }}
                   className="flex-1"
+                  disabled={categoryCreating}
                 >
                   Cancel
                 </Button>
@@ -365,11 +406,19 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
                   onClick={handleCreateCustomCategory}
                   disabled={
                     !customCategoryName.trim() ||
-                    customCategoryName.trim().length < 2
+                    customCategoryName.trim().length < 2 ||
+                    categoryCreating
                   }
                   className="flex-1"
                 >
-                  Create Category
+                  {categoryCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Create Category"
+                  )}
                 </Button>
               </div>
             </div>

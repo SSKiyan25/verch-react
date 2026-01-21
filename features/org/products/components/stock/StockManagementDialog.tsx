@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Minus, Package, History, AlertTriangle } from "lucide-react";
+import { getVariationDisplayName } from "@/lib/utils/product-utils";
 
 interface StockManagementDialogProps {
   product: ProductWithDetails;
@@ -34,7 +35,14 @@ interface StockAdjustment {
   variationId: string;
   adjustment: number;
   reason: string;
-  action: "increase" | "decrease" | "adjustment";
+  action:
+    | "add"
+    | "remove"
+    | "adjust"
+    | "reserve"
+    | "release"
+    | "sell"
+    | "return";
 }
 
 export function StockManagementDialog({
@@ -50,7 +58,7 @@ export function StockManagementDialog({
   const handleStockChange = (
     variationId: string,
     value: number,
-    action: "increase" | "decrease" | "adjustment"
+    action: StockAdjustment["action"]
   ) => {
     setAdjustments((prev) => ({
       ...prev,
@@ -70,7 +78,7 @@ export function StockManagementDialog({
         ...prev[variationId],
         variationId,
         adjustment: prev[variationId]?.adjustment || 0,
-        action: prev[variationId]?.action || "adjustment",
+        action: prev[variationId]?.action || "adjust",
         reason,
       },
     }));
@@ -81,17 +89,50 @@ export function StockManagementDialog({
     if (!adj) return variation.available_quantity;
 
     switch (adj.action) {
-      case "increase":
+      case "add":
         return variation.available_quantity + Math.abs(adj.adjustment);
-      case "decrease":
+      case "remove":
         return Math.max(
           0,
           variation.available_quantity - Math.abs(adj.adjustment)
         );
-      case "adjustment":
+      case "adjust":
         return Math.max(0, adj.adjustment);
+      case "reserve":
+        // Reserve moves from available to reserved
+        return Math.max(
+          0,
+          variation.available_quantity - Math.abs(adj.adjustment)
+        );
+      case "release":
+        // Release moves from reserved to available
+        return variation.available_quantity + Math.abs(adj.adjustment);
+      case "sell":
+        return Math.max(
+          0,
+          variation.available_quantity - Math.abs(adj.adjustment)
+        );
+      case "return":
+        return variation.available_quantity + Math.abs(adj.adjustment);
       default:
         return variation.available_quantity;
+    }
+  };
+
+  const getNewReserved = (variation: any) => {
+    const adj = adjustments[variation.id];
+    if (!adj) return variation.reserved_quantity;
+
+    switch (adj.action) {
+      case "reserve":
+        return variation.reserved_quantity + Math.abs(adj.adjustment);
+      case "release":
+        return Math.max(
+          0,
+          variation.reserved_quantity - Math.abs(adj.adjustment)
+        );
+      default:
+        return variation.reserved_quantity;
     }
   };
 
@@ -103,10 +144,21 @@ export function StockManagementDialog({
   const getTotalAdjustment = () => {
     return Object.values(adjustments).reduce((total, adj) => {
       switch (adj.action) {
-        case "increase":
+        case "add":
+        case "return":
+        case "release":
           return total + Math.abs(adj.adjustment);
-        case "decrease":
+        case "remove":
+        case "sell":
+        case "reserve":
           return total - Math.abs(adj.adjustment);
+        case "adjust":
+          return (
+            total +
+            (adj.adjustment -
+              (product.variations?.find((v) => v.id === adj.variationId)
+                ?.available_quantity || 0))
+          );
         default:
           return total;
       }
@@ -115,9 +167,9 @@ export function StockManagementDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-full sm:max-w-md md:max-w-lg lg:max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-8">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 p-8 flex-col">
             <Package className="w-5 h-5" />
             Manage Stock - {product.name}
           </DialogTitle>
@@ -191,6 +243,7 @@ export function StockManagementDialog({
             {product.variations?.map((variation) => {
               const adjustment = adjustments[variation.id];
               const newStock = getNewStock(variation);
+              const newReserved = getNewReserved(variation);
               const isLowStock = newStock < 10 && newStock > 0;
               const isOutOfStock = newStock === 0;
 
@@ -202,10 +255,7 @@ export function StockManagementDialog({
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <h4 className="font-medium">
-                            {variation.variation_name ||
-                              `${Object.values(variation.attributes).join(
-                                ", "
-                              )}`}
+                            {getVariationDisplayName(variation)}
                           </h4>
                           <Badge variant="outline" className="text-xs">
                             {variation.sku}
@@ -226,7 +276,7 @@ export function StockManagementDialog({
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Price: ₱{variation.price.toFixed(2)} | Reserved:{" "}
-                          {variation.reserved_quantity}
+                          {newReserved}
                         </div>
                       </div>
                     </div>
@@ -273,10 +323,8 @@ export function StockManagementDialog({
                       <div className="flex items-center gap-2">
                         <Label className="min-w-0 text-sm">Action:</Label>
                         <Select
-                          value={adjustment?.action || "adjustment"}
-                          onValueChange={(
-                            value: "increase" | "decrease" | "adjustment"
-                          ) => {
+                          value={adjustment?.action || "adjust"}
+                          onValueChange={(value: StockAdjustment["action"]) => {
                             handleStockChange(
                               variation.id,
                               adjustment?.adjustment || 0,
@@ -288,9 +336,13 @@ export function StockManagementDialog({
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="increase">Increase</SelectItem>
-                            <SelectItem value="decrease">Decrease</SelectItem>
-                            <SelectItem value="adjustment">Set to</SelectItem>
+                            <SelectItem value="add">Add Stock</SelectItem>
+                            <SelectItem value="remove">Remove Stock</SelectItem>
+                            <SelectItem value="adjust">Adjust to</SelectItem>
+                            <SelectItem value="reserve">Reserve</SelectItem>
+                            <SelectItem value="release">Release</SelectItem>
+                            <SelectItem value="sell">Sell</SelectItem>
+                            <SelectItem value="return">Return</SelectItem>
                           </SelectContent>
                         </Select>
 
@@ -300,7 +352,7 @@ export function StockManagementDialog({
                             size="sm"
                             onClick={() => {
                               const currentAdj = adjustment?.adjustment || 0;
-                              const action = adjustment?.action || "adjustment";
+                              const action = adjustment?.action || "adjust";
                               handleStockChange(
                                 variation.id,
                                 Math.max(0, currentAdj - 1),
@@ -316,7 +368,7 @@ export function StockManagementDialog({
                             value={adjustment?.adjustment || 0}
                             onChange={(e) => {
                               const value = parseInt(e.target.value) || 0;
-                              const action = adjustment?.action || "adjustment";
+                              const action = adjustment?.action || "adjust";
                               handleStockChange(variation.id, value, action);
                             }}
                             className="w-20 text-center"
@@ -326,7 +378,7 @@ export function StockManagementDialog({
                             size="sm"
                             onClick={() => {
                               const currentAdj = adjustment?.adjustment || 0;
-                              const action = adjustment?.action || "adjustment";
+                              const action = adjustment?.action || "adjust";
                               handleStockChange(
                                 variation.id,
                                 currentAdj + 1,

@@ -31,11 +31,12 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
   const { errors, validatePhotos, validateFeaturedPhoto } =
     useProductValidation(data);
 
-  const { uploadImage, uploadMultipleImages, isUploading } = useImageUpload({
-    bucket: "product-images",
-    maxSize: 5 * 1024 * 1024, // 5MB
-    allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/jpg"],
-  });
+  const { uploadToTemporary, uploadMultipleToTemporary, isUploading } =
+    useImageUpload({
+      tempBucket: "temp-uploads",
+      maxSize: 5 * 1024 * 1024, // 5MB
+      allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/jpg"],
+    });
 
   const handleFileSelect = async (
     files: FileList | null,
@@ -45,28 +46,31 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
 
     try {
       if (isFeatured) {
-        // Upload single featured image
+        // Upload single featured image to temp
         const file = files[0];
-        const result = await uploadImage(file, "products");
-        const newFeaturedUrl = result.url;
+        const result = await uploadToTemporary(file, "products", "featured");
 
-        // Validate before updating
-        const isValid = validateFeaturedPhoto(newFeaturedUrl);
+        // Validate before updating (using temp URL for validation)
+        const isValid = validateFeaturedPhoto(result.url);
         if (isValid) {
-          onChange({ featured_photo_url: newFeaturedUrl });
+          onChange({ temp_featured_image_path: result.path });
           toast.success("Featured image uploaded successfully!");
         }
       } else {
-        // Upload multiple images
+        // Upload multiple images to temp
         const filesArray = Array.from(files);
-        const results = await uploadMultipleImages(filesArray, "products");
-        const newUrls = results.map((r) => r.url);
-        const updatedUrls = [...(data.photo_urls || []), ...newUrls];
+        const results = await uploadMultipleToTemporary(filesArray, "products");
+        const tempPaths = results.map((r) => r.path);
+        const tempUrls = results.map((r) => r.url);
+        const updatedTempPaths = [
+          ...(data.temp_gallery_image_paths || []),
+          ...tempPaths,
+        ];
 
-        // Validate before updating
-        const isValid = validatePhotos(updatedUrls);
+        // Validate before updating (using temp URLs for validation)
+        const isValid = validatePhotos(tempUrls);
         if (isValid) {
-          onChange({ photo_urls: updatedUrls });
+          onChange({ temp_gallery_image_paths: updatedTempPaths });
           toast.success(`${filesArray.length} image(s) uploaded successfully!`);
         } else {
           toast.error(errors.photo_urls || "Invalid images");
@@ -78,30 +82,38 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
     }
   };
 
-  const removePhoto = (url: string) => {
-    const newPhotos = data.photo_urls?.filter((u) => u !== url) || [];
+  const removePhoto = (path: string) => {
+    const newTempPaths =
+      data.temp_gallery_image_paths?.filter((p) => p !== path) || [];
 
     // Validate before updating
-    validatePhotos(newPhotos);
-    onChange({ photo_urls: newPhotos });
+    validatePhotos(newTempPaths); // Adjust validation if needed for paths
+    onChange({ temp_gallery_image_paths: newTempPaths });
 
     // If removing featured photo, clear it
-    if (data.featured_photo_url === url) {
+    if (data.temp_featured_image_path === path) {
       validateFeaturedPhoto("");
-      onChange({ featured_photo_url: "" });
+      onChange({ temp_featured_image_path: "" });
     }
   };
 
-  const setFeaturedPhoto = (url: string) => {
+  const setFeaturedPhoto = (path: string) => {
     // Validate before updating
-    const isValid = validateFeaturedPhoto(url);
+    const isValid = validateFeaturedPhoto(path); // Adjust if needed
     if (isValid) {
-      onChange({ featured_photo_url: url });
+      onChange({ temp_featured_image_path: path });
       toast.success("Featured image updated!");
     }
   };
 
-  const canUploadMore = !data.photo_urls || data.photo_urls.length < 10;
+  const canUploadMore =
+    !data.temp_gallery_image_paths || data.temp_gallery_image_paths.length < 10;
+
+  // Helper to get temp URL for preview
+  const getTempUrl = (path: string) => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    return `${supabaseUrl}/storage/v1/object/public/temp-uploads/${path}`;
+  };
 
   return (
     <Card>
@@ -159,11 +171,11 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
             onChange={(e) => handleFileSelect(e.target.files, true)}
           />
 
-          {data.featured_photo_url ? (
+          {data.temp_featured_image_path ? (
             <div className="space-y-2">
               <div className="relative w-full h-96 rounded-lg overflow-hidden border">
                 <ImageWithLoading
-                  src={data.featured_photo_url}
+                  src={getTempUrl(data.temp_featured_image_path)}
                   alt="Featured image"
                   width={600}
                   height={1200}
@@ -179,7 +191,7 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
                   className="absolute top-2 right-2"
                   onClick={() => {
                     validateFeaturedPhoto("");
-                    onChange({ featured_photo_url: "" });
+                    onChange({ temp_featured_image_path: "" });
                   }}
                 >
                   <X className="w-3 h-3" />
@@ -215,9 +227,9 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">
               Additional Photos
-              {data.photo_urls && (
+              {data.temp_gallery_image_paths && (
                 <span className="text-xs text-muted-foreground ml-2">
-                  ({data.photo_urls.length}/10)
+                  ({data.temp_gallery_image_paths.length}/10)
                 </span>
               )}
               {errors.photo_urls && (
@@ -259,13 +271,14 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
           )}
 
           {/* Photo Gallery */}
-          {data.photo_urls && data.photo_urls.length > 0 ? (
+          {data.temp_gallery_image_paths &&
+          data.temp_gallery_image_paths.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {data.photo_urls.map((url, index) => (
+              {data.temp_gallery_image_paths.map((path, index) => (
                 <div key={index} className="relative group">
                   <div className="relative aspect-square rounded-lg overflow-hidden border">
                     <ImageWithLoading
-                      src={url}
+                      src={getTempUrl(path)}
                       alt={`Product image ${index + 1}`}
                       width={150}
                       height={150}
@@ -277,8 +290,8 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => setFeaturedPhoto(url)}
-                        disabled={data.featured_photo_url === url}
+                        onClick={() => setFeaturedPhoto(path)}
+                        disabled={data.temp_featured_image_path === path}
                         title="Set as featured"
                       >
                         <Star className="w-3 h-3" />
@@ -286,7 +299,7 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
                       <Button
                         variant="destructive"
                         size="sm"
-                        onClick={() => removePhoto(url)}
+                        onClick={() => removePhoto(path)}
                         title="Remove image"
                       >
                         <X className="w-3 h-3" />
@@ -294,7 +307,7 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
                     </div>
 
                     {/* Featured indicator */}
-                    {data.featured_photo_url === url && (
+                    {data.temp_featured_image_path === path && (
                       <Badge className="absolute top-1 left-1 text-xs">
                         <Star className="w-3 h-3" />
                       </Badge>

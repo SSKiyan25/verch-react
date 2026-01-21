@@ -16,8 +16,7 @@ export const sanitizeInput = {
   text: (value: string): string => {
     return value
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-      .replace(/[<>]/g, "")
-      .trim();
+      .replace(/[<>]/g, "");
   },
 
   number: (value: string): number => {

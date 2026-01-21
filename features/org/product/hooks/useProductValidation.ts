@@ -111,6 +111,33 @@ const productValidationRules = {
       return null;
     },
   },
+  // Temporary image paths - no validation needed as they're handled internally
+  temp_featured_image_path: {
+    required: false,
+  },
+  temp_gallery_image_paths: {
+    required: false,
+  },
+  // Variations - optional array of variation objects
+  variations: {
+    required: false,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    custom: (variations: any[]) => {
+      if (variations && variations.length > 0) {
+        // Basic validation for variations array
+        if (variations.length > 50) {
+          return "Maximum 50 variations allowed";
+        }
+        // Check each variation has required fields
+        for (const variation of variations) {
+          if (!variation.price || variation.price < 0) {
+            return "Each variation must have a valid price";
+          }
+        }
+      }
+      return null;
+    },
+  },
 };
 
 export function useProductValidation(data: CreateProductData) {

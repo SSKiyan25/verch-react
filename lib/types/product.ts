@@ -19,35 +19,35 @@ export interface Product {
   account_id: string;
   organization_id: string;
   name: string;
-  category_old?: string;
+  category_old?: string | null;
   status: ProductStatus;
-  description?: string;
+  description?: string | null;
   search_keywords: string[];
   is_approved: boolean;
   total_sales: number;
   total_orders: number;
   is_discounted: boolean;
   discount_type: DiscountType;
-  discount_target?: string;
+  discount_target?: string | null;
   discount_value: number;
-  featured_photo_url?: string;
+  featured_photo_url?: string | null;
   photo_urls: string[];
   can_pre_order: boolean;
   created_at: string;
   updated_at: string;
   is_archived: boolean;
-  category_id?: string;
+  category_id?: string | null;
 }
 
 // Product Variation type
 export interface ProductVariation {
   id: string;
   product_id: string;
-  sku?: string;
+  sku?: string | null;
   attributes: Record<string, any>;
-  variation_name?: string;
+  variation_name?: string | null;
   price: number;
-  compare_at_price?: number;
+  compare_at_price?: number | null;
   stock_quantity: number;
   reserved_quantity: number;
   pre_order_quantity: number;
@@ -64,15 +64,15 @@ export interface ProductVariation {
 // Product Category type
 export interface ProductCategory {
   id: string;
-  organization_id?: string;
+  organization_id?: string | null;
   name: string;
   slug: string;
-  description?: string;
-  parent_id?: string;
+  description?: string | null;
+  parent_id?: string | null;
   sort_order: number;
   is_active: boolean;
   is_custom: boolean;
-  icon?: string;
+  icon?: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -83,14 +83,14 @@ export interface StockLog {
   variation_id: string;
   product_id: string;
   organization_id: string;
-  previous_quantity?: number;
-  new_quantity?: number;
+  previous_quantity?: number | null;
+  new_quantity?: number | null;
   quantity_change: number;
   action: StockAction;
-  source_type?: string;
-  source_id?: string;
-  performed_by?: string;
-  remarks?: string;
+  source_type?: string | null;
+  source_id?: string | null;
+  performed_by?: string | null;
+  remarks?: string | null;
   created_at: string;
 }
 
@@ -104,16 +104,21 @@ export interface ProductWithDetails extends Product {
 // Product creation/update DTOs
 export interface CreateProductData {
   name: string;
-  description?: string;
-  category_id?: string;
+  description?: string | null;
+  category_id?: string | null;
   status?: ProductStatus;
   search_keywords?: string[];
-  featured_photo_url?: string;
+  featured_photo_url?: string | null;
   photo_urls?: string[];
   can_pre_order?: boolean;
   discount_type?: DiscountType;
-  discount_target?: string;
+  discount_target?: string | null;
   discount_value?: number;
+  // Temporary image paths for handling uploads before creation
+  temp_featured_image_path?: string | null;
+  temp_gallery_image_paths?: string[];
+  // Variations to create with the product
+  variations?: CreateVariationData[];
 }
 
 export interface UpdateProductData extends Partial<CreateProductData> {
@@ -123,11 +128,11 @@ export interface UpdateProductData extends Partial<CreateProductData> {
 
 export interface CreateVariationData {
   product_id: string;
-  sku?: string;
+  sku?: string | null;
   attributes?: Record<string, any>;
-  variation_name?: string;
+  variation_name?: string | null;
   price: number;
-  compare_at_price?: number;
+  compare_at_price?: number | null;
   stock_quantity?: number;
 }
 

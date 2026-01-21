@@ -20,7 +20,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
     isEditing,
     isSaving,
     formData,
-    updateFormData,
+    updateFormData, // We use this instead of updateImages
     handleSave,
     handleCancel,
   } = useProductForm({ initialData });
@@ -28,13 +28,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
   const [variations, setVariations] = useState<CreateVariationData[]>([]);
 
   const handleSaveWithVariations = async () => {
-    const productData = {
-      ...formData,
-      variations,
-    };
-
-    console.log("Saving product with variations:", productData);
-    await handleSave();
+    // We pass the local 'variations' state to the hook's save function
+    await handleSave(variations);
   };
 
   return (
@@ -48,16 +43,20 @@ export function ProductForm({ initialData }: ProductFormProps) {
       />
 
       <div className="container max-w-3xl mx-auto p-4">
-        {/* Linear Top-to-Bottom Layout */}
         <div className="space-y-8">
           {/* Step 1: Basic Information */}
           <ProductBasicInfo data={formData} onChange={updateFormData} />
 
           {/* Step 2: Media/Images */}
+          {/* FIX: Reverted to use data and onChange because ProductMedia handles uploads internally */}
           <ProductMedia data={formData} onChange={updateFormData} />
 
-          {/* Step 3: Product Variations */}
-          <ProductVariations variations={variations} onChange={setVariations} />
+          {/* Step 3: Product Variations*/}
+          <ProductVariations
+            variations={variations}
+            onChange={setVariations}
+            productName={formData.name || "Product"}
+          />
 
           {/* Step 4: Settings & Visibility */}
           <ProductSettings data={formData} onChange={updateFormData} />

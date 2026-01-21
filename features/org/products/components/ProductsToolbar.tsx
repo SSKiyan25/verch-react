@@ -1,6 +1,6 @@
 "use client";
 
-import { Grid3X3, List, Search, Package, Layers } from "lucide-react";
+import { Grid3X3, List, Search, Package, Layers, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -11,8 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ProductFilters, ProductStatus } from "@/lib/types/product";
-import { mockCategories } from "@/features/org/products/utils/data";
+import {
+  ProductFilters,
+  ProductStatus,
+  ProductCategory,
+} from "@/lib/types/product";
 import Link from "next/link";
 
 interface ProductsToolbarProps {
@@ -20,7 +23,11 @@ interface ProductsToolbarProps {
   onViewModeChange: (mode: "grid" | "list") => void;
   filters: ProductFilters;
   onFiltersChange: (filters: ProductFilters) => void;
+  onClearFilters: () => void;
   totalProducts: number;
+  categories: ProductCategory[];
+  categoriesLoading: boolean;
+  categoriesError: string | null;
 }
 
 const statusOptions: { value: ProductStatus; label: string }[] = [
@@ -35,8 +42,18 @@ export function ProductsToolbar({
   onViewModeChange,
   filters,
   onFiltersChange,
+  onClearFilters,
   totalProducts,
+  categories,
+  categoriesLoading,
+  categoriesError,
 }: ProductsToolbarProps) {
+  const hasActiveFilters = !!(
+    filters.search ||
+    filters.status ||
+    filters.category_id
+  );
+
   return (
     <div className="space-y-4">
       {/* Navigation Tabs */}
@@ -123,17 +140,39 @@ export function ProductsToolbar({
               category_id: value === "all" ? undefined : value,
             })
           }
+          disabled={categoriesLoading}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
-            <SelectValue placeholder="Filter by category" />
+            <SelectValue
+              placeholder={
+                categoriesLoading
+                  ? "Loading categories..."
+                  : categoriesError
+                  ? "Categories unavailable"
+                  : "Filter by category"
+              }
+            />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
-            {mockCategories.map((category) => (
-              <SelectItem key={category.id} value={category.id}>
-                {category.name}
+            {categoriesLoading ? (
+              <SelectItem value="loading" disabled>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Loading...
+                </div>
               </SelectItem>
-            ))}
+            ) : categoriesError ? (
+              <SelectItem value="error" disabled>
+                Failed to load categories
+              </SelectItem>
+            ) : (
+              categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))
+            )}
           </SelectContent>
         </Select>
       </div>
@@ -144,11 +183,11 @@ export function ProductsToolbar({
           <Badge variant="secondary">
             {totalProducts} product{totalProducts !== 1 ? "s" : ""}
           </Badge>
-          {(filters.search || filters.status || filters.category_id) && (
+          {hasActiveFilters && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => onFiltersChange({})}
+              onClick={onClearFilters}
               className="h-8 px-2 text-xs"
             >
               Clear filters
