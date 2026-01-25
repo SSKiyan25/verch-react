@@ -5,13 +5,18 @@ import { ProductListItem } from "./ProductListItem";
 
 interface ProductsListProps {
   products: ProductWithDetails[];
+  onProductUpdate: (product: ProductWithDetails) => void;
 }
 
-export function ProductsList({ products }: ProductsListProps) {
+export function ProductsList({ products, onProductUpdate }: ProductsListProps) {
   return (
     <div className="space-y-4">
       {products.map((product) => (
-        <ProductListItem key={product.id} product={product} />
+        <ProductListItem
+          key={product.id}
+          product={product}
+          onProductUpdate={onProductUpdate}
+        />
       ))}
     </div>
   );

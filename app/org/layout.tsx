@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import { AppSidebar } from "@/components/navbar/app-sidebar";
+import { MobileBottomNav } from "@/components/navbar/mobile-bottom-nav";
 import {
   SidebarProvider,
   SidebarInset,
@@ -29,7 +29,6 @@ import {
   Settings,
   BarChart3,
 } from "lucide-react";
-//import { Organization } from "@/lib/types/organization";
 
 // Organization navigation items
 const orgNavItems = [
@@ -37,31 +36,61 @@ const orgNavItems = [
     title: "Dashboard",
     url: "/org/dashboard",
     icon: LayoutDashboard,
+    iconName: "LayoutDashboard",
   },
   {
     title: "Products",
     url: "/org/products",
     icon: Package,
+    iconName: "Package",
   },
   {
     title: "Orders",
     url: "/org/orders",
     icon: ShoppingCart,
+    iconName: "ShoppingCart",
   },
   {
     title: "Members",
     url: "/org/members",
     icon: Users,
+    iconName: "Users",
   },
   {
     title: "Analytics",
     url: "/org/analytics",
     icon: BarChart3,
+    iconName: "BarChart3",
   },
   {
     title: "Settings",
     url: "/org/settings",
     icon: Settings,
+    iconName: "Settings",
+  },
+];
+
+// Mobile bottom nav links
+const mobileNavLinks = [
+  {
+    label: "Dashboard",
+    icon: "LayoutDashboard",
+    href: "/org/dashboard",
+  },
+  {
+    label: "Products",
+    icon: "Package",
+    href: "/org/products",
+  },
+  {
+    label: "Orders",
+    icon: "ShoppingCart",
+    href: "/org/orders",
+  },
+  {
+    label: "Settings",
+    icon: "Settings",
+    href: "/org/settings",
   },
 ];
 
@@ -128,21 +157,12 @@ export default function OrganizationLayout({
 
       try {
         // Fetch organization data to check setup status
-        // console.log(
-        //   "Fetching organization data for user:",
-        //   user.id,
-        //   "organization_id:",
-        //   user.organization_id
-        // );
-
         const response = await fetch(
           `/api/organizations/${user.organization_id}`
         );
         const data = await response.json();
 
         if (response.ok && data.organization) {
-          // console.log("Organization data fetched:", data.organization);
-
           // Update organization status from draft to active if needed
           if (data.organization.status === "draft") {
             console.log("Organization status is draft, updating to active...");
@@ -236,23 +256,14 @@ export default function OrganizationLayout({
   const transformedNavItems = orgNavItems.map((item) => ({
     title: item.title,
     url: item.url,
-    icon:
-      typeof item.icon === "function"
-        ? item.icon.displayName || item.icon.name || "default"
-        : item.icon,
+    icon: item.iconName,
   }));
 
-  // Create iconMap from the original orgNavItems
+  // Create iconMap from the original orgNavItems with proper typing
   const iconMap = orgNavItems.reduce((map, item) => {
-    const iconKey =
-      typeof item.icon === "function"
-        ? item.icon.displayName || item.icon.name || "default"
-        : item.icon;
-    if (typeof item.icon === "function") {
-      map[iconKey] = item.icon;
-    }
+    map[item.iconName] = item.icon as React.FC<{ className?: string }>;
     return map;
-  }, {} as Record<string, React.ComponentType<any>>);
+  }, {} as Record<string, React.FC<{ className?: string }>>);
 
   const breadcrumbs = generateBreadcrumbs();
 
@@ -333,12 +344,15 @@ export default function OrganizationLayout({
         </header>
 
         {/* Main Content */}
-        <div className="flex flex-1 flex-col gap-4 p-8">
+        <div className="flex flex-1 flex-col gap-4 p-4 md:p-8 pb-20 md:pb-4">
           <div className="min-h-[100vh] flex-1 rounded-xl bg-card md:min-h-min p-4 md:p-6 border">
             {children}
           </div>
         </div>
       </SidebarInset>
+
+      {/* Mobile Bottom Navigation */}
+      <MobileBottomNav links={mobileNavLinks} iconMap={iconMap} />
     </SidebarProvider>
   );
 }

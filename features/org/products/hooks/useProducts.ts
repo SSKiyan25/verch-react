@@ -167,6 +167,37 @@ export function useProducts(options: UseProductsOptions = {}) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.search]);
 
+  const updateLocalProduct = (
+    updatedProduct: Partial<ProductWithDetails> & { id: string }
+  ) => {
+    // console.log("Updating local product state:", updatedProduct);
+
+    setProducts((currentProducts) => {
+      return currentProducts.map((p) => {
+        if (p.id === updatedProduct.id) {
+          return {
+            ...p, // Keep existing data
+            ...updatedProduct, // Overwrite with new data
+
+            // SECURITY: Ensure arrays/objects don't get wiped if undefined in update
+            category: updatedProduct.category || p.category,
+            variations: updatedProduct.variations || p.variations,
+
+            // PHOTOS: Handle specific photo logic
+            photo_urls: updatedProduct.photo_urls || p.photo_urls,
+
+            // CRITICAL: Ensure the featured photo updates on the card immediately
+            featured_photo_url:
+              updatedProduct.featured_photo_url !== undefined
+                ? updatedProduct.featured_photo_url
+                : p.featured_photo_url,
+          };
+        }
+        return p;
+      });
+    });
+  };
+
   return {
     products,
     pagination,
@@ -176,6 +207,7 @@ export function useProducts(options: UseProductsOptions = {}) {
     fetchProducts,
     updateFilters,
     clearFilters,
+    updateLocalProduct,
     goToPage,
     nextPage,
     previousPage,

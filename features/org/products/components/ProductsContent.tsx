@@ -31,6 +31,7 @@ export function ProductsContent() {
     previousPage,
     changePageSize,
     refresh,
+    updateLocalProduct,
   } = useProducts();
 
   const {
@@ -61,7 +62,7 @@ export function ProductsContent() {
     );
   }
 
-  // Empty state (no products at all)
+  // Empty state logic ... (same as before)
   if (
     !isLoading &&
     products.length === 0 &&
@@ -71,8 +72,6 @@ export function ProductsContent() {
   ) {
     return (
       <div className="space-y-6">
-        {/* Add the CategoriesTest component for debugging */}
-        {/* <CategoriesTest /> */}
         <ProductsEmpty />
       </div>
     );
@@ -80,9 +79,6 @@ export function ProductsContent() {
 
   return (
     <div className="space-y-6">
-      {/* Add the CategoriesTest component for debugging */}
-      {/* <CategoriesTest /> */}
-
       <ProductsToolbar
         viewMode={viewMode}
         onViewModeChange={setViewMode}
@@ -98,7 +94,6 @@ export function ProductsContent() {
       {isLoading ? (
         <ProductsLoading viewMode={viewMode} />
       ) : products.length === 0 ? (
-        // No products found with current filters
         <div className="text-center py-12 space-y-4">
           <div className="text-muted-foreground">
             <p className="text-lg font-medium">No products found</p>
@@ -116,11 +111,19 @@ export function ProductsContent() {
         </div>
       ) : (
         <>
-          {/* Products List/Grid */}
+          {/* 2. Pass the updater function down.
+              Note: You'll need to update ProductsGrid/ProductsList to accept this prop.
+          */}
           {viewMode === "grid" ? (
-            <ProductsGrid products={products} />
+            <ProductsGrid
+              products={products}
+              onProductUpdate={updateLocalProduct}
+            />
           ) : (
-            <ProductsList products={products} />
+            <ProductsList
+              products={products}
+              onProductUpdate={updateLocalProduct}
+            />
           )}
 
           {/* Pagination */}

@@ -21,14 +21,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
 import { StockManagementDialog } from "./stock/StockManagementDialog";
+import { EditProductModal } from "./edit/EditProductModal";
 
 interface ProductListItemProps {
   product: ProductWithDetails;
+  onProductUpdate: (product: ProductWithDetails) => void;
 }
 
-export function ProductListItem({ product }: ProductListItemProps) {
+export function ProductListItem({
+  product,
+  onProductUpdate,
+}: ProductListItemProps) {
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
   const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const lowestPrice =
     product.variations?.reduce(
@@ -182,7 +188,7 @@ export function ProductListItem({ product }: ProductListItemProps) {
                         <Eye className="w-4 h-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Product
                       </DropdownMenuItem>
@@ -204,7 +210,16 @@ export function ProductListItem({ product }: ProductListItemProps) {
         product={product}
         open={detailsModalOpen}
         onOpenChange={setDetailsModalOpen}
+        onProductUpdate={onProductUpdate}
       />
+
+      <EditProductModal
+        product={product}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSave={onProductUpdate}
+      />
+
       <StockManagementDialog
         product={product}
         open={stockModalOpen}

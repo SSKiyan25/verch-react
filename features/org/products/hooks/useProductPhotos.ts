@@ -1,0 +1,231 @@
+"use client";
+
+import { useState, useCallback } from "react";
+import { useImageUpload } from "@/lib/hooks/use-image-upload";
+import { useUser } from "@/lib/hooks/use-user";
+import { toast } from "sonner";
+
+interface UseProductPhotosProps {
+  productId: string;
+  organizationId: string;
+  onPhotoUpdate?: (updatedData: {
+    featured_photo_url?: string;
+    photo_urls?: string[];
+  }) => void;
+}
+
+export function useProductPhotos({
+  productId,
+  organizationId,
+  onPhotoUpdate,
+}: UseProductPhotosProps) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const { user } = useUser();
+
+  // Use your existing image upload hook
+  const { uploadMultipleImages, isUploading } = useImageUpload();
+
+  // Update product photos via API
+  const updateProductPhotos = useCallback(
+    async (updateData: {
+      featured_photo_url?: string | null;
+      photo_urls?: string[];
+    }) => {
+      if (!user?.organization_id) {
+        throw new Error("User organization not found");
+      }
+
+      const response = await fetch(
+        `/api/organizations/${organizationId}/products/${productId}/edit-product`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to update product photos");
+      }
+
+      return result.data;
+    },
+    [organizationId, productId, user?.organization_id]
+  );
+
+  // Set featured photo
+  const setFeaturedPhoto = useCallback(
+    async (
+      photoUrl: string,
+      currentFeaturedUrl: string | null,
+      currentPhotoUrls: string[]
+    ) => {
+      setIsLoading(true);
+
+      try {
+        const newFeaturedUrl = photoUrl;
+        let newPhotoUrls = [...currentPhotoUrls];
+
+        // If there was a previous featured photo, add it back to the gallery
+        if (currentFeaturedUrl && currentFeaturedUrl !== photoUrl) {
+          newPhotoUrls = [...currentPhotoUrls, currentFeaturedUrl];
+        }
+
+        // Remove the new featured photo from the gallery if it exists there
+        newPhotoUrls = newPhotoUrls.filter((url) => url !== photoUrl);
+
+        const updateData = {
+          featured_photo_url: newFeaturedUrl,
+          photo_urls: newPhotoUrls,
+        };
+
+        const updatedProduct = await updateProductPhotos(updateData);
+
+        onPhotoUpdate?.({
+          featured_photo_url: updatedProduct.featured_photo_url,
+          photo_urls: updatedProduct.photo_urls,
+        });
+
+        toast.success("Featured photo updated successfully");
+        return updatedProduct;
+      } catch (error) {
+        console.error("Failed to set featured photo:", error);
+        toast.error("Failed to set featured photo");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [updateProductPhotos, onPhotoUpdate]
+  );
+
+  // Delete photo
+  const deletePhoto = useCallback(
+    async (
+      photoUrl: string,
+      currentFeaturedUrl: string | null,
+      currentPhotoUrls: string[],
+      isFeatured: boolean
+    ) => {
+      setIsLoading(true);
+
+      try {
+        const updateData: {
+          featured_photo_url?: string | null;
+          photo_urls?: string[];
+        } = {};
+
+        if (isFeatured) {
+          // If deleting featured photo, set first gallery photo as new featured (if any)
+          const remainingPhotos = currentPhotoUrls.filter(
+            (url) => url !== photoUrl
+          );
+
+          if (remainingPhotos.length > 0) {
+            updateData.featured_photo_url = remainingPhotos[0];
+            updateData.photo_urls = remainingPhotos.slice(1);
+          } else {
+            updateData.featured_photo_url = null;
+            updateData.photo_urls = [];
+          }
+        } else {
+          // If deleting gallery photo, just remove it from photo_urls
+          updateData.photo_urls = currentPhotoUrls.filter(
+            (url) => url !== photoUrl
+          );
+          // Keep current featured photo unchanged
+        }
+
+        const updatedProduct = await updateProductPhotos(updateData);
+
+        onPhotoUpdate?.({
+          featured_photo_url: updatedProduct.featured_photo_url,
+          photo_urls: updatedProduct.photo_urls,
+        });
+
+        toast.success("Photo deleted successfully");
+        return updatedProduct;
+      } catch (error) {
+        console.error("Failed to delete photo:", error);
+        toast.error("Failed to delete photo");
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [updateProductPhotos, onPhotoUpdate]
+  );
+
+  // Upload photos using your existing hook
+  const uploadPhotos = useCallback(
+    async (
+      files: File[],
+      currentFeaturedUrl: string | null,
+      currentPhotoUrls: string[]
+    ) => {
+      setIsLoading(true);
+      setUploadProgress(0);
+
+      try {
+        toast.info("Uploading images...");
+        setUploadProgress(25);
+
+        // Use your existing upload function
+        const uploadResults = await uploadMultipleImages(
+          files,
+          `products/${productId}`
+        );
+        setUploadProgress(75);
+
+        const newPhotoUrls = uploadResults.map((result) => result.url);
+        const updateData: {
+          featured_photo_url?: string;
+          photo_urls?: string[];
+        } = {};
+
+        if (!currentFeaturedUrl && newPhotoUrls.length > 0) {
+          // No featured photo exists, set first uploaded as featured
+          updateData.featured_photo_url = newPhotoUrls[0];
+          updateData.photo_urls = [
+            ...currentPhotoUrls,
+            ...newPhotoUrls.slice(1),
+          ];
+        } else {
+          // Add all uploaded photos to gallery
+          updateData.photo_urls = [...currentPhotoUrls, ...newPhotoUrls];
+        }
+
+        const updatedProduct = await updateProductPhotos(updateData);
+
+        onPhotoUpdate?.({
+          featured_photo_url: updatedProduct.featured_photo_url,
+          photo_urls: updatedProduct.photo_urls,
+        });
+
+        setUploadProgress(100);
+        toast.success(`${files.length} photo(s) uploaded successfully`);
+
+        return updatedProduct;
+      } catch (error) {
+        console.error("Failed to upload photos:", error);
+        toast.error("Failed to upload photos");
+        throw error;
+      } finally {
+        setIsLoading(false);
+        setUploadProgress(0);
+      }
+    },
+    [productId, uploadMultipleImages, updateProductPhotos, onPhotoUpdate]
+  );
+
+  return {
+    setFeaturedPhoto,
+    deletePhoto,
+    uploadPhotos,
+    isLoading: isLoading || isUploading,
+    uploadProgress,
+  };
+}

@@ -12,14 +12,25 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageWithLoading } from "@/components/ui/image-with-loading";
-import { Edit, Package, AlertTriangle, Eye, Images } from "lucide-react";
+import {
+  Edit,
+  Package,
+  AlertTriangle,
+  Eye,
+  Images,
+  BarChart3,
+  ShoppingCart,
+  Percent,
+  Truck,
+} from "lucide-react";
 import { StockManagementDialog } from "./stock/StockManagementDialog";
+import { EditProductModal } from "./edit/EditProductModal";
 import {
   VariationsTab,
-  OrdersTab,
-  AnalyticsTab,
   SettingsTab,
   PhotosTab,
+  DiscountTab,
+  SupplierTab,
 } from "./details-tabs";
 import {
   getProductStatusColor,
@@ -33,18 +44,30 @@ interface ProductDetailsModalProps {
   product: ProductWithDetails;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onProductUpdate: (product: ProductWithDetails) => void;
 }
 
 export function ProductDetailsModal({
   product,
   open,
   onOpenChange,
+  onProductUpdate,
 }: ProductDetailsModalProps) {
   const [stockModalOpen, setStockModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const totalStock = getTotalStock(product.variations);
   const lowStock = isLowStock(totalStock);
   const outOfStock = isOutOfStock(totalStock);
+
+  const handleEditProduct = () => {
+    setEditModalOpen(true);
+  };
+
+  const handleEditSave = (updatedData: ProductWithDetails) => {
+    onProductUpdate(updatedData);
+    // console.log("Product updated in details modal:", updatedData);
+  };
 
   return (
     <>
@@ -148,6 +171,7 @@ export function ProductDetailsModal({
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={handleEditProduct}
                     className="w-full sm:w-auto"
                   >
                     <Edit className="w-4 h-4 mr-2" />
@@ -161,6 +185,34 @@ export function ProductDetailsModal({
                   >
                     <Package className="w-4 h-4 mr-2" />
                     Manage Stock
+                  </Button>
+                </div>
+
+                {/* Quick Actions */}
+                <div className="flex flex-col sm:flex-row gap-2 pt-2 border-t">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full sm:w-auto justify-start"
+                    onClick={() => {
+                      // TODO: Navigate to analytics page
+                      console.log("Navigate to analytics");
+                    }}
+                  >
+                    <BarChart3 className="w-4 h-4 mr-2" />
+                    View Analytics
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full sm:w-auto justify-start"
+                    onClick={() => {
+                      // TODO: Navigate to orders page with product filter
+                      console.log("Navigate to orders for this product");
+                    }}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    View Orders
                   </Button>
                 </div>
               </div>
@@ -184,17 +236,18 @@ export function ProductDetailsModal({
                   <span className="hidden sm:inline">Photos</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  value="orders"
+                  value="discount"
                   className="text-xs sm:text-sm px-2 py-2"
                 >
-                  Orders
+                  <Percent className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Discount</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  value="analytics"
+                  value="supplier"
                   className="text-xs sm:text-sm px-2 py-2"
                 >
-                  <span className="hidden sm:inline">Analytics</span>
-                  <span className="sm:hidden">Stats</span>
+                  <Truck className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
+                  <span className="hidden sm:inline">Supplier</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="settings"
@@ -209,15 +262,18 @@ export function ProductDetailsModal({
               </TabsContent>
 
               <TabsContent value="photos" className="mt-4">
-                <PhotosTab product={product} />
+                <PhotosTab
+                  product={product}
+                  onProductUpdate={onProductUpdate}
+                />
               </TabsContent>
 
-              <TabsContent value="orders" className="mt-4">
-                <OrdersTab product={product} />
+              <TabsContent value="discount" className="mt-4">
+                <DiscountTab product={product} />
               </TabsContent>
 
-              <TabsContent value="analytics" className="mt-4">
-                <AnalyticsTab product={product} />
+              <TabsContent value="supplier" className="mt-4">
+                <SupplierTab product={product} />
               </TabsContent>
 
               <TabsContent value="settings" className="mt-4">
@@ -233,6 +289,14 @@ export function ProductDetailsModal({
         product={product}
         open={stockModalOpen}
         onOpenChange={setStockModalOpen}
+      />
+
+      {/* Edit Product Modal */}
+      <EditProductModal
+        product={product}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        onSave={handleEditSave}
       />
     </>
   );
