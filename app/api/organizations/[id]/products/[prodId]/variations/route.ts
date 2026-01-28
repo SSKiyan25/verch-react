@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/server";
@@ -11,15 +12,25 @@ const createVariationSchema = z.object({
   price: z.number().min(0),
   compare_at_price: z.number().min(0).optional().nullable(),
   stock_quantity: z.number().int().min(0).default(0),
+  pre_order_quantity: z.number().int().min(0).optional(),
+  is_available: z.boolean().optional(),
 });
 
+// --- FIX 1: POST Method ---
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string; prodId: string } }
+  // 1. Change Type to Promise
+  { params }: { params: Promise<{ id: string; prodId: string }> }
 ) {
   try {
+    // 2. Await the params before using them
+    const { id, prodId } = await params;
+
     const supabase = await createClient();
     const user = await getCurrentUser();
+
+    // Now this will log the correct UUID instead of 'undefined'
+    console.log("Creating variation for product ID:", prodId);
 
     if (!user) {
       return NextResponse.json(
@@ -31,17 +42,13 @@ export async function POST(
     const body = await request.json();
     const validatedData = createVariationSchema.parse(body);
 
-    // 2. REFACTOR: Use the shared function instead of rewriting the logic
-    // This automatically handles the Insert + The Stock Log + The Error Handling
     const newVariation = await createVariationInternal(
       supabase,
       user.id,
-      params.id, // organizationId
-      params.prodId, // productId
+      id, // use the awaited variable
+      prodId, // use the awaited variable
       validatedData
     );
-
-    console.log("Variation created with ID:", newVariation.id);
 
     return NextResponse.json({
       success: true,
@@ -61,6 +68,42 @@ export async function POST(
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       },
+      { status: 500 }
+    );
+  }
+}
+
+// --- FIX 2: GET Method ---
+export async function GET(
+  request: NextRequest,
+  // 1. Change Type to Promise
+  { params }: { params: Promise<{ id: string; prodId: string }> }
+) {
+  try {
+    // 2. Await the params
+    const { prodId } = await params;
+
+    const supabase = await createClient();
+    const user = await getCurrentUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { data: variations, error } = await supabase
+      .from("product_variations")
+      .select("*")
+      .eq("product_id", prodId) // use the awaited variable
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data: variations });
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Internal server error" },
       { status: 500 }
     );
   }
