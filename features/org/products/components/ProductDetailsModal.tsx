@@ -279,7 +279,11 @@ export function ProductDetailsModal({
               </TabsContent>
 
               <TabsContent value="supplier" className="mt-4">
-                <SupplierTab product={product} />
+                <SupplierTab
+                  product={product}
+                  organizationId={product.organization_id}
+                  onProductUpdate={onProductUpdate}
+                />
               </TabsContent>
 
               <TabsContent value="settings" className="mt-4">

@@ -1,49 +1,63 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { ProductWithDetails } from "@/lib/types/product";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Truck, Plus, Edit, Phone, Mail, MapPin, Building } from "lucide-react";
+import { useSupplierForm } from "../../hooks/useSupplierForm";
+import { SupplierView } from "./supplier/SupplierView";
+import { SupplierForm } from "./supplier/SupplierForm";
+import { SupplierSelector } from "./supplier/SupplierSelector";
 
 interface SupplierTabProps {
   product: ProductWithDetails;
+  organizationId: string;
+  onProductUpdate?: (product: ProductWithDetails) => void;
 }
 
-export function SupplierTab({ product }: SupplierTabProps) {
-  // TODO: Replace with actual supplier data from product
-  const hasSupplier = false;
-  const supplier = {
-    name: "ABC Trading Co.",
-    contact_person: "John Doe",
-    email: "john@abctrading.com",
-    phone: "+63 912 345 6789",
-    address: "123 Business St, Makati City, Metro Manila",
-    cost_price: 150.0,
-    minimum_order: 50,
-    lead_time_days: 7,
-  };
+export function SupplierTab({
+  product,
+  organizationId,
+  onProductUpdate,
+}: SupplierTabProps) {
+  const currentSupplier = product.supplier;
 
-  const handleSaveSupplier = () => {
-    // TODO: Implement save supplier functionality
-    console.log("Save supplier");
-  };
+  const {
+    formData,
+    suppliers,
+    archivedSuppliers,
+    loadingSuppliers,
+    saving,
+    archiving,
+    isEditMode,
+    selectedSupplierId,
+    errors,
+    setIsEditMode,
+    setSelectedSupplierId,
+    handleInputChange,
+    handleAddressChange,
+    handleAddLink,
+    handleLinkChange,
+    handleRemoveLink,
+    handleSelectExistingSupplier,
+    handleSaveSupplier,
+    handleRemoveSupplier,
+    handleArchiveSupplier,
+    handleRestoreSupplier,
+    resetForm,
+  } = useSupplierForm({
+    productId: product.id,
+    organizationId,
+    currentSupplier,
+    onSupplierUpdate: (updatedSupplier) => {
+      // Update the product with new supplier data
+      onProductUpdate?.({
+        ...product,
+        supplier: updatedSupplier,
+      });
+    },
+  });
 
-  const handleRemoveSupplier = () => {
-    // TODO: Implement remove supplier functionality
-    console.log("Remove supplier");
-  };
+  const hasSupplier = !!currentSupplier && !isEditMode;
 
   return (
     <div className="space-y-6">
@@ -63,187 +77,53 @@ export function SupplierTab({ product }: SupplierTabProps) {
       </div>
 
       {hasSupplier ? (
-        /* Existing Supplier */
-        <div className="space-y-4">
-          {/* Supplier Details Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Building className="w-4 h-4" />
-                {supplier.name}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{supplier.phone}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">{supplier.email}</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground mt-0.5" />
-                    <span className="text-sm">{supplier.address}</span>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">
-                      Contact Person
-                    </span>
-                    <div className="font-medium">{supplier.contact_person}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">
-                      Cost Price
-                    </span>
-                    <div className="font-medium">
-                      ₱{supplier.cost_price.toFixed(2)}
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-xs text-muted-foreground">
-                      Lead Time
-                    </span>
-                    <div className="font-medium">
-                      {supplier.lead_time_days} days
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-2 pt-4 border-t">
-                <Button variant="outline" size="sm">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Supplier
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRemoveSupplier}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Remove Supplier
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Procurement Info */}
-          <Card className="bg-blue-50 border-blue-200">
-            <CardHeader>
-              <CardTitle className="text-blue-900">
-                Procurement Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <span className="text-xs text-blue-800">Minimum Order</span>
-                  <div className="font-medium text-blue-900">
-                    {supplier.minimum_order} units
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-blue-800">Cost per Unit</span>
-                  <div className="font-medium text-blue-900">
-                    ₱{supplier.cost_price.toFixed(2)}
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <span className="text-xs text-blue-800">Lead Time</span>
-                  <div className="font-medium text-blue-900">
-                    {supplier.lead_time_days} days
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        /* Existing Supplier View */
+        <SupplierView
+          supplier={currentSupplier}
+          onEdit={() => setIsEditMode(true)}
+          onRemove={handleRemoveSupplier}
+          onArchive={handleArchiveSupplier}
+          isRemoving={saving}
+          isArchiving={archiving}
+        />
       ) : (
-        /* Add New Supplier */
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Truck className="w-4 h-4" />
-              Add Supplier
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Basic Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier-name">Supplier Name *</Label>
-                <Input id="supplier-name" placeholder="ABC Trading Co." />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="contact-person">Contact Person</Label>
-                <Input id="contact-person" placeholder="John Doe" />
-              </div>
-            </div>
+        /* Add/Edit Supplier Form */
+        <div className="space-y-4">
+          {/* Select Existing Supplier */}
+          {!isEditMode && suppliers.length > 0 && (
+            <SupplierSelector
+              suppliers={suppliers}
+              archivedSuppliers={archivedSuppliers}
+              selectedSupplierId={selectedSupplierId}
+              isLoading={loadingSuppliers}
+              isSaving={saving}
+              onSelectChange={setSelectedSupplierId}
+              onLink={() =>
+                selectedSupplierId &&
+                handleSelectExistingSupplier(selectedSupplierId)
+              }
+              onRestore={handleRestoreSupplier}
+            />
+          )}
 
-            {/* Contact Information */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="supplier-email">Email</Label>
-                <Input
-                  id="supplier-email"
-                  type="email"
-                  placeholder="supplier@company.com"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="supplier-phone">Phone</Label>
-                <Input id="supplier-phone" placeholder="+63 912 345 6789" />
-              </div>
-            </div>
-
-            {/* Address */}
-            <div className="space-y-2">
-              <Label htmlFor="supplier-address">Address</Label>
-              <Textarea
-                id="supplier-address"
-                placeholder="123 Business St, Makati City, Metro Manila"
-                rows={3}
-              />
-            </div>
-
-            {/* Procurement Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="cost-price">Cost Price (₱) *</Label>
-                <Input
-                  id="cost-price"
-                  type="number"
-                  placeholder="150.00"
-                  step="0.01"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="minimum-order">Minimum Order Qty</Label>
-                <Input id="minimum-order" type="number" placeholder="50" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lead-time">Lead Time (Days)</Label>
-                <Input id="lead-time" type="number" placeholder="7" />
-              </div>
-            </div>
-
-            {/* Action Button */}
-            <div className="flex gap-2 pt-4">
-              <Button
-                onClick={handleSaveSupplier}
-                className="flex-1 sm:flex-initial"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Supplier
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Create/Edit Supplier Form */}
+          <SupplierForm
+            formData={formData}
+            errors={errors}
+            isEditMode={isEditMode}
+            isSaving={saving}
+            onInputChange={handleInputChange}
+            onAddressChange={handleAddressChange}
+            onAddLink={handleAddLink}
+            onLinkChange={handleLinkChange}
+            onRemoveLink={handleRemoveLink}
+            onSave={handleSaveSupplier}
+            onCancel={() => {
+              setIsEditMode(false);
+              resetForm();
+            }}
+          />
+        </div>
       )}
 
       {/* Guidelines */}
@@ -253,11 +133,17 @@ export function SupplierTab({ product }: SupplierTabProps) {
             Supplier Guidelines
           </h4>
           <ul className="text-sm text-amber-800 space-y-1">
-            <li>• Cost price should be lower than your selling price</li>
-            <li>• Lead time affects inventory planning and restocking</li>
+            <li>• You can link existing suppliers or create new ones</li>
             <li>• Keep supplier contact information up to date</li>
-            <li>• Minimum order quantity helps with bulk purchasing</li>
-            <li>• Regular supplier reviews improve procurement efficiency</li>
+            <li>• Suppliers can be reused across multiple products</li>
+            <li>
+              • <strong>Unlink</strong> removes supplier from this product only
+            </li>
+            <li>
+              • <strong>Archive</strong> removes supplier from product and hides
+              it from listings
+            </li>
+            <li>• Archived suppliers can be restored anytime</li>
           </ul>
         </CardContent>
       </Card>

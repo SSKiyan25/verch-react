@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { Supplier } from "./supplier";
+
 // Enums from the database
 export type ProductStatus =
   | "draft"
@@ -37,6 +39,7 @@ export interface Product {
   updated_at: string;
   is_archived: boolean;
   category_id?: string | null;
+  supplier_id?: string | null;
 }
 
 // Product Variation type
@@ -99,6 +102,7 @@ export interface ProductWithDetails extends Product {
   variations?: ProductVariation[];
   category?: ProductCategory;
   stock_logs?: StockLog[];
+  supplier?: Supplier | null;
 }
 
 // Product creation/update DTOs

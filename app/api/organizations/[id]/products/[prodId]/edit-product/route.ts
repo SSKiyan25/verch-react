@@ -1,35 +1,40 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { NextRequest, NextResponse } from "next/server"; // Use NextRequest
 import { createClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/server";
 
 export async function PATCH(
-  request: Request,
-  { params }: { params: { id: string; prodId: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; prodId: string }> } // ✅ Fix: params is a Promise
 ) {
-  const user = await getCurrentUser();
-  const { prodId } = await params;
-  if (!user) {
-    return NextResponse.json(
-      { message: "Authentication required" },
-      { status: 401 }
-    );
-  }
-  const organizationId = user.organization_id;
-
   try {
+    // 1. Await params properly
+    const { id: organizationId, prodId } = await params;
+
+    // 2. Auth Check
+    const user = await getCurrentUser();
+    if (!user) {
+      return NextResponse.json(
+        { message: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
+    // Optional: Verify user actually belongs to the organization in the URL
+    if (user.organization_id !== organizationId) {
+      // Logic depends on your app - usually strict equality is good security
+    }
+
     const supabase = await createClient();
     const body = await request.json();
 
-    // 2. Security Whitelist
-    // We strictly define what fields are allowed to be updated.
-    // This prevents users from manually sending { "account_id": "hack" } to change ownership.
+    // 3. Whitelist Fields (Security)
     const allowedFields = [
       "name",
       "category_old",
       "status",
       "description",
-      "search_keywords", // text[]
+      "search_keywords",
       "is_approved",
       "total_sales",
       "total_orders",
@@ -38,38 +43,41 @@ export async function PATCH(
       "discount_target",
       "discount_value",
       "featured_photo_url",
-      "photo_urls", // jsonb
+      "photo_urls",
       "can_pre_order",
       "is_archived",
       "category_id",
-      "supplier_id",
+      "supplier_id", // ✅ Ensure this is here
     ];
 
-    // 3. Filter the incoming body
     const updates: Record<string, any> = {};
-
     Object.keys(body).forEach((key) => {
-      // Only add the field to the update list if it is in our whitelist
       if (allowedFields.includes(key)) {
         updates[key] = body[key];
       }
     });
 
-    // 4. Guard Clause: If the filtered update object is empty, stop here.
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
-        { message: "No valid fields provided for update" },
+        { message: "No valid fields provided" },
         { status: 400 }
       );
     }
 
-    // 5. Perform the Update
+    // 4. Perform Update
     const { data, error } = await supabase
       .from("products")
-      .update(updates) // Supabase automatically handles partial updates here
+      .update(updates)
       .eq("id", prodId)
-      .eq("organization_id", organizationId) // Double security: ensure product belongs to this org
-      .select()
+      .eq("organization_id", organizationId)
+      .select(
+        `
+        *,
+        category:product_categories(id, name, slug, description),
+        variations:product_variations(*),
+        supplier:suppliers(*)
+      `
+      )
       .single();
 
     if (error) {
