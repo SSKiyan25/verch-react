@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProductWithDetails } from "@/lib/types/product";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
-import { StockManagementDialog } from "./stock/StockManagementDialog";
+// import { StockManagementDialog } from "./stock/StockManagementDialog";
 import { EditProductModal } from "./edit/EditProductModal";
 
 interface ProductCardProps {
@@ -29,8 +30,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
+  const router = useRouter();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [stockModalOpen, setStockModalOpen] = useState(false);
+  // const [stockModalOpen, setStockModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false); // Added State
 
   const lowestPrice =
@@ -89,6 +91,10 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
       .join(" ");
   };
 
+  const handleManageStock = () => {
+    router.push(`/org/products/${product.id}/stocks`);
+  };
+
   return (
     <>
       <Card className="group relative overflow-hidden bg-white border border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-lg">
@@ -130,7 +136,7 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Product
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setStockModalOpen(true)}>
+                <DropdownMenuItem onClick={handleManageStock}>
                   <Package className="w-4 h-4 mr-2" />
                   Manage Stock
                 </DropdownMenuItem>
@@ -218,7 +224,7 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
               variant="outline"
               size="sm"
               className="flex-1"
-              onClick={() => setStockModalOpen(true)}
+              onClick={handleManageStock}
             >
               <Package className="w-4 h-4 mr-1" />
               Stock
@@ -242,11 +248,7 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
         onSave={onProductUpdate}
       />
 
-      <StockManagementDialog
-        product={product}
-        open={stockModalOpen}
-        onOpenChange={setStockModalOpen}
-      />
+      {/* Removed StockManagementDialog - now navigates to dedicated page */}
     </>
   );
 }

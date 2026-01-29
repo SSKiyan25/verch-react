@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProductWithDetails } from "@/lib/types/product";
 import {
   Dialog,
@@ -23,7 +24,7 @@ import {
   Percent,
   Truck,
 } from "lucide-react";
-import { StockManagementDialog } from "./stock/StockManagementDialog";
+// import { StockManagementDialog } from "./stock/StockManagementDialog";
 import { EditProductModal } from "./edit/EditProductModal";
 import {
   VariationsTab,
@@ -53,7 +54,8 @@ export function ProductDetailsModal({
   onOpenChange,
   onProductUpdate,
 }: ProductDetailsModalProps) {
-  const [stockModalOpen, setStockModalOpen] = useState(false);
+  const router = useRouter();
+  // const [stockModalOpen, setStockModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const totalStock = getTotalStock(product.variations);
@@ -67,6 +69,10 @@ export function ProductDetailsModal({
   const handleEditSave = (updatedData: ProductWithDetails) => {
     onProductUpdate(updatedData);
     // console.log("Product updated in details modal:", updatedData);
+  };
+
+  const handleManageStock = () => {
+    router.push(`/org/products/${product.id}/stocks`);
   };
 
   return (
@@ -180,7 +186,7 @@ export function ProductDetailsModal({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setStockModalOpen(true)}
+                    onClick={handleManageStock}
                     className="w-full sm:w-auto"
                   >
                     <Package className="w-4 h-4 mr-2" />
@@ -284,12 +290,7 @@ export function ProductDetailsModal({
         </DialogContent>
       </Dialog>
 
-      {/* Stock Management Modal */}
-      <StockManagementDialog
-        product={product}
-        open={stockModalOpen}
-        onOpenChange={setStockModalOpen}
-      />
+      {/* Removed StockManagementDialog - now navigates to dedicated page */}
 
       {/* Edit Product Modal */}
       <EditProductModal

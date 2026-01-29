@@ -113,6 +113,19 @@ export default function OrganizationLayout({
     ].includes(userRole);
   };
 
+  // Helper function to check if a segment looks like an ID
+  const isIdSegment = (segment: string) => {
+    // Check if segment looks like an ID (UUID, numeric ID, or common ID patterns)
+    return (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        segment
+      ) || // UUID
+      /^\d+$/.test(segment) || // Numeric ID
+      /^[a-zA-Z]+-\d+$/.test(segment) || // Pattern like "prod-123"
+      /^[a-zA-Z0-9]{8,}$/.test(segment)
+    ); // Long alphanumeric strings
+  };
+
   // Fetch organization data and check setup status
   useEffect(() => {
     const checkAuthAndSetup = async () => {
@@ -219,7 +232,7 @@ export default function OrganizationLayout({
     };
   }, [user, loading, router, pathname]);
 
-  // Generate breadcrumbs from pathname, excluding "org"
+  // Generate breadcrumbs from pathname, excluding "org" and IDs
   const generateBreadcrumbs = () => {
     const segments = pathname.split("/").filter(Boolean);
     const breadcrumbs = [];
@@ -227,9 +240,32 @@ export default function OrganizationLayout({
     // Skip the first segment if it's "org"
     const startIndex = segments[0] === "org" ? 1 : 0;
 
+    // Keep track of the path as we build breadcrumbs
+    let currentPath = "/org";
+
     for (let i = startIndex; i < segments.length; i++) {
       const segment = segments[i];
-      const href = "/" + segments.slice(0, i + 1).join("/");
+
+      // Add segment to current path regardless
+      currentPath += `/${segment}`;
+
+      // Skip ID-like segments for display, but continue building path
+      if (isIdSegment(segment)) {
+        continue;
+      }
+
+      // For non-ID segments, create a breadcrumb
+      // But use the base path for linking (without the ID)
+      let href = currentPath;
+
+      // If this follows an ID segment, link to the parent section
+      if (i > 0 && isIdSegment(segments[i - 1])) {
+        // Remove the ID from the href for linking
+        const pathParts = currentPath.split("/").filter(Boolean);
+        const cleanParts = pathParts.filter((part) => !isIdSegment(part));
+        href = "/" + cleanParts.join("/");
+      }
+
       const title = segment.charAt(0).toUpperCase() + segment.slice(1);
 
       breadcrumbs.push({

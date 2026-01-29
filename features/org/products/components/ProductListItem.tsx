@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProductWithDetails } from "@/lib/types/product";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
-import { StockManagementDialog } from "./stock/StockManagementDialog";
+// import { StockManagementDialog } from "./stock/StockManagementDialog";
 import { EditProductModal } from "./edit/EditProductModal";
 
 interface ProductListItemProps {
@@ -32,8 +33,9 @@ export function ProductListItem({
   product,
   onProductUpdate,
 }: ProductListItemProps) {
+  const router = useRouter();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [stockModalOpen, setStockModalOpen] = useState(false);
+  // const [stockModalOpen, setStockModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
 
   const lowestPrice =
@@ -90,6 +92,10 @@ export function ProductListItem({
       .split("_")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
+  };
+
+  const handleManageStock = () => {
+    router.push(`/org/products/${product.id}/stocks`);
   };
 
   return (
@@ -169,7 +175,7 @@ export function ProductListItem({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setStockModalOpen(true)}
+                    onClick={handleManageStock}
                   >
                     <Package className="w-4 h-4 mr-2" />
                     <span className="hidden sm:inline">Stock</span>
@@ -192,7 +198,7 @@ export function ProductListItem({
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Product
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setStockModalOpen(true)}>
+                      <DropdownMenuItem onClick={handleManageStock}>
                         <Package className="w-4 h-4 mr-2" />
                         Manage Stock
                       </DropdownMenuItem>
@@ -220,11 +226,7 @@ export function ProductListItem({
         onSave={onProductUpdate}
       />
 
-      <StockManagementDialog
-        product={product}
-        open={stockModalOpen}
-        onOpenChange={setStockModalOpen}
-      />
+      {/* Removed StockManagementDialog - now navigates to dedicated page */}
     </>
   );
 }
