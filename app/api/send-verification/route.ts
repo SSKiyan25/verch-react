@@ -10,6 +10,9 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    // console.log(
+    //   "[send-verification] Received request to send verification code."
+    // );
     const { email, type = "organization_verification" } = await request.json();
 
     // Validate email

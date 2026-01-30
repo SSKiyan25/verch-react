@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useValidation } from "./useValidation";
 import { loginValidationRules, hasValidationErrors } from "../utils/validation";
+import { refreshUserCache } from "@/app/actions/cache/user";
 
 interface LoginCredentials {
   email: string;
@@ -25,11 +26,13 @@ export function useLogin() {
   });
 
   const loginWithEmail = async ({ email, password }: LoginCredentials) => {
-    // Client-side validation first
+    // 1. Validation
+    console.log("[Auth] 🔄 Starting email login process...");
     const validationErrors = validation.validateAllFields({ email, password });
-
     if (hasValidationErrors(validationErrors)) {
       setError("Please fix the validation errors before submitting");
+      // Note: validation usually returns early, so isLoading wasn't set yet.
+      // If you set it earlier, ensure you set it false here.
       return;
     }
 
@@ -39,7 +42,7 @@ export function useLogin() {
     setUserProfile(null);
 
     try {
-      // Sign in with email and password
+      // 2. Auth (Sign In)
       const { data: authData, error: authError } =
         await supabase.auth.signInWithPassword({
           email,
@@ -48,7 +51,9 @@ export function useLogin() {
 
       if (authError) throw authError;
 
-      // Get user profile to determine role and redirect
+      console.log("[Auth] ✅ Sign in successful. Fetching profile...");
+
+      // 3. Fetch Profile
       const { data: profile, error: profileError } = await supabase
         .from("users")
         .select("role, is_verified, has_agreed_to_terms, organization_id")
@@ -56,151 +61,128 @@ export function useLogin() {
         .single();
 
       if (profileError) {
-        console.error("Profile fetch error:", profileError);
+        console.error("[Auth] ❌ Profile fetch error:", profileError);
         throw profileError;
       }
 
-      // Check if user is verified
       if (!profile.is_verified) {
         throw new Error(
           "Account not verified. Please contact admin for verification."
         );
       }
 
-      // Store profile for later use, include user ID
       const profileWithId = {
         ...profile,
         id: authData.user.id,
         user_id: authData.user.id,
       };
-      setUserProfile(profileWithId);
-      // console.log("User profile fetched:", profileWithId);
 
-      // Check if user needs to accept terms
+      setUserProfile(profileWithId);
+
+      // 4. Terms Check
       if (!profile.has_agreed_to_terms) {
-        console.log("User needs to accept terms");
+        console.log("[Auth] ⚠️ User needs to accept terms. Halting redirect.");
         setNeedsTermsAcceptance(true);
-        return; // Don't redirect yet, show terms modal
+        setIsLoading(false); // 👈 MANUALLY STOP LOADING HERE
+        return;
       }
 
-      // If terms already accepted, proceed with redirect
+      // 5. If all good, Redirect
+      // We do NOT stop loading here. We let the redirect happen.
       await proceedWithRedirect(profile.role);
     } catch (error: unknown) {
-      console.error("Login error:", error);
+      console.error("[Auth] ❌ Login error:", error);
       setError(
         error instanceof Error
           ? error.message
           : "An error occurred during login"
       );
-    } finally {
-      setIsLoading(false);
+      setIsLoading(false); // 👈 ONLY STOP LOADING ON ERROR
     }
+    // ❌ REMOVED THE FINALLY BLOCK
   };
 
   const handleTermsAccepted = async () => {
-    console.log("🔵 handleTermsAccepted called with userProfile:", userProfile);
+    console.log("[Terms] 🔄 Starting post-acceptance process...");
     setIsTermsAccepting(true);
     let currentProfile = userProfile;
 
-    // If userProfile is null (e.g., due to Fast Refresh or state loss), fetch it again
-    if (!currentProfile) {
-      console.log("🔵 userProfile is null, fetching again...");
-      try {
+    try {
+      // 1. Recovery Check: If state was lost, refetch user
+      if (!currentProfile) {
+        console.log("[Terms] ⚠️ Profile state lost, refetching...");
         const {
           data: { user },
-          error: authError,
         } = await supabase.auth.getUser();
 
-        if (authError || !user) {
-          console.error("🔴 Auth error when fetching user:", authError);
-          setError("Session expired. Please log in again.");
-          router.push("/login");
-          return;
-        }
+        if (!user) throw new Error("No authenticated user found");
 
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile } = await supabase
           .from("users")
-          .select("role, is_verified, has_agreed_to_terms, organization_id")
+          .select("*")
           .eq("id", user.id)
           .single();
 
-        if (profileError) {
-          console.error("🔴 Profile fetch error:", profileError);
-          setError("Failed to fetch user profile. Please try again.");
-          return;
-        }
+        if (!profile) throw new Error("Profile not found");
 
-        currentProfile = {
-          ...profile,
-          id: user.id,
-          user_id: user.id,
-        };
-        console.log("🔵 Refetched user profile:", currentProfile);
-      } catch (error) {
-        console.error("🔴 Error refetching profile:", error);
-        setError("Session expired. Please log in again.");
-        router.push("/login");
-        return;
+        currentProfile = { ...profile, id: user.id };
+        console.log("[Terms] ✅ Profile recovered");
       }
+
+      // 2. ⚡️ CACHE INVALIDATION (The New Part)
+      // Since the user just accepted terms in the DB (via useTermsAcceptance),
+      // we must tell the server to forget the old "has_agreed_to_terms: false" data.
+      console.log(
+        `[Cache] ⚡️ Triggering server cache invalidation for ${currentProfile.id}...`
+      );
+      await refreshUserCache(currentProfile.id);
+      console.log("[Cache] ✅ Server cache invalidated.");
+
+      // 3. Update Local State (for UI feedback)
+      setUserProfile({ ...currentProfile, has_agreed_to_terms: true });
+      setNeedsTermsAcceptance(false);
+
+      // 4. Wait a moment for consistency
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      // 5. Redirect
+      await proceedWithRedirect(currentProfile.role);
+    } catch (error) {
+      console.error("[Terms] ❌ Error in completion flow:", error);
+      setError("An error occurred after accepting terms. Please refresh.");
+    } finally {
+      setIsTermsAccepting(false);
+      // We don't clear userProfile here immediately to prevent UI flash before redirect
     }
-
-    console.log("🔵 Proceeding with redirect...");
-
-    // Update the local profile state to reflect terms acceptance
-    const updatedProfile = {
-      ...currentProfile,
-      has_agreed_to_terms: true,
-    };
-    setUserProfile(updatedProfile);
-
-    console.log("🔵 Updated profile:", updatedProfile);
-
-    // Close the modal
-    setNeedsTermsAcceptance(false);
-
-    // Small delay to ensure UI updates
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
-    // Then proceed with redirect using the original profile role
-    console.log(
-      "🔵 Calling proceedWithRedirect with role:",
-      currentProfile.role
-    );
-    await proceedWithRedirect(currentProfile.role);
-
-    // Clear user profile after redirect
-    setUserProfile(null);
-    console.log("🔵 Cleared user profile");
-    setIsTermsAccepting(false);
   };
 
   const proceedWithRedirect = async (role: string) => {
-    console.log("🟢 proceedWithRedirect called with role:", role);
+    console.log(`[Redirect] 🚀 preparing redirect for role: ${role}`);
 
-    // Small delay to ensure auth state is properly set
+    // Tiny delay to ensure cookies are set
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    console.log("🟢 About to redirect based on role:", role);
+    // 👇 ADD THIS: Force server components to see the new cookie
+    router.refresh();
 
-    // Redirect based on role
     switch (role) {
       case "admin":
-        console.log("🟢 Redirecting to admin dashboard");
         router.push("/admin/dashboard");
         break;
       case "organization_admin":
       case "organization_manager":
       case "organization_staff":
-        console.log("🟢 Redirecting to org dashboard");
         router.push("/org/dashboard");
         break;
       case "customer":
-        throw new Error("Please use Google sign-in for customer accounts.");
+        setError("Please use Google sign-in for customer accounts.");
+        // If we error here, we MUST stop loading manually (see below)
+        setIsLoading(false);
+        break;
       default:
-        throw new Error("Invalid account type.");
+        setError("Invalid account type.");
+        setIsLoading(false);
     }
-
-    console.log("🟢 Router.push called, redirect should happen");
   };
 
   const clearError = () => {

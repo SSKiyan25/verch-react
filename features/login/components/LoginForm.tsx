@@ -44,6 +44,7 @@ export function LoginForm({
   } = useLogin();
 
   const handleEmailLogin = async (e: React.FormEvent) => {
+    console.log("[LoginForm] Submitting email login form");
     e.preventDefault();
     await loginWithEmail({ email, password });
   };
