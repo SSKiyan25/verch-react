@@ -4,6 +4,11 @@ import { getCurrentUser } from "@/lib/auth/server";
 import { ProductCategory } from "@/lib/types/product";
 import { z } from "zod";
 
+// ✅ 1. Define the Context Type (Next.js 15 Requirement)
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 // Validation schema for creating a category
 const createCategorySchema = z.object({
   name: z
@@ -26,10 +31,13 @@ const createCategorySchema = z.object({
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteContext // ✅ 2. Use the Promise Type
 ) {
   try {
-    const organizationId = params.id;
+    // ✅ 3. Await params before access
+    const { id } = await params;
+    const organizationId = id;
+
     console.log("📍 Categories API called for organization:", organizationId);
 
     // Validate organization ID format
@@ -49,12 +57,6 @@ export async function GET(
     const supabase = await createClient();
     const user = await getCurrentUser();
 
-    // console.log("👤 Current user:", {
-    //   id: user?.id,
-    //   organization_id: user?.organization_id,
-    //   role: user?.role,
-    // });
-
     if (!user) {
       console.log("❌ No authenticated user");
       return NextResponse.json(
@@ -64,7 +66,6 @@ export async function GET(
     }
 
     // Updated logic: Check if user has access to this organization
-    // Allow if user belongs to the org OR if we're fetching global categories
     const hasOrgAccess = user.organization_id === organizationId;
     const isAdmin = ["admin"].includes(user.role || "");
 
@@ -97,9 +98,7 @@ export async function GET(
     const includeInactive = searchParams.get("include_inactive") === "true";
     const parentId = searchParams.get("parent_id");
 
-    // console.log("🔍 Query params:", { includeInactive, parentId });
-
-    // Build query for organization-specific categories AND global categories
+    // Build query
     let query = supabase
       .from("product_categories")
       .select(
@@ -109,26 +108,20 @@ export async function GET(
         children:product_categories!parent_id(id, name, sort_order, is_active)
       `
       )
-      // This is the key fix: include global categories (organization_id IS NULL)
-      // AND organization-specific categories
       .or(`organization_id.eq.${organizationId},organization_id.is.null`)
       .order("sort_order", { ascending: true })
       .order("name", { ascending: true });
 
-    // Filter by active status
     if (!includeInactive) {
       query = query.eq("is_active", true);
     }
 
-    // Filter by parent category
     if (parentId) {
       query = query.eq("parent_id", parentId);
     } else {
-      // Only root categories (no parent)
       query = query.is("parent_id", null);
     }
 
-    // console.log("🔍 Executing query...");
     const { data: categories, error: categoriesError } = await query;
 
     if (categoriesError) {
@@ -138,15 +131,6 @@ export async function GET(
         { status: 500 }
       );
     }
-
-    // console.log("✅ Categories fetched successfully:", {
-    //   count: categories?.length || 0,
-    //   categories: categories?.map((c) => ({
-    //     id: c.id,
-    //     name: c.name,
-    //     organization_id: c.organization_id,
-    //   })),
-    // });
 
     return NextResponse.json({
       success: true,
@@ -163,10 +147,12 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteContext // ✅ 4. Use Promise Type here too
 ) {
   try {
-    const organizationId = params.id;
+    // ✅ 5. Await params here too
+    const { id } = await params;
+    const organizationId = id;
 
     // Validate organization ID format
     if (
@@ -191,7 +177,6 @@ export async function POST(
       );
     }
 
-    // Check if user belongs to this organization
     if (user.organization_id !== organizationId) {
       return NextResponse.json(
         { error: "Access denied to this organization" },
@@ -199,7 +184,6 @@ export async function POST(
       );
     }
 
-    // Check if user has permission to create categories
     const canCreateCategories = [
       "admin",
       "organization_admin",
@@ -213,17 +197,14 @@ export async function POST(
       );
     }
 
-    // Parse and validate request body
     const body = await request.json();
     const validatedData = createCategorySchema.parse(body);
 
-    // Generate slug from name
     const slug = validatedData.name
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-    // Check if slug already exists for this organization
     const { data: existingCategory, error: slugCheckError } = await supabase
       .from("product_categories")
       .select("id")
@@ -246,7 +227,6 @@ export async function POST(
       );
     }
 
-    // Validate parent category exists if provided
     if (validatedData.parent_id) {
       const { data: parentCategory, error: parentError } = await supabase
         .from("product_categories")
@@ -264,7 +244,6 @@ export async function POST(
       }
     }
 
-    // Prepare category data
     const categoryData: Omit<
       ProductCategory,
       "id" | "created_at" | "updated_at"
@@ -280,7 +259,6 @@ export async function POST(
       icon: validatedData.icon || null,
     };
 
-    // Insert category
     const { data: category, error: insertError } = await supabase
       .from("product_categories")
       .insert(categoryData)
