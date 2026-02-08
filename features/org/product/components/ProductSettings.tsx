@@ -40,6 +40,7 @@ export function ProductSettings({ data, onChange }: ProductSettingsProps) {
       pending_approval:
         "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
       archived: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+      rejected: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
     };
     return variants[status] || variants.draft;
   };
@@ -48,7 +49,14 @@ export function ProductSettings({ data, onChange }: ProductSettingsProps) {
     // Validate before updating
     const isValid = validateStatus(value);
     if (isValid) {
-      onChange({ status: value });
+      // If status is set to "published", also set is_approved to true
+      if (value === "published") {
+        onChange({ status: value, is_approved: true });
+      }
+      // If status is not "published", set is_approved to false
+      else {
+        onChange({ status: value, is_approved: false });
+      }
     }
   };
 
@@ -101,7 +109,7 @@ export function ProductSettings({ data, onChange }: ProductSettingsProps) {
                   <SelectItem value="published">
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                      Published
+                      Published (Auto-approved)
                     </div>
                   </SelectItem>
                   <SelectItem value="pending_approval">
@@ -132,6 +140,11 @@ export function ProductSettings({ data, onChange }: ProductSettingsProps) {
                   .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
                   .join(" ")}
               </Badge>
+              {data.status === "published" && (
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                  ✓ Approved
+                </Badge>
+              )}
             </div>
 
             {/* Status Info */}
@@ -144,8 +157,9 @@ export function ProductSettings({ data, onChange }: ProductSettingsProps) {
               )}
               {data.status === "published" && (
                 <p>
-                  ✅ <strong>Published:</strong> Live and available for
-                  customers to purchase
+                  ✅ <strong>Published & Approved:</strong> Live and available
+                  for customers to purchase. This product is automatically
+                  approved.
                 </p>
               )}
               {data.status === "pending_approval" && (
@@ -237,6 +251,16 @@ export function ProductSettings({ data, onChange }: ProductSettingsProps) {
             automatically calculated and added to final customer prices when
             backend integration is complete. Current pricing displays are for
             preview only.
+          </AlertDescription>
+        </Alert>
+
+        {/* Important Note */}
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20">
+          <Info className="w-4 h-4 text-blue-600" />
+          <AlertDescription className="text-xs text-blue-800 dark:text-blue-200">
+            <strong>Note:</strong> Setting status to &quot;Published&quot;
+            automatically approves the product and makes it visible to
+            customers.
           </AlertDescription>
         </Alert>
 

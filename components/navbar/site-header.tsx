@@ -6,7 +6,7 @@ import { Settings, LogOut, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, ReactNode } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,8 @@ interface SiteHeaderProps {
   profileUrl?: string; // Profile page URL
   settingsUrl?: string; // Settings page URL
   onLogout?: () => Promise<void> | void; // Custom logout handler
+  customAuthSection?: ReactNode; // Custom component to replace default auth section
+  customNavigation?: ReactNode; // Custom navigation component
 }
 
 export function SiteHeader({
@@ -54,6 +56,8 @@ export function SiteHeader({
   profileUrl = "/profile",
   settingsUrl = "/settings",
   onLogout,
+  customAuthSection,
+  customNavigation,
 }: SiteHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
@@ -144,6 +148,11 @@ export function SiteHeader({
                 </Link>
               )}
             </div>
+
+            {/* Custom Navigation - Optional */}
+            {customNavigation && (
+              <div className="hidden md:flex ml-8">{customNavigation}</div>
+            )}
           </div>
 
           {/* Right Navigation */}
@@ -178,8 +187,10 @@ export function SiteHeader({
               )}
             </button> */}
 
-            {/* User Menu or Login Link */}
-            {isAuthenticated && user ? (
+            {/* Custom Auth Section or Default Auth UI */}
+            {customAuthSection ? (
+              customAuthSection
+            ) : isAuthenticated && user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="outline-none focus:ring-2 focus:ring-primary/20 rounded-lg">

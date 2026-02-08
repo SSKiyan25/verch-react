@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   full_name: string;
-  email: string;
+  email?: string;
   avatar_url?: string | null;
   role:
     | "customer"
@@ -20,7 +20,7 @@ export interface User {
 
 export interface CreateUserData {
   full_name: string;
-  email: string;
+  email?: string;
   password: string;
   role: User["role"];
   contact_number?: string;

@@ -18,12 +18,14 @@ import { Settings, Save, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEditProduct } from "../../hooks/useEditProduct";
 import { useUser } from "@/lib/hooks/use-user";
+import { toast } from "sonner";
 
 interface SettingsTabProps {
   product: ProductWithDetails;
+  onProductUpdate?: (product: ProductWithDetails) => void;
 }
 
-export function SettingsTab({ product }: SettingsTabProps) {
+export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
   const { user } = useUser();
 
   const [formData, setFormData] = useState({
@@ -37,16 +39,31 @@ export function SettingsTab({ product }: SettingsTabProps) {
     useEditProduct({
       onSuccess: (updatedProduct) => {
         console.log("Product settings updated successfully:", updatedProduct);
-        // TODO: Show success toast or update parent state
+
+        // Show success toast
+        toast.success("Settings updated successfully");
+
+        // Update local product state
+        if (onProductUpdate) {
+          onProductUpdate({
+            ...product,
+            status: updatedProduct.status,
+            is_approved: updatedProduct.is_approved,
+            can_pre_order: updatedProduct.can_pre_order,
+            is_archived: updatedProduct.is_archived,
+          });
+        }
       },
       onError: (error) => {
         console.error("Failed to update settings:", error);
+        toast.error("Failed to update settings");
       },
     });
 
   const handleSave = async () => {
     if (!user?.organization_id) {
       console.error("No organization ID found");
+      toast.error("No organization found");
       return;
     }
 
@@ -69,6 +86,42 @@ export function SettingsTab({ product }: SettingsTabProps) {
       // Error handling is done in the hook
       console.error("Settings save failed:", error);
     }
+  };
+
+  const handleStatusChange = (value: ProductStatus) => {
+    const newFormData = {
+      ...formData,
+      status: value,
+    };
+
+    // If status is set to "published", also set is_approved to true
+    if (value === "published") {
+      newFormData.is_approved = true;
+    }
+    // If status is not "published", set is_approved to false
+    else {
+      newFormData.is_approved = false;
+    }
+
+    setFormData(newFormData);
+  };
+
+  const handleApprovalChange = (checked: boolean) => {
+    const newFormData = {
+      ...formData,
+      is_approved: checked,
+    };
+
+    // If approved is enabled, also set status to "published"
+    if (checked) {
+      newFormData.status = "published";
+    }
+    // If approved is disabled, set status to "draft"
+    else {
+      newFormData.status = "draft";
+    }
+
+    setFormData(newFormData);
   };
 
   const formatStatus = (status: string) => {
@@ -111,12 +164,7 @@ export function SettingsTab({ product }: SettingsTabProps) {
               <Label htmlFor="status">Status</Label>
               <Select
                 value={formData.status}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    status: value as ProductStatus,
-                  }))
-                }
+                onValueChange={handleStatusChange}
               >
                 <SelectTrigger
                   className={fieldErrors.status ? "border-red-500" : ""}
@@ -192,9 +240,7 @@ export function SettingsTab({ product }: SettingsTabProps) {
               </div>
               <Switch
                 checked={formData.is_approved}
-                onCheckedChange={(checked) =>
-                  setFormData((prev) => ({ ...prev, is_approved: checked }))
-                }
+                onCheckedChange={handleApprovalChange}
               />
             </div>
 
@@ -258,10 +304,17 @@ export function SettingsTab({ product }: SettingsTabProps) {
           </h4>
           <ul className="text-sm text-amber-800 space-y-1">
             <li>• Draft products are only visible to you and your team</li>
-            <li>• Published products are visible to customers</li>
+            <li>
+              • Published products are visible to customers and marked as
+              approved
+            </li>
             <li>• Pending approval requires admin review before publishing</li>
             <li>• Archived products are hidden but can be restored</li>
             <li>• Pre-orders allow sales when inventory is zero</li>
+            <li>
+              • <strong>Note:</strong> Enabling &quot;Product Approved&quot;
+              automatically publishes the product
+            </li>
           </ul>
         </CardContent>
       </Card>

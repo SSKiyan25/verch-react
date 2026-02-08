@@ -287,7 +287,10 @@ export function ProductDetailsModal({
               </TabsContent>
 
               <TabsContent value="settings" className="mt-4">
-                <SettingsTab product={product} />
+                <SettingsTab
+                  product={product}
+                  onProductUpdate={onProductUpdate}
+                />
               </TabsContent>
             </Tabs>
           </div>

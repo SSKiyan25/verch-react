@@ -1,0 +1,209 @@
+"use client";
+
+import { SiteHeader } from "@/components/navbar/site-header";
+import { MobileBottomNav } from "@/components/navbar/mobile-bottom-nav";
+import { Home as HomeIcon, ShoppingBag, Store, LogIn } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  LogOut,
+  ChevronDown,
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Settings,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+
+// Define mobile icon map
+const mobileIconMap = {
+  home: HomeIcon,
+  products: ShoppingBag,
+  stores: Store,
+  login: LogIn,
+};
+
+interface PublicShellProps {
+  children: React.ReactNode;
+  user: {
+    name: string;
+    email: string;
+    avatar: string;
+    role: string;
+  } | null;
+}
+
+export function PublicShell({ children, user }: PublicShellProps) {
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
+
+  // Custom navigation links for desktop
+  const customNavigation = (
+    <nav className="flex items-center space-x-6">
+      <Link
+        href="/"
+        className="text-sm font-medium transition-colors hover:text-primary"
+      >
+        Home
+      </Link>
+      <Link
+        href="/products"
+        className="text-sm font-medium transition-colors hover:text-primary"
+      >
+        Products
+      </Link>
+      <Link
+        href="/stores"
+        className="text-sm font-medium transition-colors hover:text-primary"
+      >
+        Stores
+      </Link>
+    </nav>
+  );
+
+  // Custom auth section
+  const customAuthSection = user ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          className="flex items-center space-x-2 h-auto p-2"
+        >
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.avatar} alt={user.name} />
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+              {getInitials(user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="hidden md:flex flex-col items-start">
+            <span className="text-sm font-medium">{user.name}</span>
+            <span className="text-xs text-muted-foreground capitalize">
+              {user.role.replace(/_/g, " ")}
+            </span>
+          </div>
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{user.name}</p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user.email}
+            </p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/user/dashboard" className="cursor-pointer">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/user/orders" className="cursor-pointer">
+            <Package className="mr-2 h-4 w-4" />
+            <span>Orders</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/cart" className="cursor-pointer">
+            <ShoppingCart className="mr-2 h-4 w-4" />
+            <span>Cart</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/user/settings" className="cursor-pointer">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={handleLogout}
+          className="cursor-pointer text-destructive focus:text-destructive"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Logout</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : (
+    <Button asChild>
+      <Link href="/login">Login</Link>
+    </Button>
+  );
+
+  // Navigation links for mobile bottom nav
+  const navLinks = [
+    {
+      label: "Home",
+      icon: "home",
+      href: "/",
+    },
+    {
+      label: "Products",
+      icon: "products",
+      href: "/products",
+    },
+    {
+      label: "Stores",
+      icon: "stores",
+      href: "/stores",
+    },
+    {
+      label: "Login",
+      icon: "login",
+      href: "/login",
+    },
+  ];
+
+  return (
+    <div className="flex min-h-screen w-full">
+      <div className="flex-1 flex flex-col min-w-0">
+        <SiteHeader
+          user={user}
+          isAuthenticated={!!user}
+          brandName="Verch"
+          logoSrc="/logo-verch.webp"
+          logoAlt="Verch Logo"
+          homeUrl="/"
+          loginUrl="/login"
+          dashboardUrl="/user/dashboard"
+          profileUrl="/user/profile"
+          settingsUrl="/user/settings"
+          onLogout={handleLogout}
+          customAuthSection={customAuthSection}
+          customNavigation={customNavigation}
+        />
+        <main className="flex-1 p-2 sm:p-4 pb-16 md:pb-4">{children}</main>
+        <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />
+      </div>
+    </div>
+  );
+}

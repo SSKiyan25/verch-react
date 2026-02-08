@@ -4,9 +4,10 @@ import { Supplier } from "./supplier";
 // Enums from the database
 export type ProductStatus =
   | "draft"
+  | "pending_approval"
   | "published"
   | "archived"
-  | "pending_approval";
+  | "rejected";
 export type DiscountType = "none" | "percentage" | "fixed_amount";
 export type StockAction =
   | "increase"
@@ -115,6 +116,7 @@ export interface CreateProductData {
   featured_photo_url?: string | null;
   photo_urls?: string[];
   can_pre_order?: boolean;
+  is_approved?: boolean;
   discount_type?: DiscountType;
   discount_target?: string | null;
   discount_value?: number;

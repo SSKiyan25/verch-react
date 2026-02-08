@@ -1,82 +1,47 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-"use client";
-import { SiteHeader } from "@/components/navbar/site-header";
-import { MobileBottomNav } from "@/components/navbar/mobile-bottom-nav";
-import { LoadingScreen } from "@/components/ui/loading-screen";
-import { Home as HomeIcon, ShoppingBag, Store, LogIn } from "lucide-react";
-import { useState, useEffect } from "react";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { PublicShell } from "@/components/layouts/public-shell";
+import { getCachedUserProfile } from "@/lib/data/user";
 
-// Define mobile icon map
-const mobileIconMap = {
-  home: HomeIcon,
-  products: ShoppingBag,
-  stores: Store,
-  login: LogIn,
-};
-
-export default function PublicLayout({
+export default async function PublicLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const supabase = await createClient();
 
-  // Simulate initial loading
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1500);
+  // Get authenticated user (if any)
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-    return () => clearTimeout(timer);
-  }, []);
+  let currentUser = null;
 
-  // Navigation links for public pages
-  const navLinks = [
-    {
-      label: "Home",
-      icon: "home",
-      href: "/",
-    },
-    {
-      label: "Products",
-      icon: "products",
-      href: "/products",
-    },
-    {
-      label: "Stores",
-      icon: "stores",
-      href: "/stores",
-    },
-    {
-      label: "Login",
-      icon: "login",
-      href: "/login",
-    },
-  ];
+  // If user is authenticated, fetch their profile
+  if (authUser) {
+    const userProfile = await getCachedUserProfile(authUser.id);
 
-  // Show loading screen while initializing
-  if (isLoading) {
-    return (
-      <LoadingScreen message="Welcome to Verch! Loading your shopping experience..." />
-    );
+    if (userProfile) {
+      currentUser = {
+        name: userProfile.full_name || authUser.email || "User",
+        email: authUser.email || "",
+        avatar: userProfile.avatar_url || "",
+        role: userProfile.role,
+      };
+
+      // Redirect authenticated users based on their role
+      if (userProfile.role === "admin") {
+        redirect("/admin/dashboard");
+      } else if (
+        userProfile.role === "organization_admin" ||
+        userProfile.role === "organization_manager" ||
+        userProfile.role === "organization_staff"
+      ) {
+        redirect("/org/dashboard");
+      }
+      // Customers can stay on public pages
+    }
   }
 
-  return (
-    <div className="flex min-h-screen w-full ">
-      <div className="flex-1 flex flex-col min-w-0">
-        <SiteHeader
-          user={null}
-          isAuthenticated={isAuthenticated}
-          brandName="Verch"
-          logoSrc="/logo-verch.webp"
-          logoAlt="Verch Logo"
-          homeUrl="/"
-          loginUrl="/login"
-        />
-        <main className="flex-1 p-2 sm:p-4 pb-16 md:pb-4">{children}</main>
-        <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />
-      </div>
-    </div>
-  );
+  return <PublicShell user={currentUser}>{children}</PublicShell>;
 }
