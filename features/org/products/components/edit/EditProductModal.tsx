@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProductWithDetails } from "@/lib/types/product";
 import {
   Dialog,
@@ -25,7 +25,7 @@ import { Edit, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEditProduct } from "../../hooks/useEditProduct";
 import { useProductCategories } from "../../hooks/useProductCategories";
-import { useUser } from "@/lib/hooks/use-user";
+import { getCachedUserOrganization } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 interface EditProductModalProps {
@@ -41,8 +41,9 @@ export function EditProductModal({
   onOpenChange,
   onSave,
 }: EditProductModalProps) {
-  const { user } = useUser();
   const { categories, isLoading: categoriesLoading } = useProductCategories();
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [hasFetchedOrg, setHasFetchedOrg] = useState(false);
 
   const [formData, setFormData] = useState({
     name: product.name || "",
@@ -51,23 +52,45 @@ export function EditProductModal({
     category_id: product.category_id || "",
   });
 
+  // 👇 Fetch Org ID via Server Action (only once)
+  useEffect(() => {
+    if (hasFetchedOrg) return;
+
+    const fetchOrgId = async () => {
+      try {
+        const cachedOrgId = await getCachedUserOrganization();
+        if (cachedOrgId) {
+          setOrganizationId(cachedOrgId);
+        }
+      } catch (error) {
+        console.error(
+          "[EditProductModal] Failed to fetch organization:",
+          error
+        );
+      } finally {
+        setHasFetchedOrg(true);
+      }
+    };
+
+    fetchOrgId();
+  }, [hasFetchedOrg]);
+
   const { updateProduct, isLoading, globalError, fieldErrors, clearErrors } =
     useEditProduct({
       onSuccess: (updatedProduct) => {
-        // console.log("Product updated successfully:", updatedProduct);
-        toast.success("Product updated successfully");
+        toast.success("✅ Product updated successfully");
         onSave?.(updatedProduct);
         onOpenChange(false);
       },
       onError: (error) => {
         toast.error("Failed to update product");
-        console.error("Failed to update product:", error);
+        console.error("[EditProductModal] Update failed:", error);
       },
     });
 
   const handleSave = async () => {
-    if (!user?.organization_id) {
-      console.error("No organization ID found");
+    if (!organizationId) {
+      toast.error("No organization found");
       return;
     }
 
@@ -89,13 +112,10 @@ export function EditProductModal({
           formData.category_id === "none" ? null : formData.category_id || null,
       };
 
-      console.log("Form data before sending:", formData);
-      console.log("Processed update data:", updateData);
-
-      await updateProduct(user.organization_id, product.id, updateData);
+      await updateProduct(organizationId, product.id, updateData);
     } catch (error) {
       // Error handling is done in the hook
-      console.error("Save failed:", error);
+      console.error("[EditProductModal] Save failed:", error);
     }
   };
 
@@ -240,11 +260,11 @@ export function EditProductModal({
           </div>
 
           {/* Settings Reference */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h4 className="font-medium text-blue-900 mb-2">
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg dark:bg-blue-950/20 dark:border-blue-800">
+            <h4 className="font-medium text-blue-900 dark:text-blue-100 mb-2">
               Additional Settings
             </h4>
-            <div className="space-y-1 text-sm text-blue-800">
+            <div className="space-y-1 text-sm text-blue-800 dark:text-blue-300">
               <p>
                 • <strong>Status & Permissions:</strong> Configure in the
                 "Settings" tab
@@ -274,7 +294,7 @@ export function EditProductModal({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isLoading}>
+          <Button onClick={handleSave} disabled={isLoading || !organizationId}>
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

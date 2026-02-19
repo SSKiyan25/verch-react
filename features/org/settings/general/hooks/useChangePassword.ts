@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useCallback } from "react";
-import { useUser } from "@/lib/hooks/use-user";
+import { changeUserPasswordAction } from "@/app/actions/user-settings";
 
 interface ChangePasswordData {
   currentPassword: string;
@@ -12,53 +11,30 @@ interface ChangePasswordData {
 export function useChangePassword() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useUser();
 
-  const changePassword = useCallback(
-    async (data: ChangePasswordData) => {
-      if (!user?.organization_id) {
-        setError("User organization not found");
-        return { success: false };
+  const changePassword = useCallback(async (data: ChangePasswordData) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // 🚀 Call Server Action directly
+      // No need to pass orgID or check roles here; the server does it securely.
+      const result = await changeUserPasswordAction(data);
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to change password");
       }
 
-      if (user.role !== "organization_admin") {
-        setError("Only organization admins can change passwords");
-        return { success: false };
-      }
-
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(
-          `/api/organizations/${user.organization_id}/settings/change-password`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify(data),
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.error || "Failed to change password");
-        }
-
-        return { success: true, message: result.message };
-      } catch (err: any) {
-        const errorMessage = err.message || "An unexpected error occurred";
-        setError(errorMessage);
-        return { success: false, error: errorMessage };
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    [user?.organization_id, user?.role]
-  );
+      return { success: true, message: result.message };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      const errorMessage = err.message || "An unexpected error occurred";
+      setError(errorMessage);
+      return { success: false, error: errorMessage };
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const clearError = useCallback(() => {
     setError(null);

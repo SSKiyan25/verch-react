@@ -1,62 +1,71 @@
-import { useState, useEffect, useCallback } from "react";
+"use client";
+
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Organization } from "@/lib/types/organization";
+import { getOrganizationAction } from "@/app/actions/organization";
 import { toast } from "sonner";
 
-export function useOrganization(organizationId?: string) {
-  const [organization, setOrganization] = useState<Organization | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+export function useOrganization(
+  organizationId?: string,
+  initialData?: Organization | null
+) {
+  const [organization, setOrganization] = useState<Organization | null>(
+    initialData || null
+  );
+  // If we have initialData, we are NOT loading.
+  const [isLoading, setIsLoading] = useState(!initialData && !!organizationId);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch organization data
-  const fetchOrganization = useCallback(async (id?: string) => {
-    if (!id) return;
+  // Track if we've already used the initial data to prevent re-fetching immediately
+  const initialIdRef = useRef(initialData?.id);
 
+  const fetchOrg = useCallback(async (id: string) => {
     setIsLoading(true);
     setError(null);
-
     try {
-      const response = await fetch(`/api/organizations/${id}`);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch organization");
-      }
-
-      const result = await response.json();
-      setOrganization(result.organization);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch organization";
-      setError(errorMessage);
-      toast.error(errorMessage);
+      console.log("Fetching organization data...");
+      const result = await getOrganizationAction(id);
+      if (!result.success || !result.data)
+        throw new Error(result.error || "Not found");
+      setOrganization(result.data);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (err: any) {
+      setError(err.message);
+      toast.error(err.message);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Update organization handler
-  const handleOrganizationUpdate = useCallback((updatedOrg: Organization) => {
-    setOrganization(updatedOrg);
-  }, []);
-
-  // Refresh organization data
-  const refresh = useCallback(() => {
-    if (organizationId) {
-      fetchOrganization(organizationId);
-    }
-  }, [fetchOrganization, organizationId]);
-
-  // Clear error
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  // Auto-fetch on mount or when organizationId changes
   useEffect(() => {
-    if (organizationId) {
-      fetchOrganization(organizationId);
+    // ⚡ If the ID matches the initial data we passed in, DON'T fetch again.
+    // console.log("useOrganization effect running with ID:", organizationId);
+    // console.log("Initial ID ref:", initialIdRef.current);
+    if (initialData && organizationId === initialIdRef.current) {
+      console.log("useOrganization: Using initial data, skipping fetch.");
+      return;
     }
-  }, [organizationId, fetchOrganization]);
+
+    if (organizationId) {
+      console.log(
+        "useOrganization: No valid initial data, fetching organization."
+      );
+      fetchOrg(organizationId);
+    } else {
+      setOrganization(null);
+      setIsLoading(false);
+    }
+  }, [organizationId, fetchOrg, initialData]);
+
+  // ... (keep handleOrganizationUpdate, refresh, etc. same as before) ...
+  const handleOrganizationUpdate = useCallback(
+    (updatedOrg: Organization) => setOrganization(updatedOrg),
+    []
+  );
+  const refresh = useCallback(() => {
+    if (organizationId) fetchOrg(organizationId);
+  }, [organizationId, fetchOrg]);
+  const clearError = useCallback(() => setError(null), []);
 
   return {
     organization,

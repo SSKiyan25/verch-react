@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useImageUpload } from "@/lib/hooks/use-image-upload";
-import { useUser } from "@/lib/hooks/use-user";
+import { getCachedUserOrganization } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 interface UseProductPhotosProps {
@@ -21,10 +21,30 @@ export function useProductPhotos({
 }: UseProductPhotosProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
-  const { user } = useUser();
+  const [cachedOrgId, setCachedOrgId] = useState<string | null>(null);
 
   // Use your existing image upload hook
   const { uploadMultipleImages, isUploading } = useImageUpload();
+
+  // 👇 Fetch Org ID via Server Action
+  useEffect(() => {
+    const fetchOrgId = async () => {
+      try {
+        console.log("[useProductPhotos] 🔍 Fetching cached organization ID...");
+        const orgId = await getCachedUserOrganization();
+        if (orgId) {
+          console.log("[useProductPhotos] ✅ Found Org ID:", orgId);
+          setCachedOrgId(orgId);
+        } else {
+          console.log("[useProductPhotos] ⚠️ No Organization ID found.");
+        }
+      } catch (error) {
+        console.error("[useProductPhotos] ❌ Error fetching org:", error);
+      }
+    };
+
+    fetchOrgId();
+  }, []);
 
   // Update product photos via API
   const updateProductPhotos = useCallback(
@@ -32,9 +52,11 @@ export function useProductPhotos({
       featured_photo_url?: string | null;
       photo_urls?: string[];
     }) => {
-      if (!user?.organization_id) {
+      if (!cachedOrgId) {
         throw new Error("User organization not found");
       }
+
+      console.log("[useProductPhotos] 📤 Updating photos via API:", updateData);
 
       const response = await fetch(
         `/api/organizations/${organizationId}/products/${productId}/edit-product`,
@@ -51,9 +73,10 @@ export function useProductPhotos({
         throw new Error(result.message || "Failed to update product photos");
       }
 
+      console.log("[useProductPhotos] ✅ Photos updated successfully");
       return result.data;
     },
-    [organizationId, productId, user?.organization_id]
+    [organizationId, productId, cachedOrgId]
   );
 
   // Set featured photo
@@ -66,6 +89,8 @@ export function useProductPhotos({
       setIsLoading(true);
 
       try {
+        console.log("[useProductPhotos] 🌟 Setting featured photo:", photoUrl);
+
         const newFeaturedUrl = photoUrl;
         let newPhotoUrls = [...currentPhotoUrls];
 
@@ -92,7 +117,10 @@ export function useProductPhotos({
         toast.success("Featured photo updated successfully");
         return updatedProduct;
       } catch (error) {
-        console.error("Failed to set featured photo:", error);
+        console.error(
+          "[useProductPhotos] ❌ Failed to set featured photo:",
+          error
+        );
         toast.error("Failed to set featured photo");
         throw error;
       } finally {
@@ -113,6 +141,11 @@ export function useProductPhotos({
       setIsLoading(true);
 
       try {
+        console.log("[useProductPhotos] 🗑️ Deleting photo:", {
+          photoUrl,
+          isFeatured,
+        });
+
         const updateData: {
           featured_photo_url?: string | null;
           photo_urls?: string[];
@@ -149,7 +182,7 @@ export function useProductPhotos({
         toast.success("Photo deleted successfully");
         return updatedProduct;
       } catch (error) {
-        console.error("Failed to delete photo:", error);
+        console.error("[useProductPhotos] ❌ Failed to delete photo:", error);
         toast.error("Failed to delete photo");
         throw error;
       } finally {
@@ -170,6 +203,7 @@ export function useProductPhotos({
       setUploadProgress(0);
 
       try {
+        console.log("[useProductPhotos] 📤 Uploading photos:", files.length);
         toast.info("Uploading images...");
         setUploadProgress(25);
 
@@ -210,7 +244,7 @@ export function useProductPhotos({
 
         return updatedProduct;
       } catch (error) {
-        console.error("Failed to upload photos:", error);
+        console.error("[useProductPhotos] ❌ Failed to upload photos:", error);
         toast.error("Failed to upload photos");
         throw error;
       } finally {

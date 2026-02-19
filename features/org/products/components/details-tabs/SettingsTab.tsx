@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ProductWithDetails, ProductStatus } from "@/lib/types/product";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Settings, Save, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEditProduct } from "../../hooks/useEditProduct";
-import { useUser } from "@/lib/hooks/use-user";
+import { getCachedUserOrganization } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 interface SettingsTabProps {
@@ -26,7 +26,7 @@ interface SettingsTabProps {
 }
 
 export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
-  const { user } = useUser();
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     status: product.status || "draft",
@@ -35,10 +35,33 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
     is_archived: product.is_archived || false,
   });
 
+  // 👇 Fetch Org ID via Server Action
+  useEffect(() => {
+    const fetchOrgId = async () => {
+      try {
+        console.log("[SettingsTab] 🔍 Fetching cached organization ID...");
+        const cachedOrgId = await getCachedUserOrganization();
+        if (cachedOrgId) {
+          console.log("[SettingsTab] ✅ Found Org ID:", cachedOrgId);
+          setOrganizationId(cachedOrgId);
+        } else {
+          console.log("[SettingsTab] ⚠️ No Organization ID found.");
+        }
+      } catch (error) {
+        console.error("[SettingsTab] ❌ Error fetching org:", error);
+      }
+    };
+
+    fetchOrgId();
+  }, []);
+
   const { updateProduct, isLoading, globalError, fieldErrors, clearErrors } =
     useEditProduct({
       onSuccess: (updatedProduct) => {
-        console.log("Product settings updated successfully:", updatedProduct);
+        console.log(
+          "[SettingsTab] ✅ Product settings updated:",
+          updatedProduct
+        );
 
         // Show success toast
         toast.success("Settings updated successfully");
@@ -55,14 +78,14 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
         }
       },
       onError: (error) => {
-        console.error("Failed to update settings:", error);
+        console.error("[SettingsTab] ❌ Failed to update settings:", error);
         toast.error("Failed to update settings");
       },
     });
 
   const handleSave = async () => {
-    if (!user?.organization_id) {
-      console.error("No organization ID found");
+    if (!organizationId) {
+      console.error("[SettingsTab] ⚠️ No organization ID found");
       toast.error("No organization found");
       return;
     }
@@ -78,13 +101,13 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
         is_archived: formData.is_archived,
       };
 
-      console.log("Settings form data:", formData);
-      console.log("Settings update data:", updateData);
+      console.log("[SettingsTab] 📝 Form data:", formData);
+      console.log("[SettingsTab] 📤 Sending update data:", updateData);
 
-      await updateProduct(user.organization_id, product.id, updateData);
+      await updateProduct(organizationId, product.id, updateData);
     } catch (error) {
       // Error handling is done in the hook
-      console.error("Settings save failed:", error);
+      console.error("[SettingsTab] ❌ Save failed:", error);
     }
   };
 
@@ -281,7 +304,7 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={isLoading}>
+        <Button onClick={handleSave} disabled={isLoading || !organizationId}>
           {isLoading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />

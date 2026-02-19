@@ -81,13 +81,31 @@ interface OrgShellProps {
     role: string;
   };
   isSetupComplete: boolean;
+  organizationLogo?: string;
 }
 
-export function OrgShell({ children, user, isSetupComplete }: OrgShellProps) {
+export function OrgShell({
+  children,
+  user,
+  isSetupComplete,
+  organizationLogo,
+}: OrgShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   // Handle Client-Side Redirection for Setup
+
+  const userForSidebar = {
+    ...user,
+    avatar: organizationLogo || user.avatar, // Use org logo if available
+  };
+
+  console.log("[OrgShell] Received props", {
+    user,
+    isSetupComplete,
+    organizationLogo,
+  });
+
   useEffect(() => {
     if (!isSetupComplete && !pathname.startsWith("/org/settings")) {
       console.log("⚠️ Setup incomplete. Redirecting to settings...");
@@ -105,15 +123,18 @@ export function OrgShell({ children, user, isSetupComplete }: OrgShellProps) {
   }));
 
   // Icon Map
-  const iconMap = orgNavItems.reduce((map, item) => {
-    map[item.iconName] = item.icon as React.FC<{ className?: string }>;
-    return map;
-  }, {} as Record<string, React.FC<{ className?: string }>>);
+  const iconMap = orgNavItems.reduce(
+    (map, item) => {
+      map[item.iconName] = item.icon as React.FC<{ className?: string }>;
+      return map;
+    },
+    {} as Record<string, React.FC<{ className?: string }>>,
+  );
 
   return (
     <SidebarProvider>
       <AppSidebar
-        user={user}
+        user={userForSidebar}
         navMain={transformedNavItems}
         iconMap={iconMap}
         homeUrl="/org/dashboard"

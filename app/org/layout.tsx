@@ -16,6 +16,7 @@ export default async function OrganizationLayout({
   children: React.ReactNode;
 }) {
   console.log("[OrgLayout] Rendering Organization Layout...");
+  console.log("Checking authentication and organization status...");
   const supabase = await createClient();
 
   // 1. Auth Check
@@ -49,7 +50,7 @@ export default async function OrganizationLayout({
   if (!organization) {
     console.error(
       "Organization not found for ID:",
-      userProfile.organization_id
+      userProfile.organization_id,
     );
     redirect("/login");
   }
@@ -67,20 +68,20 @@ export default async function OrganizationLayout({
     avatar: userProfile.avatar_url || "",
     role: userProfile.role,
   };
-
-  console.log("[OrgLayout] User and Organization data", {
-    currentUser,
-    organization: {
-      id: organization.id,
-      name: organization.name,
-      status: organization.status,
-      is_setup_complete: organization.is_setup_complete,
-    },
-  });
+  // console.log("[OrgLayout] User and Organization data", {
+  //   currentUser,
+  //   organization: {
+  //     id: organization.id,
+  //     name: organization.name,
+  //     status: organization.status,
+  //     is_setup_complete: organization.is_setup_complete,
+  //   },
+  // });
   return (
     <OrgShell
       user={currentUser}
       isSetupComplete={organization.is_setup_complete}
+      organizationLogo={organization.logo_image_url}
     >
       {children}
     </OrgShell>

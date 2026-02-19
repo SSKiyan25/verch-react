@@ -11,16 +11,21 @@ import { useProductCreation } from "./useProductCreation";
 
 interface UseProductFormProps {
   initialData?: ProductWithDetails;
+  // 1. Add orgId to props so we can pass it down
+  orgId: string;
 }
 
-export function useProductForm({ initialData }: UseProductFormProps = {}) {
+export function useProductForm({ initialData, orgId }: UseProductFormProps) {
   const params = useParams();
   const router = useRouter();
-  const isEditing = Boolean(params?.id && params.id !== "new");
 
-  const { createProduct, isCreating } = useProductCreation();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isEditing = Boolean(params?.id && (params.id as any) !== "new");
 
-  // 1. We keep formData (this holds the paths: "temp/...")
+  // 2. Pass orgId to the creation hook
+  const { createProduct, isCreating } = useProductCreation(orgId);
+
+  // 3. We keep formData (this holds the paths: "temp/...")
   const [formData, setFormData] = useState<CreateProductData>({
     name: "",
     description: "",
@@ -34,9 +39,6 @@ export function useProductForm({ initialData }: UseProductFormProps = {}) {
     temp_gallery_image_paths: [], // Initialize empty
   });
 
-  // REMOVED: const [featuredImage, setFeaturedImage]... (We don't need raw files anymore)
-  // REMOVED: const [galleryImages, setGalleryImages]...
-
   useEffect(() => {
     if (isEditing && initialData) {
       setFormData({
@@ -49,8 +51,6 @@ export function useProductForm({ initialData }: UseProductFormProps = {}) {
         discount_target: initialData.discount_target || "",
         discount_value: initialData.discount_value || 0,
         status: initialData.status || "draft",
-        // Note: We don't load temp paths for existing products,
-        // usually we handle existing images separately, but for now this is fine.
       });
     }
   }, [isEditing, initialData]);
@@ -59,23 +59,18 @@ export function useProductForm({ initialData }: UseProductFormProps = {}) {
     setFormData((prev) => ({ ...prev, ...updates }));
   };
 
-  // REMOVED: updateImages helper.
-  // ProductMedia now calls updateFormData directly.
-
   const handleSave = async (currentVariations: CreateVariationData[] = []) => {
     try {
       if (isEditing) {
         console.log("Updating product:", formData);
         throw new Error("Update functionality not implemented yet");
       } else {
-        // DEBUG LOG: Check this in your browser console before it sends!
-        console.log("Submitting Payload:", {
-          ...formData,
-          variations: currentVariations,
-        });
+        // // DEBUG LOG: Check this in your browser console before it sends!
+        // console.log("Submitting Payload:", {
+        //   ...formData,
+        //   variations: currentVariations,
+        // });
 
-        // 2. CRITICAL CHANGE:
-        // We only pass the data object. We do NOT pass file arguments anymore.
         const result = await createProduct({
           ...formData,
           variations: currentVariations,

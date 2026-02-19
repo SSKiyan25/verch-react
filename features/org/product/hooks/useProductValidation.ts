@@ -64,7 +64,7 @@ const productValidationRules = {
     },
   },
   featured_photo_url: {
-    required: false,
+    required: true,
     custom: (value: string) => {
       if (value && !VALIDATION_PATTERNS.url.test(value)) {
         return "Invalid URL format";
@@ -111,9 +111,15 @@ const productValidationRules = {
       return null;
     },
   },
-  // Temporary image paths - no validation needed as they're handled internally
+  // Temporary image paths - featured image is required
   temp_featured_image_path: {
-    required: false,
+    required: true,
+    custom: (value: string) => {
+      if (!value || value.trim() === "") {
+        return "Featured image is required";
+      }
+      return null;
+    },
   },
   temp_gallery_image_paths: {
     required: false,
@@ -134,6 +140,15 @@ const productValidationRules = {
             return "Each variation must have a valid price";
           }
         }
+      }
+      return null;
+    },
+  },
+  is_approved: {
+    required: false,
+    custom: (value: boolean | undefined) => {
+      if (value !== undefined && typeof value !== "boolean") {
+        return "Approval status must be true or false";
       }
       return null;
     },

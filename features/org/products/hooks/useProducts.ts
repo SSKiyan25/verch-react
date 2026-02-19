@@ -1,9 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@/lib/hooks/use-user";
 import { ProductWithDetails, ProductFilters } from "@/lib/types/product";
 import { toast } from "sonner";
+import { getCachedUserOrganization } from "@/app/actions/auth";
 
 export interface PaginationInfo {
   page: number;
@@ -19,11 +19,10 @@ export interface UseProductsOptions {
 }
 
 export function useProducts(options: UseProductsOptions = {}) {
-  const { user, loading: userLoading } = useUser();
-  const organizationId = user?.organization_id;
+  const { initialPage = 1, initialLimit = 10, autoFetch = true } = options;
 
-  const { initialPage = 1, initialLimit = 20, autoFetch = true } = options;
-
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: initialPage,
@@ -35,17 +34,51 @@ export function useProducts(options: UseProductsOptions = {}) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // 👇 Fetch Org ID via Server Action
+  useEffect(() => {
+    const fetchOrgId = async () => {
+      try {
+        // console.log("[useProducts] 🔍 Fetching cached organization ID...");
+        setIsLoadingUser(true);
+
+        // 👇 Call Server Action
+        // ✅ Leverages Next.js Data Cache, saving DB reads
+        const cachedOrgId = await getCachedUserOrganization();
+
+        if (cachedOrgId) {
+          // console.log("[useProducts] ✅ Found Org ID:", cachedOrgId);
+          setOrganizationId(cachedOrgId);
+        } else {
+          console.log("[useProducts] ⚠️ No Organization ID found.");
+          setOrganizationId(null);
+        }
+      } catch (error) {
+        console.error("[useProducts] ❌ Error fetching org:", error);
+        setOrganizationId(null);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    fetchOrgId();
+  }, []);
+
   // Fetch products from API
   const fetchProducts = async (
     currentFilters: ProductFilters = filters,
-    currentPagination: Partial<PaginationInfo> = {}
+    currentPagination: Partial<PaginationInfo> = {},
   ) => {
     if (!organizationId) {
+      console.log("[useProducts] ⏸️ Skipping fetch - no organization_id");
       setError("No organization found");
       return;
     }
 
     try {
+      // console.log(
+      //   "[useProducts] 📦 Fetching products for organization:",
+      //   organizationId
+      // );
       setIsLoading(true);
       setError(null);
 
@@ -54,11 +87,11 @@ export function useProducts(options: UseProductsOptions = {}) {
       // Pagination
       searchParams.append(
         "page",
-        String(currentPagination.page || pagination.page)
+        String(currentPagination.page || pagination.page),
       );
       searchParams.append(
         "limit",
-        String(currentPagination.limit || pagination.limit)
+        String(currentPagination.limit || pagination.limit),
       );
 
       // Filters
@@ -78,8 +111,13 @@ export function useProducts(options: UseProductsOptions = {}) {
         searchParams.append("is_archived", String(currentFilters.is_archived));
       }
 
+      // console.log(
+      //   "[useProducts] 🔗 API URL:",
+      //   `/api/organizations/${organizationId}/products?${searchParams.toString()}`
+      // );
+
       const response = await fetch(
-        `/api/organizations/${organizationId}/products?${searchParams.toString()}`
+        `/api/organizations/${organizationId}/products?${searchParams.toString()}`,
       );
 
       if (!response.ok) {
@@ -89,6 +127,12 @@ export function useProducts(options: UseProductsOptions = {}) {
 
       const data = await response.json();
 
+      console.log("[useProducts] ✅ Products fetched successfully:", {
+        count: data.data?.length || 0,
+        total: data.pagination?.total || 0,
+        page: data.pagination?.page || 1,
+      });
+
       setProducts(data.data || []);
       setPagination(
         data.pagination || {
@@ -96,14 +140,14 @@ export function useProducts(options: UseProductsOptions = {}) {
           limit: initialLimit,
           total: 0,
           pages: 0,
-        }
+        },
       );
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to fetch products";
+      console.error("[useProducts] ❌ Fetch error:", error);
       setError(errorMessage);
       toast.error(errorMessage);
-      console.error("Products fetch error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -111,6 +155,7 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   // Update filters and refetch
   const updateFilters = (newFilters: ProductFilters) => {
+    console.log("[useProducts] 🔄 Updating filters:", newFilters);
     setFilters(newFilters);
     setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
     fetchProducts(newFilters, { page: 1 });
@@ -118,11 +163,13 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   // Clear all filters
   const clearFilters = () => {
+    console.log("[useProducts] 🧹 Clearing all filters");
     updateFilters({});
   };
 
   // Pagination handlers
   const goToPage = (page: number) => {
+    console.log("[useProducts] 📄 Going to page:", page);
     const newPagination = { ...pagination, page };
     setPagination(newPagination);
     fetchProducts(filters, newPagination);
@@ -142,23 +189,26 @@ export function useProducts(options: UseProductsOptions = {}) {
 
   // Change page size
   const changePageSize = (limit: number) => {
+    console.log("[useProducts] 📏 Changing page size to:", limit);
     const newPagination = { ...pagination, limit, page: 1 };
     setPagination(newPagination);
     fetchProducts(filters, newPagination);
   };
 
-  // Initial fetch - wait for user to load
+  // 👇 Initial fetch triggers once we have the ID
   useEffect(() => {
-    if (!userLoading && organizationId && autoFetch) {
+    if (!isLoadingUser && organizationId && autoFetch) {
+      console.log("[useProducts] 🚀 Initial fetch triggered");
       fetchProducts();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, autoFetch, userLoading]);
+  }, [organizationId, autoFetch, isLoadingUser]);
 
   // Search with debouncing
   useEffect(() => {
     if (!filters.search) return;
 
+    console.log("[useProducts] 🔍 Search debouncing for:", filters.search);
     const debounceTimer = setTimeout(() => {
       fetchProducts(filters, { page: 1 });
     }, 300);
@@ -168,14 +218,17 @@ export function useProducts(options: UseProductsOptions = {}) {
   }, [filters.search]);
 
   const updateLocalProduct = (
-    updatedProduct: Partial<ProductWithDetails> & { id: string }
+    updatedProduct: Partial<ProductWithDetails> & { id: string },
   ) => {
-    // console.log("Updating local product state:", updatedProduct);
+    console.log("[useProducts] 🔄 Updating local product:", {
+      productId: updatedProduct.id,
+      updatedFields: Object.keys(updatedProduct),
+    });
 
     setProducts((currentProducts) => {
-      return currentProducts.map((p) => {
+      const updatedProducts = currentProducts.map((p) => {
         if (p.id === updatedProduct.id) {
-          return {
+          const merged = {
             ...p, // Keep existing data
             ...updatedProduct, // Overwrite with new data
 
@@ -192,9 +245,18 @@ export function useProducts(options: UseProductsOptions = {}) {
                 ? updatedProduct.featured_photo_url
                 : p.featured_photo_url,
           };
+
+          console.log("[useProducts] ✅ Product updated locally:", {
+            before: { status: p.status, is_approved: p.is_approved },
+            after: { status: merged.status, is_approved: merged.is_approved },
+          });
+
+          return merged;
         }
         return p;
       });
+
+      return updatedProducts;
     });
   };
 
@@ -202,7 +264,7 @@ export function useProducts(options: UseProductsOptions = {}) {
     products,
     pagination,
     filters,
-    isLoading: isLoading || userLoading,
+    isLoading: isLoading || isLoadingUser, // 👈 Combine loading states
     error,
     fetchProducts,
     updateFilters,
@@ -212,6 +274,9 @@ export function useProducts(options: UseProductsOptions = {}) {
     nextPage,
     previousPage,
     changePageSize,
-    refresh: () => fetchProducts(),
+    refresh: () => {
+      console.log("[useProducts] 🔄 Manual refresh triggered");
+      fetchProducts();
+    },
   };
 }

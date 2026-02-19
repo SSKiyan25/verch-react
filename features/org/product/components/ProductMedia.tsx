@@ -40,7 +40,7 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
 
   const handleFileSelect = async (
     files: FileList | null,
-    isFeatured = false
+    isFeatured = false,
   ) => {
     if (!files || files.length === 0) return;
 
@@ -141,10 +141,13 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label className="text-sm font-medium">
-              Featured Image
-              {errors.featured_photo_url && (
+              Featured Image <span className="text-red-500">*</span>
+              {(errors.featured_photo_url ||
+                errors.temp_featured_image_path) && (
                 <span className="text-xs text-red-500 ml-2">
-                  ({errors.featured_photo_url})
+                  (
+                  {errors.featured_photo_url || errors.temp_featured_image_path}
+                  )
                 </span>
               )}
             </Label>
@@ -214,10 +217,10 @@ export function ProductMedia({ data, onChange }: ProductMediaProps) {
             </div>
           )}
 
-          {errors.featured_photo_url && (
+          {(errors.featured_photo_url || errors.temp_featured_image_path) && (
             <div className="flex items-center gap-1 text-xs text-red-500">
               <AlertCircle className="w-3 h-3" />
-              {errors.featured_photo_url}
+              {errors.featured_photo_url || errors.temp_featured_image_path}
             </div>
           )}
         </div>

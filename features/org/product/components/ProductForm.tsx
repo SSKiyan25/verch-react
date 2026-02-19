@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ProductWithDetails, CreateVariationData } from "@/lib/types/product";
+import { Organization } from "@/lib/types/organization";
 import { useProductForm } from "../hooks/useProductForm";
 import { ProductFormHeader } from "./ProductFormHeader";
 import { ProductBasicInfo } from "./ProductBasicInfo";
@@ -13,17 +14,23 @@ import { Save, X } from "lucide-react";
 
 interface ProductFormProps {
   initialData?: ProductWithDetails;
+  // 1. Accept the organization data (pre-fetched by server)
+  organization: Organization;
 }
 
-export function ProductForm({ initialData }: ProductFormProps) {
+export function ProductForm({ initialData, organization }: ProductFormProps) {
   const {
     isEditing,
     isSaving,
     formData,
-    updateFormData, // We use this instead of updateImages
+    updateFormData,
     handleSave,
     handleCancel,
-  } = useProductForm({ initialData });
+  } = useProductForm({
+    initialData,
+    // 2. Pass the ID to the hook so it doesn't need to fetch the user
+    orgId: organization.id,
+  });
 
   const [variations, setVariations] = useState<CreateVariationData[]>([]);
 
@@ -48,7 +55,6 @@ export function ProductForm({ initialData }: ProductFormProps) {
           <ProductBasicInfo data={formData} onChange={updateFormData} />
 
           {/* Step 2: Media/Images */}
-          {/* FIX: Reverted to use data and onChange because ProductMedia handles uploads internally */}
           <ProductMedia data={formData} onChange={updateFormData} />
 
           {/* Step 3: Product Variations*/}
@@ -56,6 +62,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
             variations={variations}
             onChange={setVariations}
             productName={formData.name || "Product"}
+            // 3. Pass the full organization object to calculate commissions instantly
+            organization={organization}
           />
 
           {/* Step 4: Settings & Visibility */}
@@ -76,7 +84,10 @@ export function ProductForm({ initialData }: ProductFormProps) {
           <Button
             onClick={handleSaveWithVariations}
             disabled={
-              isSaving || !formData.name?.trim() || variations.length === 0
+              isSaving ||
+              !formData.name?.trim() ||
+              variations.length === 0 ||
+              !formData.temp_featured_image_path?.trim()
             }
             className="min-w-[120px]"
           >
@@ -84,8 +95,8 @@ export function ProductForm({ initialData }: ProductFormProps) {
             {isSaving
               ? "Saving..."
               : isEditing
-              ? "Update Product"
-              : "Create Product"}
+                ? "Update Product"
+                : "Create Product"}
           </Button>
         </div>
       </div>

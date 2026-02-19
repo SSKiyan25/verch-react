@@ -1,52 +1,59 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
-import { useUser } from "@/lib/hooks/use-user";
+import { getUserSecurityStatus } from "@/app/actions/user-settings";
 
-export function useAdminPasswordCheck() {
-  const [needsPasswordChange, setNeedsPasswordChange] = useState<
-    boolean | null
-  >(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { user, loading: userLoading } = useUser();
+// Define the shape of the data returned by your Server Action
+export type SecurityStatus = Awaited<ReturnType<typeof getUserSecurityStatus>>;
+
+export function useAdminPasswordCheck(initialData?: SecurityStatus) {
+  const [state, setState] = useState({
+    needsPasswordChange: initialData
+      ? initialData.isOrganizationAdmin &&
+        !initialData.hasChangedDefaultPassword
+      : null,
+    isOrganizationAdmin: initialData?.isOrganizationAdmin ?? false,
+    organizationId: initialData?.organizationId ?? undefined,
+    organizationName: initialData?.organizationName ?? null,
+  });
+
+  // If we have data, we aren't loading!
+  const [isLoading, setIsLoading] = useState(!initialData);
 
   useEffect(() => {
-    const checkPasswordChangeRequired = () => {
-      if (userLoading) return;
-      console.log("User loaded:", user);
-      if (!user) {
-        setNeedsPasswordChange(null);
-        setIsLoading(false);
-        return;
+    // If we already have data, skip the effect!
+    if (initialData) return;
+
+    let mounted = true;
+    const checkStatus = async () => {
+      try {
+        setIsLoading(true);
+        const status = await getUserSecurityStatus();
+        if (mounted && status) {
+          setState({
+            isOrganizationAdmin: status.isOrganizationAdmin,
+            organizationId: status.organizationId || undefined,
+            organizationName: status.organizationName,
+            needsPasswordChange:
+              status.isOrganizationAdmin && !status.hasChangedDefaultPassword,
+          });
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (mounted) setIsLoading(false);
       }
-
-      // Only organization admins need to change their default password
-      if (user.role !== "organization_admin") {
-        setNeedsPasswordChange(false);
-        setIsLoading(false);
-        return;
-      }
-
-      // Check if organization admin has changed their default password
-      const hasChangedDefaultPassword =
-        (user as any).has_changed_default_password ?? false;
-
-      setNeedsPasswordChange(!hasChangedDefaultPassword);
-      setIsLoading(false);
     };
-
-    checkPasswordChangeRequired();
-  }, [user, userLoading]);
-
-  const markPasswordChanged = () => {
-    setNeedsPasswordChange(false);
-  };
+    checkStatus();
+    return () => {
+      mounted = false;
+    };
+  }, [initialData]);
 
   return {
-    needsPasswordChange,
+    ...state,
     isLoading,
-    markPasswordChanged,
-    isOrganizationAdmin: user?.role === "organization_admin",
+    markPasswordChanged: () =>
+      setState((prev) => ({ ...prev, needsPasswordChange: false })),
   };
 }

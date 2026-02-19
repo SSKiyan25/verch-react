@@ -1,6 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import { ProductWithDetails } from "@/lib/types/product";
-import { useUser } from "@/lib/hooks/use-user";
+import { getCachedUserOrganization } from "@/app/actions/auth";
 import { useProductPhotos } from "./useProductPhotos";
 
 interface UsePhotosTabControllerProps {
@@ -12,9 +12,42 @@ export function usePhotosTabController({
   product,
   onProductUpdate,
 }: UsePhotosTabControllerProps) {
-  const { user, loading: isUserLoading } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // Organization ID state
+  const [organizationId, setOrganizationId] = useState<string | null>(null);
+  const [isLoadingUser, setIsLoadingUser] = useState(true);
+
+  // 👇 Fetch Org ID via Server Action
+  useEffect(() => {
+    const fetchOrgId = async () => {
+      try {
+        console.log(
+          "[usePhotosTabController] 🔍 Fetching cached organization ID..."
+        );
+        setIsLoadingUser(true);
+
+        // 👇 Call Server Action - leverages Next.js Data Cache
+        const cachedOrgId = await getCachedUserOrganization();
+
+        if (cachedOrgId) {
+          console.log("[usePhotosTabController] ✅ Found Org ID:", cachedOrgId);
+          setOrganizationId(cachedOrgId);
+        } else {
+          console.log("[usePhotosTabController] ⚠️ No Organization ID found.");
+          setOrganizationId(null);
+        }
+      } catch (error) {
+        console.error("[usePhotosTabController] ❌ Error fetching org:", error);
+        setOrganizationId(null);
+      } finally {
+        setIsLoadingUser(false);
+      }
+    };
+
+    fetchOrgId();
+  }, []);
 
   // 1. LOCAL SOURCE OF TRUTH (The Optimistic Fix)
   const [localProduct, setLocalProduct] = useState(product);
@@ -55,14 +88,20 @@ export function usePhotosTabController({
     uploadProgress,
   } = useProductPhotos({
     productId: localProduct.id,
-    organizationId: user?.organization_id || "",
+    organizationId: organizationId || "",
     onPhotoUpdate: (updatedData) => {
+      console.log(
+        "[usePhotosTabController] 📸 Photo update received:",
+        updatedData
+      );
+
       // Update local state BEFORE clearing optimistic
       setLocalProduct((prev) => ({
         ...prev,
         ...updatedData,
       }));
       setOptimisticPhotos(null);
+
       // Pass the full updated product to parent
       onProductUpdate?.({ ...localProduct, ...updatedData });
     },
@@ -94,6 +133,11 @@ export function usePhotosTabController({
   // 5. HANDLERS
   const handleSetFeatured = async (photoUrl: string) => {
     try {
+      console.log(
+        "[usePhotosTabController] 🌟 Setting featured photo:",
+        photoUrl
+      );
+
       const newPhotoUrls = currentPhotos.photo_urls.filter(
         (url) => url !== photoUrl
       );
@@ -112,17 +156,28 @@ export function usePhotosTabController({
         currentPhotos.featured_photo_url || null,
         currentPhotos.photo_urls
       );
+
+      console.log(
+        "[usePhotosTabController] ✅ Featured photo set successfully"
+      );
     } catch (error) {
+      console.error("[usePhotosTabController] ❌ Set featured failed:", error);
       setOptimisticPhotos(null);
-      console.error("Set featured failed:", error);
     }
   };
 
   const handleDeletePhoto = async (photoUrl: string, isFeatured: boolean) => {
-    if (isFeatured && allPhotos.filter((p) => !p.isUploading).length === 1)
+    if (isFeatured && allPhotos.filter((p) => !p.isUploading).length === 1) {
+      console.log("[usePhotosTabController] ⚠️ Cannot delete last photo");
       return;
+    }
 
     try {
+      console.log("[usePhotosTabController] 🗑️ Deleting photo:", {
+        photoUrl,
+        isFeatured,
+      });
+
       if (isFeatured) {
         setOptimisticPhotos({
           featured_photo_url: null,
@@ -145,31 +200,43 @@ export function usePhotosTabController({
         currentPhotos.photo_urls,
         isFeatured
       );
+
+      console.log("[usePhotosTabController] ✅ Photo deleted successfully");
     } catch (error) {
+      console.error("[usePhotosTabController] ❌ Delete photo failed:", error);
       setOptimisticPhotos(null);
-      console.error("Delete photo failed:", error);
     }
   };
 
   const handleFileSelect = async (files: File[]) => {
     if (files.length === 0) return;
+
     try {
+      console.log(
+        "[usePhotosTabController] 📤 Uploading photos:",
+        files.length
+      );
+
       const optimisticUrls = files.map(
         (file, index) => `uploading-${Date.now()}-${index}-${file.name}`
       );
+
       setOptimisticPhotos({
         featured_photo_url: currentPhotos.featured_photo_url,
         photo_urls: currentPhotos.photo_urls,
         uploading: [...currentPhotos.uploading, ...optimisticUrls],
       });
+
       await uploadPhotos(
         files,
         currentPhotos.featured_photo_url || null,
         currentPhotos.photo_urls
       );
+
+      console.log("[usePhotosTabController] ✅ Photos uploaded successfully");
     } catch (error) {
+      console.error("[usePhotosTabController] ❌ Upload failed:", error);
       setOptimisticPhotos(null);
-      console.error("Upload failed:", error);
     }
   };
 
@@ -208,8 +275,8 @@ export function usePhotosTabController({
       uploadProgress,
       isLoading: isOperationLoading,
       // Pass the user loading state or if org ID is missing
-      isInitializing: isUserLoading,
-      hasOrganization: !!user?.organization_id,
+      isInitializing: isLoadingUser,
+      hasOrganization: !!organizationId,
     },
     handlers,
     refs: {

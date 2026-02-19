@@ -8,9 +8,8 @@ import {
   VALIDATION_PATTERNS,
 } from "@/lib/hooks/use-input-validation";
 import { generateSku, validateSku } from "@/lib/utils/sku-generator";
-import { useUser } from "@/lib/hooks/use-user";
-import { useOrganization } from "@/lib/hooks/use-organization";
 import { toast } from "sonner";
+import { Organization } from "@/lib/types/organization";
 
 interface VariationFormData extends Omit<CreateVariationData, "product_id"> {
   attributes: Record<string, string>;
@@ -19,11 +18,10 @@ interface VariationFormData extends Omit<CreateVariationData, "product_id"> {
 export function useProductVariations(
   variations: CreateVariationData[],
   onChange: (variations: CreateVariationData[]) => void,
-  productName: string = "Product"
+  productName: string = "Product",
+  // ⚡ Pass organization directly
+  organization: Organization | null
 ) {
-  const { user } = useUser();
-  const { organization } = useOrganization(user?.organization_id ?? undefined);
-
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [formData, setFormData] = useState<VariationFormData>({
@@ -37,8 +35,11 @@ export function useProductVariations(
   const [newAttrKey, setNewAttrKey] = useState("");
   const [newAttrValue, setNewAttrValue] = useState("");
 
-  // Get commission rate from organization settings
-  const commissionRate = organization?.settings?.commissionRate || 0.05; // Default to 5% if not found
+  // ⚡ Get commission rate directly from passed prop
+  // Note: Ensure your Organization type includes 'settings'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const settings = organization?.settings as any;
+  const commissionRate = settings?.commissionRate || 0.05;
 
   // Validation rules for variation form
   const validationRules = {
@@ -270,7 +271,6 @@ export function useProductVariations(
   };
 
   return {
-    // State
     isDialogOpen,
     setIsDialogOpen,
     editingIndex,
@@ -280,9 +280,7 @@ export function useProductVariations(
     newAttrValue,
     setNewAttrValue,
     errors,
-    commissionRate, // Expose commission rate for display
-
-    // Actions
+    commissionRate,
     handleAdd,
     handleEdit,
     handleSave,

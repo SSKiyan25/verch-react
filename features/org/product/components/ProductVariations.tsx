@@ -15,17 +15,21 @@ import {
 import { CreateVariationData } from "@/lib/types/product";
 import { useProductVariations } from "../hooks/useProductVariations";
 import { VariationModal } from "./VariationModal";
+import { Organization } from "@/lib/types/organization";
 
 interface ProductVariationsProps {
   variations: CreateVariationData[];
   onChange: (variations: CreateVariationData[]) => void;
   productName?: string;
+  // 1. Add organization prop
+  organization: Organization | null;
 }
 
 export function ProductVariations({
   variations,
   onChange,
   productName = "Product",
+  organization, // 2. Destructure organization
 }: ProductVariationsProps) {
   const {
     isDialogOpen,
@@ -48,7 +52,7 @@ export function ProductVariations({
     handleKeyDown,
     removeAttribute,
     calculateFinalPrice,
-  } = useProductVariations(variations, onChange, productName);
+  } = useProductVariations(variations, onChange, productName, organization); // 3. Pass to hook
 
   // Create a wrapper function to bridge the type gap
   const handleFormFieldChangeWrapper = (field: string, value: any) => {
