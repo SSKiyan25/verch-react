@@ -21,43 +21,31 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
-// import { StockManagementDialog } from "./stock/StockManagementDialog";
 import { EditProductModal } from "./edit/EditProductModal";
 
 interface ProductCardProps {
   product: ProductWithDetails;
-  onProductUpdate: (product: ProductWithDetails) => void; // Added Prop
+  onProductUpdate: (product: ProductWithDetails) => void;
 }
 
 export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
   const router = useRouter();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  // const [stockModalOpen, setStockModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false); // Added State
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const lowestPrice =
-    product.variations?.reduce(
-      (min, variation) => Math.min(min, variation.price),
-      Infinity
-    ) || 0;
-
+    product.variations?.reduce((min, v) => Math.min(min, v.price), Infinity) ||
+    0;
   const highestPrice =
-    product.variations?.reduce(
-      (max, variation) => Math.max(max, variation.price),
-      0
-    ) || 0;
+    product.variations?.reduce((max, v) => Math.max(max, v.price), 0) || 0;
 
   const priceDisplay =
     lowestPrice === highestPrice
       ? `₱${lowestPrice.toFixed(2)}`
-      : `₱${lowestPrice.toFixed(2)} - ₱${highestPrice.toFixed(2)}`;
+      : `₱${lowestPrice.toFixed(2)} – ₱${highestPrice.toFixed(2)}`;
 
-  // Calculate total stock across variations
   const totalStock =
-    product.variations?.reduce(
-      (total, variation) => total + variation.available_quantity,
-      0
-    ) || 0;
+    product.variations?.reduce((t, v) => t + v.available_quantity, 0) || 0;
 
   const isLowStock = totalStock < 10 && totalStock > 0;
   const isOutOfStock = totalStock === 0;
@@ -80,26 +68,21 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
   const getStockColor = () => {
     if (isOutOfStock) return "text-red-500";
     if (isLowStock) return "text-amber-500";
-    return "text-emerald-500";
+    return "text-emerald-600";
   };
 
-  // Helper function to format status text
-  const formatStatus = (status: string) => {
-    return status
+  const formatStatus = (status: string) =>
+    status
       .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
       .join(" ");
-  };
-
-  const handleManageStock = () => {
-    router.push(`/org/products/${product.id}/stocks`);
-  };
 
   return (
     <>
-      <Card className="group relative overflow-hidden bg-white border border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-lg">
-        {/* Image Section */}
-        <div className="relative aspect-square overflow-hidden bg-slate-50">
+      {/* h-full so the card stretches to match siblings in the grid row */}
+      <Card className="group relative overflow-hidden bg-white border border-slate-200 hover:border-slate-300 transition-all duration-200 hover:shadow-md flex flex-col h-full">
+        {/* Image — fixed aspect ratio */}
+        <div className="relative aspect-square overflow-hidden bg-slate-50 shrink-0">
           {product.featured_photo_url ? (
             <ImageWithLoading
               src={product.featured_photo_url}
@@ -111,144 +94,132 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
             />
           ) : (
             <div className="w-full h-full bg-slate-100 flex items-center justify-center">
-              <Package className="w-12 h-12 text-slate-400" />
+              <Package className="w-8 h-8 text-slate-300" />
             </div>
           )}
 
-          {/* Floating Actions */}
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="w-8 h-8 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-44">
-                <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
-                  <Eye className="w-4 h-4 mr-2" />
-                  View Details
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Product
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleManageStock}>
-                  <Package className="w-4 h-4 mr-2" />
-                  Manage Stock
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-
-          {/* Status Badge */}
-          <div className="absolute top-3 left-3">
+          {/* Status badge */}
+          <div className="absolute top-2 left-2">
             <Badge
-              className={`${getStatusColor(
-                product.status
-              )} text-xs font-medium border-0`}
+              className={`${getStatusColor(product.status)} text-[10px] px-1.5 py-0 border-0`}
             >
               {formatStatus(product.status)}
             </Badge>
           </div>
 
-          {/* Stock Warning */}
+          {/* Stock warning */}
           {(isOutOfStock || isLowStock) && (
-            <div className="absolute bottom-3 left-3">
-              <Badge variant="destructive" className="text-xs">
-                <AlertTriangle className="w-3 h-3 mr-1" />
+            <div className="absolute bottom-2 left-2">
+              <Badge
+                variant="destructive"
+                className="text-[10px] px-1.5 py-0 gap-0.5"
+              >
+                <AlertTriangle className="w-2.5 h-2.5" />
                 {isOutOfStock ? "Out of Stock" : "Low Stock"}
               </Badge>
             </div>
           )}
+
+          {/* Hover actions */}
+          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon"
+                  variant="secondary"
+                  className="w-7 h-7 bg-white/90 backdrop-blur-sm hover:bg-white shadow-sm"
+                >
+                  <MoreHorizontal className="w-3.5 h-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40">
+                <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
+                  <Eye className="w-3.5 h-3.5 mr-2" /> View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                  <Edit className="w-3.5 h-3.5 mr-2" /> Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() =>
+                    router.push(`/org/products/${product.id}/stocks`)
+                  }
+                >
+                  <Package className="w-3.5 h-3.5 mr-2" /> Manage Stock
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
-        {/* Content */}
-        <CardContent className="p-4 space-y-3">
-          {/* Category */}
-          {product.category && (
-            <Badge variant="outline" className="text-xs text-slate-600">
-              {product.category.name}
-            </Badge>
-          )}
+        {/* Content — flex-1 so it fills remaining card height */}
+        <CardContent className="p-3 flex flex-col flex-1 gap-1.5">
+          {/* Category — fixed min-height so cards without category don't collapse */}
+          <div className="min-h-[16px]">
+            {product.category && (
+              <span className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
+                {product.category.name}
+              </span>
+            )}
+          </div>
 
-          {/* Product Name */}
-          <h3 className="font-semibold text-slate-900 line-clamp-2 leading-snug">
+          {/* Name — fixed 2-line clamp keeps height consistent */}
+          <h3 className="text-sm font-semibold text-slate-900 line-clamp-2 leading-snug min-h-[40px]">
             {product.name}
           </h3>
 
-          {/* Description */}
-          <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed">
-            {product.description || "No description available"}
-          </p>
-
           {/* Price */}
-          <div className="pt-2">
-            <span className="text-xl font-bold text-slate-900">
-              {priceDisplay}
-            </span>
-          </div>
+          <p className="text-sm font-bold text-slate-900">{priceDisplay}</p>
 
-          {/* Stock Info */}
-          <div className="flex items-center justify-between text-sm">
+          {/* Stock + variants */}
+          <div className="flex items-center justify-between text-xs">
             <span className={`font-medium ${getStockColor()}`}>
-              Stock: {totalStock}
+              {isOutOfStock ? "Out of stock" : `${totalStock} in stock`}
             </span>
-            <span className="text-slate-500">
+            <span className="text-slate-400">
               {product.variations?.length || 0} variant
               {product.variations?.length !== 1 ? "s" : ""}
             </span>
           </div>
 
-          {/* Sales Info */}
-          <div className="flex items-center justify-between text-sm text-slate-500 pt-2 border-t border-slate-100">
-            <span>₱{product.total_sales.toLocaleString()} sales</span>
-            <span>{product.total_orders} orders</span>
-          </div>
+          {/* Orders */}
+          <p className="text-[11px] text-slate-400">
+            {product.total_orders} orders
+          </p>
 
-          {/* Actions */}
-          <div className="flex gap-2 pt-3">
+          {/* Buttons */}
+          <div className="flex gap-1.5 mt-auto flex-col md:flex-row pt-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1"
+              className="flex-1 h-7 p-1 text-xs"
               onClick={() => setDetailsModalOpen(true)}
             >
-              <Eye className="w-4 h-4 mr-1" />
-              View
+              <Eye className="w-3 h-3 mr-1" /> View
             </Button>
-            <Button
+            {/* <Button
               variant="outline"
               size="sm"
-              className="flex-1"
-              onClick={handleManageStock}
+              className="flex-1 h-7 p-1 text-xs"
+              onClick={() => router.push(`/org/products/${product.id}/stocks`)}
             >
-              <Package className="w-4 h-4 mr-1" />
-              Stock
-            </Button>
+              <Package className="w-3 h-3 mr-1" /> Stock
+            </Button> */}
           </div>
         </CardContent>
       </Card>
 
-      {/* Modals */}
       <ProductDetailsModal
         product={product}
         open={detailsModalOpen}
         onOpenChange={setDetailsModalOpen}
         onProductUpdate={onProductUpdate}
       />
-
       <EditProductModal
         product={product}
         open={editModalOpen}
         onOpenChange={setEditModalOpen}
         onSave={onProductUpdate}
       />
-
-      {/* Removed StockManagementDialog - now navigates to dedicated page */}
     </>
   );
 }
