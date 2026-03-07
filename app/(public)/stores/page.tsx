@@ -1,8 +1,40 @@
-export default function StoresPage() {
+import { unstable_cache } from "next/cache";
+import { getPublicStores } from "@/lib/supabase/queries/stores";
+import {
+  StoresHeader,
+  StoresSearchBar,
+  StoresGrid,
+  StoresPagination,
+} from "@/features/public/stores";
+
+type Props = {
+  searchParams: Promise<{
+    search?: string;
+    page?: string;
+  }>;
+};
+
+export default async function StoresPage({ searchParams }: Props) {
+  const { search, page: pageParam } = await searchParams;
+  const page = pageParam ? Number(pageParam) : 1;
+
+  const getCachedStores = unstable_cache(
+    () => getPublicStores({ search, page, pageSize: 20 }),
+    ["public-stores", String(page), search ?? ""],
+    { revalidate: 60, tags: ["public-stores"] },
+  );
+
+  const { stores, totalCount, totalPages } = await getCachedStores();
+
   return (
-    <div style={{ padding: 40, textAlign: "center" }}>
-      <h1>Stores Page</h1>
-      <p>This page is under development.</p>
-    </div>
+    <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex flex-col gap-6">
+        <StoresHeader />
+        <StoresSearchBar defaultValue={search} />
+        <hr className="border-gray-300" />
+        <StoresGrid stores={stores} totalCount={totalCount} />
+        <StoresPagination page={page} totalPages={totalPages} />
+      </div>
+    </main>
   );
 }
