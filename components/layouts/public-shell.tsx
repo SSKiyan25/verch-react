@@ -2,7 +2,13 @@
 
 import { SiteHeader } from "@/components/navbar/site-header";
 import { MobileBottomNav } from "@/components/navbar/mobile-bottom-nav";
-import { Home as HomeIcon, ShoppingBag, Store, LogIn } from "lucide-react";
+import {
+  Home as HomeIcon,
+  ShoppingBag,
+  Store,
+  LogIn,
+  ShoppingCart as CartIcon,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +37,7 @@ const mobileIconMap = {
   products: ShoppingBag,
   stores: Store,
   login: LogIn,
+  cart: CartIcon,
 };
 
 interface PublicShellProps {
@@ -132,7 +139,7 @@ export function PublicShell({ children, user }: PublicShellProps) {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/cart" className="cursor-pointer">
+          <Link href="/user/cart" className="cursor-pointer">
             <ShoppingCart className="mr-2 h-4 w-4" />
             <span>Cart</span>
           </Link>
@@ -163,24 +170,34 @@ export function PublicShell({ children, user }: PublicShellProps) {
   const navLinks = [
     {
       label: "Home",
-      icon: "home",
+      icon: "home" as const,
       href: "/",
     },
     {
       label: "Products",
-      icon: "products",
+      icon: "products" as const,
       href: "/products",
     },
     {
       label: "Stores",
-      icon: "stores",
+      icon: "stores" as const,
       href: "/stores",
     },
-    {
-      label: "Login",
-      icon: "login",
-      href: "/login",
-    },
+    ...(user
+      ? [
+          {
+            label: "Cart",
+            icon: "cart" as const,
+            href: "/user/cart",
+          },
+        ]
+      : [
+          {
+            label: "Login",
+            icon: "login" as const,
+            href: "/login",
+          },
+        ]),
   ];
 
   return (

@@ -7,24 +7,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { TermsModal } from "@/features/login/components/TermsModal";
 import { useTermsAcceptance } from "@/features/login/hooks/useTermsAcceptance";
+import { createUserAfterOAuth } from "@/features/login/actions/authActions";
 import { refreshUserCache } from "@/app/actions/cache/user";
+
+type UserProfile = {
+  id: string;
+  role: string;
+  has_agreed_to_terms: boolean;
+};
+
+function getRoleRedirect(role: string): string {
+  switch (role) {
+    case "admin":
+      return "/admin/dashboard";
+    case "organization_admin":
+    case "organization_manager":
+    case "organization_staff":
+      return "/org/dashboard";
+    case "customer":
+      return "/user/dashboard";
+    default:
+      return "/user/dashboard";
+  }
+}
 
 export default function AuthCallbackPage() {
   const router = useRouter();
   const supabase = createClient();
   const [error, setError] = useState<string | null>(null);
   const [needsTerms, setNeedsTerms] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const { acceptTerms, isLoading: termsLoading } = useTermsAcceptance();
 
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        console.log("[Callback] 🔄 Processing authentication...");
         await new Promise((resolve) => setTimeout(resolve, 500));
-        // Get the current session
+
         const {
           data: { session },
           error: sessionError,
@@ -34,60 +54,41 @@ export default function AuthCallbackPage() {
           throw new Error("No session found");
         }
 
-        const userId = session.user.id;
-
-        // Check if user exists
-        const { data: profile, error: profileError } = await supabase
+        // Check if user exists in our users table
+        const { data: existingUser, error: fetchError } = await supabase
           .from("users")
-          .select("*")
-          .eq("id", userId)
+          .select("id, role, has_agreed_to_terms")
+          .eq("id", session.user.id)
           .single();
 
-        if (profileError && profileError.code === "PGRST116") {
-          // New user - create profile
-          console.log("[Callback] 👤 Creating new user...");
+        if (fetchError && fetchError.code === "PGRST116") {
+          // New user — create via Server Action
+          const result = await createUserAfterOAuth(
+            session.user.user_metadata?.full_name ?? "User",
+            session.user.user_metadata?.avatar_url ?? null,
+          );
 
-          const response = await fetch("/api/user", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${session.access_token}`,
-            },
-            body: JSON.stringify({
-              full_name: session.user.user_metadata?.full_name || "User",
-              avatar_url: session.user.user_metadata?.avatar_url || null,
-            }),
-          });
+          if (!result.success) throw new Error(result.error);
 
-          if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || "Failed to create profile");
-          }
-
-          const { data: newUser } = await response.json();
-          setUserProfile(newUser);
+          setUserProfile(result.user);
           setNeedsTerms(true);
           return;
         }
 
-        if (profileError) throw profileError;
+        if (fetchError) throw fetchError;
 
-        setUserProfile(profile);
+        setUserProfile(existingUser);
 
-        // Check terms acceptance
-        if (!profile.has_agreed_to_terms) {
-          console.log("[Callback] ⚠️ Terms acceptance required");
+        if (!existingUser.has_agreed_to_terms) {
           setNeedsTerms(true);
           return;
         }
 
-        // Redirect based on role
-        console.log("[Callback] ✅ Redirecting...");
-        await redirectByRole(profile.role);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      } catch (err: any) {
-        console.error("[Callback] ❌ Error:", err);
-        setError(err.message || "Authentication failed");
+        router.push(getRoleRedirect(existingUser.role));
+      } catch (err: unknown) {
+        const message =
+          err instanceof Error ? err.message : "Authentication failed";
+        setError(message);
         setTimeout(() => router.push("/login"), 3000);
       }
     };
@@ -101,17 +102,9 @@ export default function AuthCallbackPage() {
       const result = await acceptTerms();
 
       if (result.success && userProfile) {
-        // Invalidate cache
         await refreshUserCache(userProfile.id);
-
-        // Update state
-        setUserProfile({ ...userProfile, has_agreed_to_terms: true });
         setNeedsTerms(false);
-
-        // Redirect
-        await new Promise((resolve) => setTimeout(resolve, 300));
-        router.refresh();
-        await redirectByRole(userProfile.role);
+        router.push(getRoleRedirect(userProfile.role));
       }
     } catch (err) {
       console.error("[Terms] Error:", err);
@@ -119,31 +112,10 @@ export default function AuthCallbackPage() {
     }
   };
 
-  const redirectByRole = async (role: string) => {
-    await new Promise((resolve) => setTimeout(resolve, 300));
-    router.refresh();
-
-    switch (role) {
-      case "admin":
-        router.push("/admin/dashboard");
-        break;
-      case "organization_admin":
-      case "organization_manager":
-      case "organization_staff":
-        router.push("/org/dashboard");
-        break;
-      case "customer":
-        router.push("/");
-        break;
-      default:
-        router.push("/");
-    }
-  };
-
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-screen w-full bg-gray-50 p-4">
-        <Card className="w-full max-w-md mx-auto">
+        <Card className="w-full max-w-2xl mx-auto shadow-lg">
           <CardHeader>
             <CardTitle className="text-center text-destructive">
               Authentication Error
@@ -172,8 +144,8 @@ export default function AuthCallbackPage() {
         isLoading={termsLoading}
       />
 
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
-        <Card className="w-full max-w-md mx-auto">
+      <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4 w-full">
+        <Card className="w-full max-w-2xl mx-auto shadow-lg">
           <CardHeader>
             <CardTitle className="text-center">Completing Sign In</CardTitle>
           </CardHeader>

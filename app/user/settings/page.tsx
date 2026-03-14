@@ -1,18 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { redirect } from "next/navigation";
 
-export default function UserSettingsPage() {
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">User Settings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-center text-muted-foreground">
-            This page is currently under development.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+export default function SettingsPage() {
+  redirect("/user/settings/profile");
 }

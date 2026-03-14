@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     domains: [
       new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "").hostname,
       "localhost",
+      "lh3.googleusercontent.com",
     ],
     remotePatterns: [
       {

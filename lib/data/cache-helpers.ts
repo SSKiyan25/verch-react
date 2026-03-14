@@ -1,0 +1,33 @@
+// lib/data/cache-helpers.ts
+
+import { revalidateTag } from "next/cache";
+
+export function invalidateCustomerCache(userId: string) {
+  revalidateTag(`customer-profile-${userId}`, "default");
+  revalidateTag(`customer-user-profile-${userId}`, "default");
+}
+
+export function invalidateUserProfileCache(userId: string) {
+  revalidateTag(`user-profile-data-${userId}`, "default");
+  // Also bust the layout cache since full_name/avatar may have changed
+  revalidateTag(`customer-profile-${userId}`, "default");
+}
+
+export function invalidateAddressesCache(userId: string) {
+  revalidateTag(`user-addresses-${userId}`, "default");
+}
+
+export function invalidateStudentInfoCache(userId: string) {
+  revalidateTag(`student-info-${userId}`, "default");
+  // Bust memberships too — student status is included in that query
+  revalidateTag(`user-memberships-${userId}`, "default");
+}
+
+export function invalidateMembershipsCache(userId: string) {
+  revalidateTag(`user-memberships-${userId}`, "default");
+}
+
+// Invalidate cache for public stores when org or product changes
+export function invalidatePublicStoresCache() {
+  revalidateTag("public-stores", "default");
+}

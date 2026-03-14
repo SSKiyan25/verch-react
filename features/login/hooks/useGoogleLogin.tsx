@@ -1,13 +1,21 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { createUserAfterOAuth } from "@/features/login/actions/authActions";
+
+type UserProfile = {
+  id: string;
+  role: string;
+  has_agreed_to_terms: boolean;
+};
 
 export function useGoogleLogin() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsTermsAcceptance, setNeedsTermsAcceptance] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -16,10 +24,7 @@ export function useGoogleLogin() {
       setIsLoading(true);
       setError(null);
 
-      console.log("[Google Auth] 🔄 Starting Google sign-in...");
-
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { data, error: authError } = await supabase.auth.signInWithOAuth({
+      const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
@@ -30,16 +35,12 @@ export function useGoogleLogin() {
         },
       });
 
-      if (authError) {
-        console.error("[Google Auth] ❌ OAuth error:", authError);
-        throw authError;
-      }
-
-      console.log("[Google Auth] ✅ Redirecting to Google...");
-      // Note: User will be redirected to Google, then back to callback
-    } catch (err: any) {
-      console.error("[Google Auth] ❌ Error:", err);
-      setError(err.message || "Failed to sign in with Google");
+      if (authError) throw authError;
+      // User is being redirected — don't set loading false
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to sign in with Google";
+      setError(message);
       setIsLoading(false);
     }
   };
@@ -49,9 +50,6 @@ export function useGoogleLogin() {
       setIsLoading(true);
       setError(null);
 
-      console.log("[Google Auth] 🔄 Processing callback...");
-
-      // Get the current session
       const {
         data: { session },
         error: sessionError,
@@ -61,74 +59,50 @@ export function useGoogleLogin() {
         throw new Error("No session found after Google sign-in");
       }
 
-      const userId = session.user.id;
-
-      // Check if user exists in our database
-      const { data: profile, error: profileError } = await supabase
+      // Check if user already exists in our users table
+      const { data: existingUser, error: fetchError } = await supabase
         .from("users")
-        .select("*")
-        .eq("id", userId)
+        .select("id, role, has_agreed_to_terms")
+        .eq("id", session.user.id)
         .single();
 
-      if (profileError && profileError.code === "PGRST116") {
-        // User doesn't exist, create new user
-        console.log("[Google Auth] 👤 New user, creating profile...");
+      if (fetchError && fetchError.code === "PGRST116") {
+        // New user — create via Server Action (also creates user_profiles)
+        const result = await createUserAfterOAuth(
+          session.user.user_metadata?.full_name ?? "User",
+          session.user.user_metadata?.avatar_url ?? null,
+        );
 
-        const response = await fetch("/api/user", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            full_name: session.user.user_metadata?.full_name || "User",
-            avatar_url: session.user.user_metadata?.avatar_url || null,
-          }),
-        });
+        if (!result.success) throw new Error(result.error);
 
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "Failed to create user profile");
-        }
-
-        const { data: newUser } = await response.json();
-        setUserProfile(newUser);
-
-        // New users must accept terms
-        console.log("[Google Auth] ⚠️ User needs to accept terms");
+        setUserProfile(result.user);
         setNeedsTermsAcceptance(true);
         setIsLoading(false);
         return;
       }
 
-      if (profileError) {
-        throw profileError;
-      }
+      if (fetchError) throw fetchError;
 
-      // Existing user
-      setUserProfile(profile);
+      setUserProfile(existingUser);
 
-      // Check if they need to accept terms
-      if (!profile.has_agreed_to_terms) {
-        console.log("[Google Auth] ⚠️ User needs to accept terms");
+      if (!existingUser.has_agreed_to_terms) {
         setNeedsTermsAcceptance(true);
         setIsLoading(false);
         return;
       }
 
-      // All good, redirect based on role
-      console.log("[Google Auth] ✅ Complete, redirecting...");
-      await proceedWithRedirect(profile.role);
-    } catch (err: any) {
-      console.error("[Google Auth] ❌ Callback error:", err);
-      setError(err.message || "Failed to complete Google sign-in");
+      await proceedWithRedirect(existingUser.role);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to complete Google sign-in";
+      setError(message);
       setIsLoading(false);
     }
   };
 
   const proceedWithRedirect = async (role: string) => {
-    console.log(`[Redirect] 🚀 Redirecting for role: ${role}`);
-
     await new Promise((resolve) => setTimeout(resolve, 300));
     router.refresh();
 

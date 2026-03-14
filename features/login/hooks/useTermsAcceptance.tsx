@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { acceptTerms as acceptTermsAction } from "@/features/login/actions/authActions";
 
 export function useTermsAcceptance() {
   const [isLoading, setIsLoading] = useState(false);
@@ -16,36 +16,21 @@ export function useTermsAcceptance() {
       setIsLoading(true);
       setError(null);
 
-      // Get the current session to include auth headers
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const result = await acceptTermsAction();
 
-      if (!session) {
-        throw new Error("No active session found");
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      const response = await fetch("/api/user/accept-terms", {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        credentials: "include", // Include cookies
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to accept terms");
-      }
-
-      // Refresh the user session to get updated data
+      // Refresh the client session so downstream reads see the updated flag
       await supabase.auth.refreshSession();
 
       return { success: true };
-    } catch (err: any) {
-      setError(err.message);
-      return { success: false, error: err.message };
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : "Failed to accept terms";
+      setError(message);
+      return { success: false, error: message };
     } finally {
       setIsLoading(false);
     }
@@ -54,11 +39,8 @@ export function useTermsAcceptance() {
   const signOut = useCallback(async () => {
     try {
       await supabase.auth.signOut();
-      // Redirect to home page instead of login to avoid redirect loop
       router.replace("/");
-    } catch (err) {
-      console.error("Error signing out:", err);
-      // Fallback redirect
+    } catch {
       router.replace("/");
     }
   }, [supabase, router]);
