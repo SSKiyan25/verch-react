@@ -8,19 +8,14 @@ type SelectedAttributes = Record<string, string>;
 export type SheetMode = "cart" | "preorder";
 
 type UseProductVariantReturn = {
-  selectedAttributes: SelectedAttributes;
   selectedVariation: PublicProductVariationDetail | null;
   normalizedVariations: PublicProductVariationDetail[];
-  setAttribute: (key: string, value: string) => void;
   selectVariation: (variation: PublicProductVariationDetail) => void;
-  isAttributeAvailable: (key: string, value: string) => boolean;
-  resetSelection: () => void;
   isSheetOpen: boolean;
   sheetMode: SheetMode | null;
   openSheetForCart: () => void;
   openSheetForPreOrder: () => void;
   closeSheet: () => void;
-  confirmSelection: () => void;
 };
 
 /**
@@ -53,17 +48,6 @@ export function useProductVariant(
     [variations],
   );
 
-  const setAttribute = useCallback((key: string, value: string) => {
-    setSelectedAttributes((prev) => {
-      if (prev[key] === value) {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      }
-      return { ...prev, [key]: value };
-    });
-  }, []);
-
   /**
    * Atomically select an entire variation by replacing the attribute map with
    * that variation's attributes. Clicking the already-selected variation
@@ -83,10 +67,6 @@ export function useProductVariant(
     [],
   );
 
-  const resetSelection = useCallback(() => {
-    setSelectedAttributes({});
-  }, []);
-
   const selectedVariation = useMemo<PublicProductVariationDetail | null>(() => {
     const keys = Object.keys(selectedAttributes);
     if (keys.length === 0) return null;
@@ -99,42 +79,26 @@ export function useProductVariant(
     );
   }, [normalizedVariations, selectedAttributes]);
 
-  const isAttributeAvailable = useCallback(
-    (key: string, value: string): boolean => {
-      const hypothetical = { ...selectedAttributes, [key]: value };
-      return normalizedVariations.some((v) =>
-        Object.entries(hypothetical).every(
-          ([k, val]) => v.attributes[k] === val,
-        ),
-      );
-    },
-    [normalizedVariations, selectedAttributes],
-  );
-
   const openSheetForCart = useCallback(() => {
     setSheetMode("cart");
     setIsSheetOpen(true);
   }, []);
+
   const openSheetForPreOrder = useCallback(() => {
     setSheetMode("preorder");
     setIsSheetOpen(true);
   }, []);
+
   const closeSheet = useCallback(() => setIsSheetOpen(false), []);
-  const confirmSelection = useCallback(() => setIsSheetOpen(false), []);
 
   return {
-    selectedAttributes,
     selectedVariation,
     normalizedVariations,
-    setAttribute,
     selectVariation,
-    isAttributeAvailable,
-    resetSelection,
     isSheetOpen,
     sheetMode,
     openSheetForCart,
     openSheetForPreOrder,
     closeSheet,
-    confirmSelection,
   };
 }

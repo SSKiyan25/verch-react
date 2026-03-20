@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PublicShell } from "@/components/layouts/public-shell";
 import { getCachedUserProfile } from "@/lib/data/user";
+import { getCachedCartCount } from "@/lib/data/cart";
 
 export default async function PublicLayout({
   children,
@@ -43,5 +44,11 @@ export default async function PublicLayout({
     }
   }
 
-  return <PublicShell user={currentUser}>{children}</PublicShell>;
+  const cartCount = authUser ? await getCachedCartCount(authUser.id) : 0;
+
+  return (
+    <PublicShell user={currentUser} cartCount={cartCount}>
+      {children}
+    </PublicShell>
+  );
 }

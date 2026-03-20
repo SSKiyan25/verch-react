@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UserShell } from "@/components/layouts/user-shell";
 import { getCachedCustomerProfile } from "@/lib/data/user-customer";
+import { getCachedCartCount } from "@/lib/data/cart";
 
 export default async function UserLayout({
   children,
@@ -54,10 +55,13 @@ export default async function UserLayout({
     role: profile.role,
   };
 
+  const cartCount = await getCachedCartCount(authUser.id);
+
   return (
     <UserShell
       user={currentUser}
       hasCompletedOnboarding={hasCompletedOnboarding}
+      cartCount={cartCount}
     >
       {children}
     </UserShell>

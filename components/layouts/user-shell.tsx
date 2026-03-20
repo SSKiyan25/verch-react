@@ -29,6 +29,8 @@ import {
   Settings,
   Store,
 } from "lucide-react";
+import { useCartStore } from "@/lib/stores/cart-store";
+import { CartBadge } from "@/components/navbar/cart-badge";
 
 const userNavItems = [
   {
@@ -85,15 +87,25 @@ interface UserShellProps {
     role: string;
   };
   hasCompletedOnboarding: boolean;
+  cartCount: number;
 }
 
 export function UserShell({
   children,
   user,
   hasCompletedOnboarding,
+  cartCount,
 }: UserShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const setCount = useCartStore((s) => s.setCount);
+
+  // Seed store with server value on mount and whenever server revalidates
+  useEffect(() => {
+    setCount(cartCount);
+  }, [cartCount, setCount]);
+
+  console.log("UserShell render - cartCount:", cartCount);
 
   // Gate: if onboarding incomplete, only allow /user/settings/contact
   useEffect(() => {
@@ -197,6 +209,16 @@ export function UserShell({
               </BreadcrumbList>
             </Breadcrumb>
           </div>
+
+          {/* Cart icon — always visible; UserShell is only rendered for authenticated users */}
+          <Link
+            href="/user/cart"
+            aria-label="Cart"
+            className="relative ml-auto inline-flex items-center justify-center rounded-md p-2 text-secondary-foreground hover:bg-secondary-foreground/10 transition-colors"
+          >
+            <ShoppingCart className="h-5 w-5" />
+            <CartBadge />
+          </Link>
         </header>
 
         <div className="flex flex-1 flex-col gap-4 p-4 pb-20 md:p-8 md:pb-4">

@@ -46,7 +46,7 @@ export function NavMain({ items, iconMap }: NavMainProps) {
                   tooltip={item.title}
                   className={`transition-colors py-2.5 w-full ${
                     isActive
-                      ? "bg-sidebar-accent/30 text-sidebar-accent-foreground"
+                      ? "bg-sidebar-accent/30 text-sidebar-accent-foreground hover:bg-sidebar-accent/30"
                       : "hover:bg-sidebar-accent/20 text-sidebar-foreground/80 hover:text-sidebar-foreground"
                   }`}
                 >

@@ -1,25 +1,29 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import type { PublicProductDetail } from "@/lib/supabase/queries/products";
 import { useProductVariant } from "../hooks/useProductVariant";
-import { usePreOrder } from "../hooks/usePreOrder";
+import { useAddToCart } from "../hooks/useAddToCart";
 import { ProductBreadcrumb } from "./ProductBreadcrumb";
 import { ProductImageGallery } from "./ProductImageGallery";
 import { ProductInfo } from "./ProductInfo";
-import { ProductVariantSelector } from "./ProductVariantSelector";
+import { ProductVariantCards } from "./ProductVariantCards";
 import { ProductVariantSheet } from "./ProductVariantSheet";
 import { ProductActions } from "./ProductActions";
 import { ProductOrganizationCard } from "./ProductOrganizationCard";
 import { ProductSupplierCard } from "./ProductSupplierCard";
-import { ProductPreOrderModal } from "./ProductPreOrderModal";
+import { MiniCartDrawer, type MiniCartInfo } from "./MiniCartDrawer";
 
 type ProductDetailProps = {
   product: PublicProductDetail;
+  isAuthenticated: boolean;
 };
 
-export function ProductDetail({ product }: ProductDetailProps) {
+export function ProductDetail({
+  product,
+  isAuthenticated,
+}: ProductDetailProps) {
   const {
     selectedVariation,
     normalizedVariations,
@@ -29,19 +33,42 @@ export function ProductDetail({ product }: ProductDetailProps) {
     openSheetForCart,
     openSheetForPreOrder,
     closeSheet,
-    confirmSelection,
   } = useProductVariant(product.variations);
 
-  const preOrderState = usePreOrder();
+  const { addToCart, isPending } = useAddToCart(isAuthenticated);
+
+  const [miniCartOpen, setMiniCartOpen] = useState(false);
+  const [miniCartInfo, setMiniCartInfo] = useState<MiniCartInfo | null>(null);
+
+  const hasPurchasableVariations = useMemo(
+    () => normalizedVariations.some((v) => v.is_available),
+    [normalizedVariations],
+  );
 
   /** Called when the sheet's action button is clicked */
-  const handleSheetConfirm = useCallback(() => {
-    confirmSelection();
-    if (sheetMode === "preorder") {
-      preOrderState.openModal();
-    }
-    // 'cart' mode: add-to-cart logic will go here in the future
-  }, [confirmSelection, sheetMode, preOrderState]);
+  const handleSheetConfirm = useCallback(
+    async (quantity: number) => {
+      if (!selectedVariation) return;
+      const success = await addToCart(
+        selectedVariation.id,
+        quantity,
+        sheetMode === "preorder",
+      );
+      if (success) {
+        closeSheet();
+        setMiniCartInfo({
+          productName: product.name,
+          variationName: selectedVariation.variation_name ?? "Variant",
+          unitPrice: selectedVariation.price,
+          quantity,
+          imageUrl: product.featured_photo_url,
+          upsertResult: success.result,
+        });
+        setMiniCartOpen(true);
+      }
+    },
+    [closeSheet, selectedVariation, addToCart, product, sheetMode],
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -77,18 +104,19 @@ export function ProductDetail({ product }: ProductDetailProps) {
             <div className="flex flex-col gap-5 rounded-xl border bg-card p-5 shadow-sm">
               {normalizedVariations.length > 0 && (
                 <>
-                  <ProductVariantSelector
+                  <ProductVariantCards
                     variations={normalizedVariations}
                     selectedVariation={selectedVariation}
-                    selectVariation={selectVariation}
+                    onSelectVariation={selectVariation}
                   />
                   <Separator />
                 </>
               )}
 
               <ProductActions
-                selectedVariation={selectedVariation}
                 canPreOrder={product.can_pre_order}
+                hasPurchasableVariations={hasPurchasableVariations}
+                isPending={isPending}
                 onAddToCart={openSheetForCart}
                 onPreOrder={openSheetForPreOrder}
               />
@@ -113,33 +141,22 @@ export function ProductDetail({ product }: ProductDetailProps) {
         </div>
       </div>
 
-      {/* Variant selection sheet */}
-      {normalizedVariations.length > 0 && (
-        <ProductVariantSheet
-          open={isSheetOpen}
-          onOpenChange={(open) => !open && closeSheet()}
-          mode={sheetMode}
-          variations={normalizedVariations}
-          selectedVariation={selectedVariation}
-          onSelectVariation={selectVariation}
-          onConfirm={handleSheetConfirm}
-        />
-      )}
-
-      {/* Pre-order modal — opened after sheet confirm when mode=preorder */}
-      <ProductPreOrderModal
-        open={preOrderState.isOpen}
-        onOpenChange={(val) => {
-          if (!val) preOrderState.closeModal();
-        }}
-        product={{
-          id: product.id,
-          name: product.name,
-          featured_photo_url: product.featured_photo_url,
-          organization_name: product.organization_name,
-        }}
+      {/* Variant sheet — confirm selected variant + quantity */}
+      <ProductVariantSheet
+        open={isSheetOpen}
+        onOpenChange={(open) => !open && closeSheet()}
+        mode={sheetMode}
+        variations={normalizedVariations}
         selectedVariation={selectedVariation}
-        preOrderState={preOrderState}
+        onSelectVariation={selectVariation}
+        onConfirm={handleSheetConfirm}
+      />
+
+      {/* Mini cart drawer — shown after successful add to cart */}
+      <MiniCartDrawer
+        open={miniCartOpen}
+        onOpenChange={setMiniCartOpen}
+        info={miniCartInfo}
       />
     </div>
   );

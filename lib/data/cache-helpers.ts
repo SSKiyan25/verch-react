@@ -31,3 +31,27 @@ export function invalidateMembershipsCache(userId: string) {
 export function invalidatePublicStoresCache() {
   revalidateTag("public-stores", "default");
 }
+
+// ─── Orders cache helpers ─────────────────────────────────────────────────────
+
+export function invalidateUserOrdersCache(userId: string) {
+  revalidateTag(`orders-${userId}`, "default");
+}
+
+export function invalidateOrderCache(
+  orderId: string,
+  userId: string,
+  orgId: string,
+) {
+  revalidateTag(`order-${orderId}`, "default");
+  revalidateTag(`orders-${userId}`, "default");
+  revalidateTag(`org-orders-${orgId}`, "default");
+}
+
+export function invalidateOrgOrdersCache(orgId: string) {
+  revalidateTag(`org-orders-${orgId}`, "default");
+}
+
+export function invalidateCartCache(userId: string) {
+  revalidateTag(`cart-${userId}`, "default");
+}

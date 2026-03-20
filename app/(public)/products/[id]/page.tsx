@@ -4,6 +4,7 @@ import {
   getPublicProducts,
 } from "@/lib/supabase/queries/products";
 import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { ProductDetail } from "@/features/public/product";
 import { OrgProductsSection } from "@/features/public/product/components/OrgProductsSection";
 import { ProductReviews } from "@/features/public/product/components/ProductReviews";
@@ -14,6 +15,13 @@ type Props = {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
+
+  // Check auth state (public page — no redirect, just pass boolean down)
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const isAuthenticated = !!user;
 
   const getCachedProduct = unstable_cache(
     () => getPublicProductById(id),
@@ -35,7 +43,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
   return (
     <>
-      <ProductDetail product={product} />
+      <ProductDetail product={product} isAuthenticated={isAuthenticated} />
       <hr className="my-8 max-w-6xl mx-auto border-gray-300" />
       <div className="mx-auto max-w-6xl px-4 py-8 space-y-12 sm:px-6 lg:px-8">
         <OrgProductsSection

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
@@ -14,6 +15,7 @@ import {
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { PublicProductVariationDetail } from "@/lib/supabase/queries/products";
 import type { SheetMode } from "../hooks/useProductVariant";
+import { getStockLabel } from "../utils/stockLabel";
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-PH", {
@@ -23,17 +25,13 @@ function formatPrice(amount: number): string {
   }).format(amount);
 }
 
-function getStockLabel(v: PublicProductVariationDetail) {
-  if (!v.is_available)
-    return { text: "Unavailable", cls: "text-muted-foreground" };
-  if (v.available_quantity === 0) {
-    if (v.pre_order_quantity > 0)
-      return { text: "Pre-order", cls: "text-amber-600" };
-    return { text: "Out of stock", cls: "text-destructive" };
-  }
-  if (v.available_quantity <= 10)
-    return { text: `${v.available_quantity} left`, cls: "text-amber-600" };
-  return { text: "In stock", cls: "text-emerald-600" };
+function isVariantSelectable(
+  variation: PublicProductVariationDetail,
+  mode: SheetMode | null,
+): boolean {
+  if (!variation.is_available) return false; // never selectable regardless of mode
+  if (mode === "preorder") return true; // available + any stock state = selectable for preorder
+  return variation.available_quantity > 0; // add mode: must have stock
 }
 
 type Props = {
@@ -43,7 +41,7 @@ type Props = {
   variations: PublicProductVariationDetail[];
   selectedVariation: PublicProductVariationDetail | null;
   onSelectVariation: (variation: PublicProductVariationDetail) => void;
-  onConfirm: () => void;
+  onConfirm: (quantity: number) => void;
 };
 
 export function ProductVariantSheet({
@@ -57,6 +55,7 @@ export function ProductVariantSheet({
 }: Props) {
   const isMobile = useIsMobile();
   const [quantity, setQuantity] = useState(1);
+  const [inputDraft, setInputDraft] = useState("1");
   const [prevVariationId, setPrevVariationId] = useState<string | undefined>(
     selectedVariation?.id,
   );
@@ -65,20 +64,54 @@ export function ProductVariantSheet({
   if (prevVariationId !== selectedVariation?.id) {
     setPrevVariationId(selectedVariation?.id);
     setQuantity(1);
+    setInputDraft("1");
   }
-
-  const maxQty =
-    selectedVariation && selectedVariation.available_quantity > 0
-      ? selectedVariation.available_quantity
-      : 1;
 
   const isOutOfStock =
     selectedVariation !== null && selectedVariation.available_quantity === 0;
 
+  const maxQty =
+    mode === "preorder"
+      ? 1000
+      : selectedVariation && selectedVariation.available_quantity > 0
+        ? selectedVariation.available_quantity
+        : 1;
+
   const canConfirm =
-    !!selectedVariation &&
-    selectedVariation.is_available &&
-    (!isOutOfStock || selectedVariation.pre_order_quantity > 0);
+    mode === "preorder"
+      ? !!selectedVariation && selectedVariation.is_available
+      : !!selectedVariation &&
+        selectedVariation.is_available &&
+        selectedVariation.available_quantity > 0;
+
+  const draftNum = parseInt(inputDraft, 10);
+  const qtyWarning =
+    inputDraft === "" || isNaN(draftNum)
+      ? "Please enter a valid quantity."
+      : draftNum < 1
+        ? "Quantity must be at least 1."
+        : draftNum > maxQty
+          ? `Maximum quantity is ${maxQty.toLocaleString()}.`
+          : null;
+
+  const commitDraft = () => {
+    const parsed = parseInt(inputDraft, 10);
+    const clamped = isNaN(parsed) ? 1 : Math.min(maxQty, Math.max(1, parsed));
+    setQuantity(clamped);
+    setInputDraft(String(clamped));
+  };
+
+  const handleDecrement = () => {
+    const next = Math.max(1, quantity - 1);
+    setQuantity(next);
+    setInputDraft(String(next));
+  };
+
+  const handleIncrement = () => {
+    const next = Math.min(maxQty, quantity + 1);
+    setQuantity(next);
+    setInputDraft(String(next));
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -92,99 +125,69 @@ export function ProductVariantSheet({
         {/* Header */}
         <SheetHeader className="px-5 pt-5 pb-3 shrink-0">
           <SheetTitle>
-            {mode === "preorder"
-              ? "Choose Variant to Pre-order"
-              : "Choose Variant"}
+            {mode === "preorder" ? "Pre-order" : "Add to Cart"}
           </SheetTitle>
         </SheetHeader>
         <Separator className="shrink-0" />
+        {/* Hint */}
+        <p className="px-5 pt-3 pb-1 text-xs text-muted-foreground shrink-0">
+          Select a variant to see details and confirm your order.
+        </p>
 
         {/* Scrollable body */}
         <div className="flex-1 overflow-y-auto">
-          {/* Unified variation list */}
+          {/* Variant list */}
           <div className="divide-y divide-border border-b">
             {variations.map((variation) => {
+              const selectable = isVariantSelectable(variation, mode);
               const isSelected = selectedVariation?.id === variation.id;
-              const unavailable = !variation.is_available;
-              const stock = getStockLabel(variation);
-
-              const customAttributes = Object.entries(
-                variation.attributes,
-              ).filter(([k]) => k !== "Variant");
+              const stockLabel = getStockLabel(variation);
+              const variantLabel =
+                variation.variation_name ??
+                Object.entries(variation.attributes)
+                  .map(([k, v]) => (k === "Variant" ? v : `${k}: ${v}`))
+                  .join(" · ");
 
               return (
                 <button
                   key={variation.id}
                   type="button"
-                  onClick={() => !unavailable && onSelectVariation(variation)}
-                  disabled={unavailable}
-                  aria-pressed={isSelected}
+                  disabled={!selectable}
+                  onClick={() => selectable && onSelectVariation(variation)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-5 py-3 text-left transition-colors",
-                    "focus-visible:outline-none focus-visible:ring-inset focus-visible:ring-2 focus-visible:ring-ring",
-                    isSelected
-                      ? "bg-primary/8 border-l-[3px] border-l-primary"
-                      : unavailable
-                        ? "cursor-not-allowed bg-muted/20 opacity-50"
-                        : "bg-background hover:bg-muted/40",
+                    "w-full px-5 py-3 text-left transition-colors",
+                    selectable
+                      ? "hover:bg-muted/50 cursor-pointer"
+                      : "opacity-50 cursor-not-allowed",
+                    isSelected &&
+                      "border-l-[3px] border-l-primary bg-primary/[0.08]",
+                    !isSelected && "border-l-[3px] border-l-transparent",
                   )}
                 >
-                  {/* Radio dot */}
-                  <span
-                    className={cn(
-                      "shrink-0 h-4 w-4 rounded-full border-2 transition-colors",
-                      isSelected
-                        ? "border-primary bg-primary"
-                        : "border-muted-foreground/40 bg-transparent",
-                    )}
-                  />
-
-                  {/* Name + attribute chips */}
-                  <span className="flex-1 min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                    <span
-                      className={cn(
-                        "text-sm font-medium leading-tight",
-                        isSelected ? "text-primary" : "text-foreground",
-                      )}
-                    >
-                      {variation.variation_name ?? "Variant"}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-foreground truncate">
+                      {variantLabel}
                     </span>
-                    {customAttributes.map(([key, val]) => (
-                      <span
-                        key={key}
-                        className="inline-flex items-center rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground whitespace-nowrap"
-                      >
-                        <span className="font-medium text-foreground/60">
-                          {key}:
-                        </span>
-                        &nbsp;{val}
-                      </span>
-                    ))}
-                  </span>
-
-                  {/* Price + stock */}
-                  <span className="shrink-0 flex flex-col items-end gap-px">
-                    <span
-                      className={cn(
-                        "text-sm font-bold tabular-nums leading-tight",
-                        isSelected ? "text-primary" : "text-foreground",
-                      )}
-                    >
-                      {formatPrice(variation.price)}
+                    <span className={cn("text-xs shrink-0", stockLabel.cls)}>
+                      {stockLabel.text}
                     </span>
-                    <span
-                      className={cn(
-                        "text-[10px] font-medium leading-tight",
-                        stock.cls,
-                      )}
-                    >
-                      {stock.text}
-                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {formatPrice(variation.price)}
                   </span>
                 </button>
               );
             })}
           </div>
+
+          {/* Hint when selected variant is unavailable in cart mode */}
+          {mode === "cart" &&
+            selectedVariation &&
+            !isVariantSelectable(selectedVariation, mode) && (
+              <p className="px-5 pt-3 text-xs text-destructive">
+                Your selected variant is unavailable. Please choose another.
+              </p>
+            )}
 
           {/* Selected variation summary + quantity */}
           {selectedVariation && (
@@ -207,46 +210,77 @@ export function ProductVariantSheet({
                   <span className="text-lg font-bold text-primary">
                     {formatPrice(selectedVariation.price)}
                   </span>
+                  <span className="text-xs text-muted-foreground">each</span>
                 </div>
                 {selectedVariation.sku && (
                   <p className="text-[11px] text-muted-foreground/60">
                     SKU: {selectedVariation.sku}
                   </p>
                 )}
+                {/* Subtotal */}
+                {(!isOutOfStock || mode === "preorder") && (
+                  <div className="flex items-center justify-between pt-1.5 mt-1 border-t border-border/50">
+                    <span className="text-xs text-muted-foreground">
+                      Subtotal ({quantity}×)
+                    </span>
+                    <span className="text-sm font-bold text-primary tabular-nums">
+                      {formatPrice(selectedVariation.price * quantity)}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Quantity stepper — only for in-stock items */}
-              {!isOutOfStock && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Quantity</span>
-                  <div className="flex items-center gap-1 rounded-md border">
-                    <button
-                      type="button"
-                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                      disabled={quantity <= 1}
-                      className="flex h-8 w-8 items-center justify-center rounded-l-md transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Decrease quantity"
-                    >
-                      <Minus className="h-3.5 w-3.5" />
-                    </button>
-                    <span className="min-w-[2.5rem] text-center text-sm font-medium tabular-nums">
-                      {quantity}
+              {/* Quantity stepper — for in-stock items and pre-orders */}
+              {(!isOutOfStock || mode === "preorder") && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium shrink-0">
+                      Quantity
                     </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setQuantity((q) => Math.min(maxQty, q + 1))
-                      }
-                      disabled={quantity >= maxQty}
-                      className="flex h-8 w-8 items-center justify-center rounded-r-md transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Increase quantity"
+                    <div
+                      className={cn(
+                        "flex items-center rounded-md border overflow-hidden transition-colors",
+                        qtyWarning && "border-destructive",
+                      )}
                     >
-                      <Plus className="h-3.5 w-3.5" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleDecrement}
+                        disabled={quantity <= 1}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={1}
+                        max={maxQty}
+                        value={inputDraft}
+                        onChange={(e) => setInputDraft(e.target.value)}
+                        onBlur={commitDraft}
+                        onKeyDown={(e) => e.key === "Enter" && commitDraft()}
+                        className="h-8 w-14 rounded-none border-0 border-x text-center text-sm font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none focus-visible:ring-0 focus-visible:ring-offset-0 shadow-none"
+                        aria-label="Quantity"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleIncrement}
+                        disabled={quantity >= maxQty}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      Max {maxQty.toLocaleString()}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    Max {maxQty}
-                  </span>
+                  {qtyWarning && (
+                    <p className="text-xs text-destructive">{qtyWarning}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -255,11 +289,15 @@ export function ProductVariantSheet({
 
         {/* Sticky footer */}
         <div className="shrink-0 border-t bg-background px-5 py-4">
-          <Button className="w-full" disabled={!canConfirm} onClick={onConfirm}>
+          <Button
+            className="w-full"
+            disabled={!selectedVariation || !canConfirm || !!qtyWarning}
+            onClick={() => onConfirm(quantity)}
+          >
             {!selectedVariation
               ? "Select a variant to continue"
               : mode === "preorder"
-                ? "Pre-order"
+                ? "Confirm Pre-order"
                 : "Add to Cart"}
           </Button>
         </div>
