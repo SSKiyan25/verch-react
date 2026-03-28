@@ -55,3 +55,17 @@ export function invalidateOrgOrdersCache(orgId: string) {
 export function invalidateCartCache(userId: string) {
   revalidateTag(`cart-${userId}`, "default");
 }
+
+// --- Org settings cache ---
+
+export function invalidateOrgSettingsCache(orgId: string): void {
+  revalidateTag(`org-settings-${orgId}`, "default");
+}
+
+export function invalidateOrgProfileCache(orgId: string): void {
+  revalidateTag(`org-profile-${orgId}`, "default");
+}
+
+export function invalidateOrgImagesCache(orgId: string): void {
+  revalidateTag(`org-images-${orgId}`, "default");
+}

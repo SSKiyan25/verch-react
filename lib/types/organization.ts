@@ -40,6 +40,11 @@ export interface Organization {
     commissionRate: number;
     autoAcceptOrders: boolean;
     requireOrderApproval: boolean;
+    gcash?: {
+      number: string;
+      accountName: string;
+      qrImagePath?: string | null;
+    };
   };
 
   // Financials (simplified, matching your DB structure)
@@ -84,8 +89,9 @@ export interface CreateOrganizationData {
 }
 
 // For updating organizations (all fields optional except id)
-export interface UpdateOrganizationData
-  extends Partial<Omit<Organization, "id">> {
+export interface UpdateOrganizationData extends Partial<
+  Omit<Organization, "id">
+> {
   id: string;
 }
 

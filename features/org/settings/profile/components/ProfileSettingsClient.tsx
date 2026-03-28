@@ -26,7 +26,6 @@ export default function ProfileSettingsClient({
     organization,
     isLoading: orgLoading,
     error: orgError,
-    handleOrganizationUpdate,
     clearError,
   } = useOrganization(organizationId, initialOrganization);
 
@@ -62,17 +61,17 @@ export default function ProfileSettingsClient({
   // 4. Update Handlers
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleBasicInfoUpdate = async (data: any) => {
-    await updateBasicInfo(data, handleOrganizationUpdate);
+    await updateBasicInfo(data);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleAddressUpdate = async (data: any) => {
-    await updateAddress(data, handleOrganizationUpdate);
+    await updateAddress(data);
   };
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleImagesUpdate = async (data: any) => {
-    await updateImages(data, handleOrganizationUpdate);
+    await updateImages(data);
   };
 
   // --- RENDER ---

@@ -1,6 +1,10 @@
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Organization } from "@/lib/types/organization";
 import { toast } from "sonner";
+import { updateBusinessHoursAction } from "@/features/org/settings/actions/updateBusinessHoursAction";
+import { updateOrderSettingsAction } from "@/features/org/settings/actions/updateOrderSettingsAction";
+import { updatePublicVisibilityAction } from "@/features/org/settings/actions/updatePublicVisibilityAction";
 
 interface UseOrganizationSettingsProps {
   organization: Organization;
@@ -11,6 +15,7 @@ export function useOrganizationSettings({
   organization,
   onUpdate,
 }: UseOrganizationSettingsProps) {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -61,7 +66,7 @@ export function useOrganizationSettings({
         setIsLoading(false);
       }
     },
-    [organization?.id, onUpdate]
+    [organization?.id, onUpdate],
   );
 
   // Update business hours
@@ -70,16 +75,41 @@ export function useOrganizationSettings({
       businessHours: Record<
         string,
         { isOpen: boolean; openTime?: string; closeTime?: string }
-      >
+      >,
     ) => {
-      return await updateOrganization({
-        settings: {
-          ...organization.settings,
+      if (!organization?.id) {
+        throw new Error("No organization ID available");
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await updateBusinessHoursAction(
+          organization.id,
           businessHours,
-        },
-      });
+        );
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        toast.success("Business hours updated successfully");
+        router.refresh();
+        return { success: true };
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to update business hours";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsLoading(false);
+      }
     },
-    [organization?.settings, updateOrganization]
+    [organization?.id, router],
   );
 
   // Update commission rate
@@ -92,7 +122,7 @@ export function useOrganizationSettings({
         },
       });
     },
-    [organization?.settings, updateOrganization]
+    [organization?.settings, updateOrganization],
   );
 
   // Update order settings
@@ -101,22 +131,92 @@ export function useOrganizationSettings({
       autoAcceptOrders?: boolean;
       requireOrderApproval?: boolean;
     }) => {
-      return await updateOrganization({
-        settings: {
-          ...organization.settings,
-          ...orderSettings,
-        },
-      });
+      if (!organization?.id) {
+        throw new Error("No organization ID available");
+      }
+
+      // Ensure both fields are present
+      const completeSettings = {
+        autoAcceptOrders:
+          orderSettings.autoAcceptOrders ??
+          organization.settings?.autoAcceptOrders ??
+          false,
+        requireOrderApproval:
+          orderSettings.requireOrderApproval ??
+          organization.settings?.requireOrderApproval ??
+          true,
+      };
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await updateOrderSettingsAction(
+          organization.id,
+          completeSettings,
+        );
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        toast.success("Order settings updated successfully");
+        router.refresh();
+        return { success: true };
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to update order settings";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsLoading(false);
+      }
     },
-    [organization?.settings, updateOrganization]
+    [organization?.id, organization?.settings, router],
   );
 
   // Update public visibility
   const updatePublicVisibility = useCallback(
     async (isPublic: boolean) => {
-      return await updateOrganization({ is_public: isPublic });
+      if (!organization?.id) {
+        throw new Error("No organization ID available");
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const result = await updatePublicVisibilityAction(organization.id, {
+          is_public: isPublic,
+        });
+
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        toast.success(
+          isPublic
+            ? "Organization is now publicly visible"
+            : "Organization visibility updated",
+        );
+        router.refresh();
+        return { success: true };
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : "Failed to update public visibility";
+        setError(errorMessage);
+        toast.error(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setIsLoading(false);
+      }
     },
-    [updateOrganization]
+    [organization?.id, router],
   );
 
   // Update setup completion status
@@ -124,7 +224,7 @@ export function useOrganizationSettings({
     async (isSetupComplete: boolean) => {
       return await updateOrganization({ is_setup_complete: isSetupComplete });
     },
-    [updateOrganization]
+    [updateOrganization],
   );
 
   // Calculate setup completion

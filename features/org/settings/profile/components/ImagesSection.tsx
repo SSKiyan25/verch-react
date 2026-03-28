@@ -63,7 +63,7 @@ export function ImagesSection({
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
-    type: "logo" | "cover" | "gallery"
+    type: "logo" | "cover" | "gallery",
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -308,7 +308,7 @@ export function ImagesSection({
                   <Button
                     size="sm"
                     variant="destructive"
-                    className="absolute -top-2 -right-2 w-6 h-6 p-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute top-2 right-2 w-6 h-6 p-0 rounded-full"
                     onClick={() => setConfirmAction({ type: "gallery", index })}
                     disabled={isDisabled}
                   >

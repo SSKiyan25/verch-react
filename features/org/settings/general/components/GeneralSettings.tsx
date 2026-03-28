@@ -10,6 +10,7 @@ import { BusinessHoursSection } from "./BusinessHoursSection";
 import { OrderSettingsSection } from "./OrderSettingsSection";
 import { PublicVisibilitySection } from "./PublicVisibilitySection";
 import { SetupStatusCard } from "./SetupStatusCard";
+import { GCashSettingsSection } from "./GCashSettingsSection";
 import { Organization } from "@/lib/types/organization";
 
 interface GeneralSettingsProps {
@@ -94,7 +95,7 @@ export function GeneralSettings({
           isExpanded={activeSection === "business-hours"}
           onToggle={() =>
             setActiveSection(
-              activeSection === "business-hours" ? null : "business-hours"
+              activeSection === "business-hours" ? null : "business-hours",
             )
           }
         />
@@ -112,6 +113,16 @@ export function GeneralSettings({
           isExpanded={activeSection === "orders"}
           onToggle={() =>
             setActiveSection(activeSection === "orders" ? null : "orders")
+          }
+        />
+
+        {/* GCash Settings */}
+        <GCashSettingsSection
+          orgId={organization.id}
+          initialGcash={organization.settings?.gcash ?? null}
+          isExpanded={activeSection === "gcash"}
+          onToggle={() =>
+            setActiveSection(activeSection === "gcash" ? null : "gcash")
           }
         />
       </div>

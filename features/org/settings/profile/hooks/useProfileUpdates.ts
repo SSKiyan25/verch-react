@@ -1,74 +1,35 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-export interface BasicInfoData {
-  name: string;
-  contact_email: string;
-  phone_number: string;
-  description: string;
-}
-
-export interface AddressData {
-  faculty: string;
-  department: string;
-  building: string;
-  room: string;
-  campus: string;
-  description: string;
-}
-
-export interface ImageData {
-  logo_image_url?: string;
-  logo_image_path?: string;
-  cover_image_url?: string;
-  cover_image_path?: string;
-  images_url?: { url: string; path: string }[];
-}
+import { updateBasicInfoAction } from "@/features/org/settings/actions/updateBasicInfoAction";
+import { updateAddressAction } from "@/features/org/settings/actions/updateAddressAction";
+import { updateImagesAction } from "@/features/org/settings/actions/updateImagesAction";
+import type {
+  BasicInfoInput,
+  AddressInput,
+  ImagesInput,
+} from "@/features/org/settings/schemas/orgSettingsSchemas";
 
 export function useProfileUpdates(organizationId: string) {
+  const router = useRouter();
   const [loadingStates, setLoadingStates] = useState({
     basicInfo: false,
     address: false,
     images: false,
   });
 
-  const updateBasicInfo = async (
-    data: BasicInfoData,
-    onSuccess: (organization: any) => void
-  ) => {
+  const updateBasicInfo = async (data: BasicInfoInput) => {
     setLoadingStates((prev) => ({ ...prev, basicInfo: true }));
 
     try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/settings/profile`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "basic_info",
-            data,
-          }),
-        }
-      );
+      const result = await updateBasicInfoAction(organizationId, data);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to update basic information"
-        );
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      const result = await response.json();
-
-      if (result.success && result.organization) {
-        toast.success("Basic information updated successfully");
-        onSuccess(result.organization);
-      } else {
-        throw new Error("Update failed");
-      }
+      toast.success("Basic information updated successfully");
+      router.refresh();
     } catch (error) {
       const errorMessage =
         error instanceof Error
@@ -81,40 +42,18 @@ export function useProfileUpdates(organizationId: string) {
     }
   };
 
-  const updateAddress = async (
-    data: AddressData,
-    onSuccess: (organization: any) => void
-  ) => {
+  const updateAddress = async (data: AddressInput) => {
     setLoadingStates((prev) => ({ ...prev, address: true }));
 
     try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/settings/profile`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "address",
-            data,
-          }),
-        }
-      );
+      const result = await updateAddressAction(organizationId, data);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update address");
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      const result = await response.json();
-
-      if (result.success && result.organization) {
-        toast.success("University location updated successfully");
-        onSuccess(result.organization);
-      } else {
-        throw new Error("Update failed");
-      }
+      toast.success("University location updated successfully");
+      router.refresh();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to update address";
@@ -125,40 +64,20 @@ export function useProfileUpdates(organizationId: string) {
     }
   };
 
-  const updateImages = async (
-    data: ImageData,
-    onSuccess: (organization: any) => void
-  ) => {
+  const updateImages = async (data: ImagesInput) => {
     setLoadingStates((prev) => ({ ...prev, images: true }));
 
     try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/settings/profile`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            type: "images",
-            data,
-          }),
-        }
-      );
+      // console.log("[updateImages] Updating with data:", data);
+      const result = await updateImagesAction(organizationId, data);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update images");
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
-      const result = await response.json();
-
-      if (result.success && result.organization) {
-        toast.success("Images updated successfully");
-        onSuccess(result.organization);
-      } else {
-        throw new Error("Update failed");
-      }
+      // console.log("[updateImages] Success, calling router.refresh()");
+      toast.success("Images updated successfully");
+      router.refresh();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Failed to update images";
