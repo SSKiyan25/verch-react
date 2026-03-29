@@ -1,6 +1,6 @@
 // lib/data/cache-helpers.ts
 
-import { revalidateTag } from "next/cache";
+import { revalidateTag, revalidatePath } from "next/cache";
 
 export function invalidateCustomerCache(userId: string) {
   revalidateTag(`customer-profile-${userId}`, "default");
@@ -54,6 +54,12 @@ export function invalidateOrgOrdersCache(orgId: string) {
 
 export function invalidateCartCache(userId: string) {
   revalidateTag(`cart-${userId}`, "default");
+  // Revalidate the cart page to show updated cart items
+  revalidatePath("/user/cart", "page");
+  // Revalidate the user layout to update cart badge count
+  revalidatePath("/user", "layout");
+  // Revalidate the public/root layout to update cart badge on public pages
+  revalidatePath("/", "layout");
 }
 
 // --- Org settings cache ---
@@ -68,4 +74,8 @@ export function invalidateOrgProfileCache(orgId: string): void {
 
 export function invalidateOrgImagesCache(orgId: string): void {
   revalidateTag(`org-images-${orgId}`, "default");
+}
+
+export function invalidateOrgOrderDetailCache(orderId: string): void {
+  revalidateTag(`org-order-${orderId}`, "default");
 }

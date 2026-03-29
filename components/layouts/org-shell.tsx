@@ -100,12 +100,6 @@ export function OrgShell({
     avatar: organizationLogo || user.avatar, // Use org logo if available
   };
 
-  console.log("[OrgShell] Received props", {
-    user,
-    isSetupComplete,
-    organizationLogo,
-  });
-
   useEffect(() => {
     if (!isSetupComplete && !pathname.startsWith("/org/settings")) {
       console.log("⚠️ Setup incomplete. Redirecting to settings...");

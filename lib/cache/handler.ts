@@ -7,7 +7,7 @@ export async function cachedQuery<T>(
   queryFn: () => Promise<T>,
   keyParts: string[],
   tags: string[] = [],
-  ttl: number = 3600
+  ttl: number = 3600,
 ): Promise<T> {
   const finalTags = tags.length > 0 ? tags : [getTag(keyParts)];
   return unstable_cache(queryFn, keyParts, {
@@ -17,5 +17,5 @@ export async function cachedQuery<T>(
 }
 
 export function invalidateCache(tag: string) {
-  revalidateTag(tag, "default"); // "default" needed for Canary versions
+  revalidateTag(tag, "default");
 }

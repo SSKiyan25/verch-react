@@ -1,8 +1,8 @@
 "use server";
 
-import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { addToCartSchema, type CartActionResult } from "../schemas/cartSchemas";
+import { invalidateCartCache } from "@/lib/data/cache-helpers";
 import type { UpsertCartItemResult } from "@/lib/supabase/queries/user/cart";
 
 export async function addToCartAction(
@@ -36,8 +36,7 @@ export async function addToCartAction(
 
     if (error) return { success: false, error: error.message };
 
-    revalidateTag(`cart-${user.id}`, "default");
-    revalidatePath("/user/cart");
+    invalidateCartCache(user.id);
 
     const rows = data as Record<string, unknown>[];
     const row = rows[0];

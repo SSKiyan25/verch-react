@@ -203,7 +203,7 @@ export function OrderCard({ order }: OrderCardProps) {
                 </span>
               )}
               {showCancel && (
-                <Button size="sm" variant="ghost" asChild>
+                <Button size="sm" variant="destructive" asChild>
                   <Link href={detailHref}>Cancel Order</Link>
                 </Button>
               )}

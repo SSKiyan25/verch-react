@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { invalidateCartCache } from "@/lib/data/cache-helpers";
 import type { CartActionResult } from "../schemas/cartSchemas";
 
 export async function clearCartAction(): Promise<CartActionResult> {
@@ -22,7 +22,7 @@ export async function clearCartAction(): Promise<CartActionResult> {
 
     if (error) return { success: false, error: error.message };
 
-    revalidateTag(`cart-${user.id}`, "default");
+    invalidateCartCache(user.id);
 
     return { success: true, data: undefined };
   } catch (err) {

@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { invalidateCartCache } from "@/lib/data/cache-helpers";
 import {
   updateCartItemSchema,
   type CartActionResult,
@@ -38,7 +38,7 @@ export async function updateCartItemAction(
 
     if (error) return { success: false, error: error.message };
 
-    revalidateTag(`cart-${user.id}`, "default");
+    invalidateCartCache(user.id);
 
     const rows = data as Record<string, unknown>[];
     const row = rows[0];
@@ -50,6 +50,7 @@ export async function updateCartItemAction(
         quantity: row.out_quantity as number,
         is_over_stock: row.out_is_over_stock as boolean,
         available_quantity: row.out_available_quantity as number,
+        is_pre_order: row.out_is_pre_order as boolean,
       },
     };
   } catch (err) {

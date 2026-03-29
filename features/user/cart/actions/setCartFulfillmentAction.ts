@@ -1,7 +1,7 @@
 "use server";
 
-import { revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { invalidateCartCache } from "@/lib/data/cache-helpers";
 import {
   setCartFulfillmentSchema,
   type CartActionResult,
@@ -39,7 +39,7 @@ export async function setCartFulfillmentAction(
 
     if (error) return { success: false, error: error.message };
 
-    revalidateTag(`cart-${user.id}`, "default");
+    invalidateCartCache(user.id);
 
     const rows = data as Record<string, unknown>[];
     const row = rows[0];
