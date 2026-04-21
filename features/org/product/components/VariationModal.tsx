@@ -1,3 +1,18 @@
+// =============================================================================
+// VariationModal — Product Creation Flow
+// =============================================================================
+// This modal is DIFFERENT from features/org/products/components/modals/VariationModal.tsx
+//
+// Purpose: Used during product CREATION to add variations to a local array
+// before the product is saved. This is a simpler, text-input-based modal.
+//
+// The modal in features/org/products/ is for EDITING existing variations on
+// saved products, with better mobile responsiveness and more sophisticated
+// form validation patterns.
+//
+// Both modals serve different purposes and should NOT be merged.
+// =============================================================================
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 

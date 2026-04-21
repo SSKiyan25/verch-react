@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ProductVariation } from "@/lib/types/product";
 import { VariationFormData } from "../components/modals/VariationModal";
+import {
+  createVariationAction,
+  updateVariationAction,
+  archiveVariationAction,
+  restoreVariationAction,
+} from "@/features/org/products/actions/variationActions";
 
 interface UseVariationModalProps {
   productId: string;
@@ -17,6 +24,7 @@ export function useVariationModal({
   onVariationCreate,
   onVariationDelete,
 }: UseVariationModalProps) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingVariation, setEditingVariation] =
@@ -70,40 +78,33 @@ export function useVariationModal({
 
       if (editingVariation) {
         // --- UPDATE ---
-        const response = await fetch(
-          `/api/organizations/${organizationId}/products/${productId}/variations/${editingVariation.id}`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }
+        const result = await updateVariationAction(
+          organizationId,
+          productId,
+          editingVariation.id,
+          payload,
         );
 
-        const result = await response.json();
-
-        if (!response.ok) {
+        if (!result.success) {
           throw new Error(result.error || "Failed to update variation");
         }
 
-        onVariationUpdate?.(result.data);
+        router.refresh();
+        onVariationUpdate?.(result.data as unknown as ProductVariation);
       } else {
         // --- CREATE ---
-        const response = await fetch(
-          `/api/organizations/${organizationId}/products/${productId}/variations`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          }
+        const result = await createVariationAction(
+          organizationId,
+          productId,
+          payload,
         );
 
-        const result = await response.json();
-
-        if (!response.ok) {
+        if (!result.success) {
           throw new Error(result.error || "Failed to create variation");
         }
 
-        onVariationCreate?.(result.data);
+        router.refresh();
+        onVariationCreate?.(result.data as unknown as ProductVariation);
       }
 
       closeModal();
@@ -134,25 +135,23 @@ export function useVariationModal({
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/products/${productId}/variations/${variationId}`,
-        {
-          method: "DELETE",
-        }
+      const result = await archiveVariationAction(
+        organizationId,
+        productId,
+        variationId,
       );
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || "Failed to archive variation");
       }
 
-      console.log(result.message || "Variation archived successfully");
+      console.log("Variation archived successfully");
+      router.refresh();
       onVariationDelete?.(variationId);
     } catch (error) {
       console.error("Delete variation error:", error);
       console.error(
-        error instanceof Error ? error.message : "Failed to archive variation"
+        error instanceof Error ? error.message : "Failed to archive variation",
       );
     } finally {
       setIsLoading(false);
@@ -163,28 +162,21 @@ export function useVariationModal({
     setIsLoading(true);
 
     try {
-      const response = await fetch(
-        `/api/organizations/${organizationId}/products/${productId}/variations/${variationId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            is_archived: false,
-            // is_available: true,
-          }),
-        }
+      const result = await restoreVariationAction(
+        organizationId,
+        productId,
+        variationId,
       );
 
-      const result = await response.json();
-
-      if (!response.ok) {
+      if (!result.success) {
         throw new Error(result.error || "Failed to restore variation");
       }
 
       console.log("Variation restored successfully");
+      router.refresh();
 
       // Update the UI
-      if (onVariationUpdate) {
+      if (onVariationUpdate && result.data) {
         onVariationUpdate(result.data);
       }
     } catch (error) {

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { CartSummary } from "@/lib/supabase/queries/user/cart";
 import type { UserAddress } from "@/lib/supabase/queries/user-settings";
+import type { ProductPromotionsMap } from "@/lib/types/public-promotions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useCart } from "../hooks/useCart";
@@ -19,11 +20,13 @@ interface CartPageClientProps {
   initialCart: CartSummary;
   addresses: UserAddress[];
   userId: string;
+  promotionsMap: ProductPromotionsMap;
 }
 
 export function CartPageClient({
   initialCart,
   addresses,
+  promotionsMap,
 }: CartPageClientProps) {
   const {
     filteredCart,
@@ -46,7 +49,7 @@ export function CartPageClient({
     handleRemoveBundle,
     handleFulfillmentUpdated,
     setFulfillmentDrawerOrg,
-  } = useCart(initialCart);
+  } = useCart(initialCart, promotionsMap);
 
   // ─── Pending remove confirmation ───────────────────────────────────────
   const [pendingRemove, setPendingRemove] = useState<{
@@ -119,8 +122,9 @@ export function CartPageClient({
               isAllOrgSelected={isAllOrgSelected(org)}
               orgSelectedSubtotal={
                 orgSubtotals.find((o) => o.orgName === org.organization_name)
-                  ?.subtotal ?? 0
+                  ?.finalSubtotal ?? 0
               }
+              promotionsMap={promotionsMap}
             />
           ))}
         </div>

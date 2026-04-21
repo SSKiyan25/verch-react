@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ProductWithDetails, CreateVariationData } from "@/lib/types/product";
-import { Organization } from "@/lib/types/organization";
+import type { PublicCategory } from "@/lib/supabase/queries/categories";
 import { useProductForm } from "../hooks/useProductForm";
 import { ProductFormHeader } from "./ProductFormHeader";
 import { ProductBasicInfo } from "./ProductBasicInfo";
@@ -14,11 +14,18 @@ import { Save, X } from "lucide-react";
 
 interface ProductFormProps {
   initialData?: ProductWithDetails;
-  // 1. Accept the organization data (pre-fetched by server)
-  organization: Organization;
+  orgId: string;
+  userId: string;
+  categories: PublicCategory[];
+  commissionRate: number;
 }
 
-export function ProductForm({ initialData, organization }: ProductFormProps) {
+export function ProductForm({
+  initialData,
+  orgId,
+  categories,
+  commissionRate,
+}: ProductFormProps) {
   const {
     isEditing,
     isSaving,
@@ -28,8 +35,7 @@ export function ProductForm({ initialData, organization }: ProductFormProps) {
     handleCancel,
   } = useProductForm({
     initialData,
-    // 2. Pass the ID to the hook so it doesn't need to fetch the user
-    orgId: organization.id,
+    orgId,
   });
 
   const [variations, setVariations] = useState<CreateVariationData[]>([]);
@@ -52,7 +58,11 @@ export function ProductForm({ initialData, organization }: ProductFormProps) {
       <div className="container max-w-3xl mx-auto p-4">
         <div className="space-y-8">
           {/* Step 1: Basic Information */}
-          <ProductBasicInfo data={formData} onChange={updateFormData} />
+          <ProductBasicInfo
+            data={formData}
+            onChange={updateFormData}
+            categories={categories}
+          />
 
           {/* Step 2: Media/Images */}
           <ProductMedia data={formData} onChange={updateFormData} />
@@ -62,8 +72,8 @@ export function ProductForm({ initialData, organization }: ProductFormProps) {
             variations={variations}
             onChange={setVariations}
             productName={formData.name || "Product"}
-            // 3. Pass the full organization object to calculate commissions instantly
-            organization={organization}
+            orgId={orgId}
+            commissionRate={commissionRate}
           />
 
           {/* Step 4: Settings & Visibility */}

@@ -1,14 +1,12 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { UserShell } from "@/components/layouts/user-shell";
 import { getCachedCustomerProfile } from "@/lib/data/user-customer";
 import { getCachedCartCount } from "@/lib/data/cart";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function UserLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+async function UserLayoutContent({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
 
   // 1. Auth check
@@ -65,5 +63,28 @@ export default async function UserLayout({
     >
       {children}
     </UserShell>
+  );
+}
+
+function UserLayoutFallback() {
+  return (
+    <div className="flex h-screen w-full items-center justify-center">
+      <div className="space-y-4">
+        <Skeleton className="h-10 w-64" />
+        <Skeleton className="h-6 w-48" />
+      </div>
+    </div>
+  );
+}
+
+export default function UserLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<UserLayoutFallback />}>
+      <UserLayoutContent>{children}</UserLayoutContent>
+    </Suspense>
   );
 }

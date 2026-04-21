@@ -25,11 +25,11 @@ import { Edit, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useEditProduct } from "../../hooks/useEditProduct";
 import { useProductCategories } from "../../hooks/useProductCategories";
-import { getCachedUserOrganization } from "@/app/actions/auth";
 import { toast } from "sonner";
 
 interface EditProductModalProps {
   product: ProductWithDetails;
+  orgId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave?: (updatedProduct: ProductWithDetails) => void;
@@ -37,14 +37,14 @@ interface EditProductModalProps {
 
 export function EditProductModal({
   product,
+  orgId,
   open,
   onOpenChange,
   onSave,
 }: EditProductModalProps) {
   const { categories, isLoading: categoriesLoading } = useProductCategories();
-  const [organizationId, setOrganizationId] = useState<string | null>(null);
-  const [hasFetchedOrg, setHasFetchedOrg] = useState(false);
 
+  // Initialize form state - will be reset when modal opens via useEffect
   const [formData, setFormData] = useState({
     name: product.name || "",
     description: product.description || "",
@@ -52,48 +52,37 @@ export function EditProductModal({
     category_id: product.category_id || "",
   });
 
-  // 👇 Fetch Org ID via Server Action (only once)
+  // Reset form data when modal opens or product changes
   useEffect(() => {
-    if (hasFetchedOrg) return;
-
-    const fetchOrgId = async () => {
-      try {
-        const cachedOrgId = await getCachedUserOrganization();
-        if (cachedOrgId) {
-          setOrganizationId(cachedOrgId);
-        }
-      } catch (error) {
-        console.error(
-          "[EditProductModal] Failed to fetch organization:",
-          error
-        );
-      } finally {
-        setHasFetchedOrg(true);
-      }
-    };
-
-    fetchOrgId();
-  }, [hasFetchedOrg]);
+    if (open) {
+      setFormData({
+        name: product.name || "",
+        description: product.description || "",
+        search_keywords: product.search_keywords?.join(", ") || "",
+        category_id: product.category_id || "",
+      });
+    }
+    // We intentionally only depend on 'open' and product.id to avoid
+    // excessive resets. Full product fields are read when modal opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, product.id]);
 
   const { updateProduct, isLoading, globalError, fieldErrors, clearErrors } =
     useEditProduct({
       onSuccess: (updatedProduct) => {
-        toast.success("✅ Product updated successfully");
+        toast.success("Product updated successfully");
+        // Call parent's save handler with fresh data
+        // Parent will handle refetch and modal closure
         onSave?.(updatedProduct);
-        onOpenChange(false);
+        // Don't close modal immediately - let parent control this after refetch
       },
       onError: (error) => {
-        toast.error("Failed to update product");
+        toast.error(error.message);
         console.error("[EditProductModal] Update failed:", error);
       },
     });
 
   const handleSave = async () => {
-    if (!organizationId) {
-      toast.error("No organization found");
-      return;
-    }
-
     // Clear any previous errors
     clearErrors();
 
@@ -112,7 +101,7 @@ export function EditProductModal({
           formData.category_id === "none" ? null : formData.category_id || null,
       };
 
-      await updateProduct(organizationId, product.id, updateData);
+      await updateProduct(orgId, product.id, updateData);
     } catch (error) {
       // Error handling is done in the hook
       console.error("[EditProductModal] Save failed:", error);
@@ -294,7 +283,7 @@ export function EditProductModal({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isLoading || !organizationId}>
+          <Button onClick={handleSave} disabled={isLoading}>
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />

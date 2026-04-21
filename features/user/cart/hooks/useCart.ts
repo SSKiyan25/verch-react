@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import type { CartSummary, CartOrg } from "@/lib/supabase/queries/user/cart";
+import type { ProductPromotionsMap } from "@/lib/types/public-promotions";
+import { calculatePromotionPrice } from "@/lib/types/public-promotions";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { updateCartItemAction } from "@/features/user/cart/actions/updateCartItemAction";
 import { removeFromCartAction } from "@/features/user/cart/actions/removeFromCartAction";
@@ -47,7 +49,10 @@ function countTotalSelectableItems(cart: CartSummary): number {
 // Hook
 // ---------------------------------------------------------------------------
 
-export function useCart(initialCart: CartSummary) {
+export function useCart(
+  initialCart: CartSummary,
+  promotionsMap?: ProductPromotionsMap,
+) {
   // ─── Local cart state (optimistic) ─────────────────────────────────────
   const [cart, setCart] = useState<CartSummary>(initialCart);
 
@@ -97,6 +102,7 @@ export function useCart(initialCart: CartSummary) {
           (g) => !removedBundleIds.has(g.bundle_instance_id),
         );
 
+        // Calculate org subtotal (original prices, no discounts)
         const orgSubtotal =
           standaloneItems.reduce(
             (sum, item) =>
@@ -358,32 +364,88 @@ export function useCart(initialCart: CartSummary) {
 
   // ─── Compute order summary data ───────────────────────────────────────
 
-  const orgSubtotals = useMemo(() => {
-    return filteredCart.orgs
+  const orgSubtotals = useMemo<
+    {
+      orgName: string;
+      originalSubtotal: number;
+      discountAmount: number;
+      finalSubtotal: number;
+    }[]
+  >(() => {
+    return cart.orgs
+      .filter(
+        (org) =>
+          org.standalone_items.some(
+            (i) =>
+              !removedItemIds.has(i.item_id) && selectedItems.has(i.item_id),
+          ) ||
+          org.bundle_groups.some(
+            (g) =>
+              !removedBundleIds.has(g.bundle_instance_id) &&
+              selectedItems.has(g.bundle_instance_id),
+          ),
+      )
       .map((org) => {
-        const standaloneSubtotal = org.standalone_items.reduce((sum, item) => {
-          if (!selectedItems.has(item.item_id)) return sum;
-          return (
-            sum +
-            item.current_price * (quantities[item.item_id] ?? item.quantity)
-          );
-        }, 0);
+        let originalSubtotal = 0;
+        let discountAmount = 0;
 
-        const bundleSubtotal = org.bundle_groups.reduce((sum, group) => {
-          if (!selectedItems.has(group.bundle_instance_id)) return sum;
-          return sum + group.bundle_subtotal;
-        }, 0);
+        // Calculate standalone items (with promotions)
+        org.standalone_items
+          .filter(
+            (i) =>
+              !removedItemIds.has(i.item_id) && selectedItems.has(i.item_id),
+          )
+          .forEach((item) => {
+            const qty = quantities[item.item_id] ?? item.quantity;
+            const itemOriginalPrice = item.current_price * qty;
+            originalSubtotal += itemOriginalPrice;
+
+            // Check for promotions
+            const productPromotions = promotionsMap?.get(item.product_id) ?? [];
+            const promotion =
+              productPromotions.find((p) => p.isEligible) ??
+              productPromotions[0] ??
+              null;
+
+            if (promotion?.isEligible) {
+              const promotionResult = calculatePromotionPrice(
+                item.current_price,
+                promotion,
+              );
+              const itemDiscountedPrice = promotionResult.finalPrice * qty;
+              discountAmount += itemOriginalPrice - itemDiscountedPrice;
+            }
+          });
+
+        // Add bundle subtotals (no promotions on bundles)
+        const bundleSubtotal = org.bundle_groups
+          .filter(
+            (g) =>
+              !removedBundleIds.has(g.bundle_instance_id) &&
+              selectedItems.has(g.bundle_instance_id),
+          )
+          .reduce((sum, g) => sum + g.bundle_subtotal, 0);
+
+        originalSubtotal += bundleSubtotal;
 
         return {
           orgName: org.organization_name,
-          subtotal: standaloneSubtotal + bundleSubtotal,
+          originalSubtotal,
+          discountAmount,
+          finalSubtotal: originalSubtotal - discountAmount,
         };
-      })
-      .filter((o) => o.subtotal > 0);
-  }, [filteredCart.orgs, selectedItems, quantities]);
+      });
+  }, [
+    cart,
+    removedItemIds,
+    removedBundleIds,
+    selectedItems,
+    quantities,
+    promotionsMap,
+  ]);
 
   const totalSelectedAmount = orgSubtotals.reduce(
-    (sum, o) => sum + o.subtotal,
+    (sum, o) => sum + o.finalSubtotal,
     0,
   );
   const totalSelectableCount = countTotalSelectableItems(filteredCart);

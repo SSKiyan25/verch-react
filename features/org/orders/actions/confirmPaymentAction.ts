@@ -87,11 +87,7 @@ export async function confirmPaymentAction(
     const invoiceSequenceNumber = rpcRow.out_invoice_sequence_number as number;
 
     // 6. Fetch order detail for PDF content
-    const orderDetail = await fetchOrgOrderDetail(
-      supabase,
-      user.id,
-      validated.orderId,
-    );
+    const orderDetail = await fetchOrgOrderDetail(user.id, validated.orderId);
 
     if (!orderDetail) {
       return { success: false, error: "Failed to fetch order detail for PDF" };

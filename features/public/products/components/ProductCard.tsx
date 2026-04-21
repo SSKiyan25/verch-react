@@ -4,11 +4,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { PromotionBadge } from "@/features/public/product/components/PromotionBadge";
 import type { PublicProductListItem } from "@/lib/supabase/queries/products";
+import type { ProductActivePromotion } from "@/lib/types/public-promotions";
 import { useRouter } from "next/navigation";
 
 type Props = {
   product: PublicProductListItem;
+  promotions?: ProductActivePromotion[]; // Optional promotions array
 };
 
 function formatPrice(amount: number): string {
@@ -53,10 +56,14 @@ function isOutOfStock(
   );
 }
 
-export function ProductCard({ product }: Props) {
+export function ProductCard({ product, promotions = [] }: Props) {
   const { label: priceLabel, compareAt } = getPriceDisplay(product.variations);
   const outOfStock = isOutOfStock(product.variations);
   const router = useRouter();
+
+  // Get the best promotion to display (first eligible, or first one if none eligible)
+  const displayPromotion =
+    promotions.find((p) => p.isEligible) ?? promotions[0];
 
   return (
     <Link
@@ -83,6 +90,9 @@ export function ProductCard({ product }: Props) {
 
         {/* Badges overlay */}
         <div className="absolute top-2 left-2 flex flex-col gap-1">
+          {displayPromotion && (
+            <PromotionBadge promotion={displayPromotion} size="sm" />
+          )}
           {product.can_pre_order && !outOfStock && (
             <Badge variant="secondary" className="text-xs">
               Pre-order

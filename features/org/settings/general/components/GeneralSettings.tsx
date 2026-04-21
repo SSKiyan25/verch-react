@@ -16,6 +16,7 @@ import { Organization } from "@/lib/types/organization";
 interface GeneralSettingsProps {
   organization: Organization;
   onUpdate: (data: Partial<Organization>) => Promise<any>;
+  onPublicVisibilityUpdate: (isPublic: boolean) => Promise<any>;
   isLoading?: boolean;
   setupChecks: {
     basicInfo: boolean;
@@ -30,6 +31,7 @@ interface GeneralSettingsProps {
 export function GeneralSettings({
   organization,
   onUpdate,
+  onPublicVisibilityUpdate,
   isLoading = false,
   setupChecks,
   setupProgress,
@@ -74,7 +76,7 @@ export function GeneralSettings({
       {/* Public Visibility Status */}
       <PublicVisibilitySection
         organization={organization}
-        onUpdate={onUpdate}
+        onUpdate={onPublicVisibilityUpdate}
         isSetupComplete={setupProgress === 100}
         isLoading={isLoading}
       />

@@ -6,7 +6,10 @@ import {
   addressSchema,
   type AddressInput,
 } from "@/features/org/settings/schemas/orgSettingsSchemas";
-import { invalidateOrgSettingsCache } from "@/lib/data/cache-helpers";
+import {
+  invalidateOrgSettingsCache,
+  invalidateOrganizationCache,
+} from "@/lib/data/cache-helpers";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -58,6 +61,7 @@ export async function updateAddressAction(
 
     // 5. Invalidate cache
     invalidateOrgSettingsCache(orgId);
+    invalidateOrganizationCache(orgId); // ← Also invalidate layout cache
 
     // 6. Return
     return { success: true };

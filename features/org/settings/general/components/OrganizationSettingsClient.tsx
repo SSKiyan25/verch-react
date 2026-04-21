@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect } from "react";
@@ -55,6 +56,7 @@ export default function OrganizationSettingsClient({
     setupProgress,
     isSetupComplete,
     updateOrganization,
+    updatePublicVisibility,
     updateSetupComplete,
     clearError: clearSettingsError,
   } = useOrganizationSettings({
@@ -62,12 +64,9 @@ export default function OrganizationSettingsClient({
     onUpdate: handleOrganizationUpdate,
   });
 
-  // Auto-update setup status
-  useEffect(() => {
-    if (organization && organization.is_setup_complete !== isSetupComplete) {
-      updateSetupComplete(isSetupComplete);
-    }
-  }, [organization, isSetupComplete, updateSetupComplete]);
+  // ❌ REMOVED: Auto-update setup status
+  // This was causing the redirect loop bug when cached data was stale.
+  // Setup completion status should only update when user explicitly saves changes.
 
   // 4. Loading Logic Update:
   // Since we passed initialData, these will be false on first render!
@@ -116,6 +115,7 @@ export default function OrganizationSettingsClient({
         <GeneralSettings
           organization={organization}
           onUpdate={updateOrganization}
+          onPublicVisibilityUpdate={updatePublicVisibility}
           isLoading={isOperationLoading} // Only true when clicking "Save"
           setupChecks={setupChecks}
           setupProgress={setupProgress}

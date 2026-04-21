@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import type {
   OrderStatus,
   PaymentMethod,
@@ -151,10 +152,12 @@ export async function fetchOrgOrders(
 }
 
 export async function fetchOrgOrderDetail(
-  supabase: SupabaseClient,
   adminUserId: string,
   orderId: string,
 ): Promise<OrgOrderDetail | null> {
+  // RPC uses auth.uid() — must create server client internally
+  const supabase = await createClient();
+
   const { data, error } = await supabase.rpc("get_order_detail", {
     p_user_id: adminUserId,
     p_order_id: orderId,

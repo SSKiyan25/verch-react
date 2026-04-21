@@ -2,10 +2,14 @@
 
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import type {
   PublicProductDetail,
   PublicProductVariationDetail,
 } from "@/lib/supabase/queries/products";
+import type { ProductActivePromotion } from "@/lib/types/public-promotions";
+import { PriceWithPromotion } from "./PriceWithPromotion";
+import { PromotionsList } from "./PromotionsList";
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-PH", {
@@ -18,33 +22,37 @@ function formatPrice(amount: number): string {
 type ProductInfoProps = {
   product: PublicProductDetail;
   selectedVariation: PublicProductVariationDetail | null;
+  promotions?: ProductActivePromotion[];
 };
 
-export function ProductInfo({ product, selectedVariation }: ProductInfoProps) {
+export function ProductInfo({
+  product,
+  selectedVariation,
+  promotions = [],
+}: ProductInfoProps) {
   const [expanded, setExpanded] = useState(false);
 
   const allOutOfStock =
     product.variations.length > 0 &&
     product.variations.every((v) => v.available_quantity === 0);
 
+  // Get best eligible promotion for price display
+  const bestPromotion = promotions.find((p) => p.isEligible) ?? null;
+
   // Determine price display
   const priceDisplay = (() => {
     if (selectedVariation) {
       return (
-        <div className="flex items-baseline gap-2">
-          {selectedVariation.compare_at_price != null && (
-            <span className="text-base text-muted-foreground line-through">
-              {formatPrice(selectedVariation.compare_at_price)}
-            </span>
-          )}
-          <span className="text-2xl font-bold text-primary">
-            {formatPrice(selectedVariation.price)}
-          </span>
-        </div>
+        <PriceWithPromotion
+          price={selectedVariation.price}
+          compareAtPrice={selectedVariation.compare_at_price}
+          promotion={bestPromotion}
+          size="lg"
+        />
       );
     }
 
-    // No variation selected: show price range (available variations only)
+    // No variation selected: show price range (no promotions applied to range)
     if (product.variations.length === 0) return null;
     const available = product.variations.filter((v) => v.is_available);
     const pool = available.length > 0 ? available : product.variations;
@@ -105,6 +113,14 @@ export function ProductInfo({ product, selectedVariation }: ProductInfoProps) {
             </button>
           )}
         </div>
+      )}
+
+      {/* Promotions section */}
+      {promotions.length > 0 && (
+        <>
+          <Separator className="my-2" />
+          <PromotionsList promotions={promotions} maxDisplay={3} />
+        </>
       )}
     </div>
   );

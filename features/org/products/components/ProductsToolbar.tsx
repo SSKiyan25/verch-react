@@ -11,11 +11,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ProductFilters,
-  ProductStatus,
-  ProductCategory,
-} from "@/lib/types/product";
+import { ProductFilters, ProductStatus } from "@/lib/types/product";
+import type { PublicCategory } from "@/lib/supabase/queries/categories";
 import Link from "next/link";
 
 interface ProductsToolbarProps {
@@ -25,7 +22,7 @@ interface ProductsToolbarProps {
   onFiltersChange: (filters: ProductFilters) => void;
   onClearFilters: () => void;
   totalProducts: number;
-  categories: ProductCategory[];
+  categories: PublicCategory[];
   categoriesLoading: boolean;
   categoriesError: string | null;
 }
@@ -148,8 +145,8 @@ export function ProductsToolbar({
                 categoriesLoading
                   ? "Loading categories..."
                   : categoriesError
-                  ? "Categories unavailable"
-                  : "Filter by category"
+                    ? "Categories unavailable"
+                    : "Filter by category"
               }
             />
           </SelectTrigger>

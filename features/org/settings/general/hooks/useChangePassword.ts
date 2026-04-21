@@ -17,7 +17,7 @@ export function useChangePassword() {
       setIsLoading(true);
       setError(null);
 
-      // 🚀 Call Server Action directly
+      // Call Server Action directly
       // No need to pass orgID or check roles here; the server does it securely.
       const result = await changeUserPasswordAction(data);
 

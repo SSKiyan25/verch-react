@@ -55,24 +55,24 @@ export function OrdersPageShell({
     });
 
   return (
-    <div className="container w-full py-6 px-4 sm:px-6 space-y-5">
+    <div className="container max-w-5xl w-full py-6 px-4 sm:px-6 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">My Orders</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Track and manage your orders
+      <div className="space-y-1">
+        <h1 className="text-3xl font-bold tracking-tight">My Orders</h1>
+        <p className="text-sm text-muted-foreground">
+          Track and manage all your orders in one place
         </p>
       </div>
 
       {/* Just-placed banner */}
       {justPlaced && (
-        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
-          <Loader2 className="h-4 w-4 animate-spin mt-0.5 shrink-0" />
+        <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3.5 text-sm text-blue-900 shadow-sm dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-200">
+          <Loader2 className="h-5 w-5 animate-spin mt-0.5 shrink-0" />
           <div>
-            <p className="font-medium">Your order was placed successfully!</p>
-            <p className="text-xs mt-0.5 opacity-80">
-              It may take a few seconds to appear below. The page will show your
-              latest orders shortly.
+            <p className="font-semibold">Order placed successfully!</p>
+            <p className="text-xs mt-1 opacity-90">
+              Your order is being processed. It may take a few moments to appear
+              below.
             </p>
           </div>
         </div>
@@ -85,7 +85,7 @@ export function OrdersPageShell({
       {orders.length === 0 ? (
         <EmptyOrders status={currentStatus} />
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {orders.map((order) => (
             <OrderCard key={order.order_id} order={order} />
           ))}
@@ -94,17 +94,18 @@ export function OrdersPageShell({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-4 border-t">
           <Button
             variant="outline"
             size="sm"
             onClick={goToPrevPage}
             disabled={!hasPrevPage}
+            className="gap-1"
           >
-            <ChevronLeft className="h-4 w-4 mr-1" />
+            <ChevronLeft className="h-4 w-4" />
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-muted-foreground font-medium">
             Page {currentPage} of {totalPages}
           </span>
           <Button
@@ -112,9 +113,10 @@ export function OrdersPageShell({
             size="sm"
             onClick={goToNextPage}
             disabled={!hasNextPage}
+            className="gap-1"
           >
             Next
-            <ChevronRight className="h-4 w-4 ml-1" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       )}

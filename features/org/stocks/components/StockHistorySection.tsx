@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { ProductWithDetails, StockLog } from "@/lib/types/product";
+import { ProductWithDetails } from "@/lib/types/product";
+import type { StockLogEntry } from "@/lib/types/org-products";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -38,7 +38,7 @@ export function StockHistorySection({
   const [searchTerm, setSearchTerm] = useState("");
   const [actionFilter, setActionFilter] = useState<string>("all");
   const [variationFilter, setVariationFilter] = useState<string>("all");
-  const [selectedLog, setSelectedLog] = useState<StockLog | null>(null);
+  const [selectedLog, setSelectedLog] = useState<StockLogEntry | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const { logs, pagination, isLoading, error } = useStockHistory({
@@ -74,29 +74,12 @@ export function StockHistorySection({
     return change > 0 ? "text-green-600" : "text-red-600";
   };
 
-  const getSourceTypeColor = (sourceType: string | null) => {
-    if (!sourceType) return "bg-gray-100 text-gray-800";
-
-    switch (sourceType) {
-      case "variation_creation":
-        return "bg-blue-100 text-blue-800";
-      case "ARCHIVE_ACTION":
-        return "bg-orange-100 text-orange-800";
-      case "RESTORE_ACTION":
-        return "bg-green-100 text-green-800";
-      case "API_USER":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
   const getVariationName = (variationId: string) => {
     const variation = product.variations?.find((v) => v.id === variationId);
     return variation ? getVariationDisplayName(variation) : variationId;
   };
 
-  const handleLogClick = (log: StockLog) => {
+  const handleLogClick = (log: StockLogEntry) => {
     setSelectedLog(log);
     setDialogOpen(true);
   };
@@ -212,21 +195,11 @@ export function StockHistorySection({
                         <span className="text-xs md:text-sm font-medium capitalize truncate">
                           {log.action}
                         </span>
-                        {log.source_type && (
-                          <Badge
-                            variant="secondary"
-                            className={`text-[10px] md:text-xs shrink-0 ${getSourceTypeColor(
-                              log.source_type
-                            )}`}
-                          >
-                            {log.source_type.replace(/_/g, " ")}
-                          </Badge>
-                        )}
                       </div>
                       <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
                         <span
                           className={`font-bold text-xs md:text-sm ${getQuantityChangeColor(
-                            log.quantity_change
+                            log.quantity_change,
                           )}`}
                         >
                           {log.quantity_change > 0 ? "+" : ""}
@@ -306,7 +279,7 @@ export function StockHistorySection({
                   size="sm"
                   onClick={() =>
                     setCurrentPage(
-                      Math.min(pagination.totalPages, currentPage + 1)
+                      Math.min(pagination.totalPages, currentPage + 1),
                     )
                   }
                   disabled={currentPage === pagination.totalPages}

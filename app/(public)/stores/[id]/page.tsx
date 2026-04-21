@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { getPublicStoreById } from "@/lib/supabase/queries/stores";
 import { getPublicProducts } from "@/lib/supabase/queries/products";
 import {
@@ -13,26 +13,30 @@ type Props = {
   searchParams: Promise<{ page?: string }>;
 };
 
+async function getCachedStore(orgId: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("public-stores");
+
+  return getPublicStoreById(orgId);
+}
+
+async function getCachedStoreProducts(orgId: string, page: number) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("public-products");
+
+  return getPublicProducts({ orgId, page, pageSize: 20 });
+}
+
 export default async function StoreDetailPage({ params, searchParams }: Props) {
   const { id: org_id } = await params;
   const { page: pageParam } = await searchParams;
   const page = pageParam ? Number(pageParam) : 1;
 
-  const getCachedStore = unstable_cache(
-    () => getPublicStoreById(org_id),
-    ["public-store", org_id],
-    { revalidate: 60, tags: ["public-stores"] },
-  );
-
-  const getCachedProducts = unstable_cache(
-    () => getPublicProducts({ orgId: org_id, page, pageSize: 20 }),
-    ["public-store-products", org_id, String(page)],
-    { revalidate: 60, tags: ["public-products"] },
-  );
-
   const [store, { products, totalCount, totalPages }] = await Promise.all([
-    getCachedStore(),
-    getCachedProducts(),
+    getCachedStore(org_id),
+    getCachedStoreProducts(org_id, page),
   ]);
 
   if (!store) notFound();

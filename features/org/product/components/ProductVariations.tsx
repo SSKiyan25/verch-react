@@ -15,21 +15,21 @@ import {
 import { CreateVariationData } from "@/lib/types/product";
 import { useProductVariations } from "../hooks/useProductVariations";
 import { VariationModal } from "./VariationModal";
-import { Organization } from "@/lib/types/organization";
 
 interface ProductVariationsProps {
   variations: CreateVariationData[];
   onChange: (variations: CreateVariationData[]) => void;
   productName?: string;
-  // 1. Add organization prop
-  organization: Organization | null;
+  orgId: string;
+  commissionRate: number;
 }
 
 export function ProductVariations({
   variations,
   onChange,
   productName = "Product",
-  organization, // 2. Destructure organization
+  orgId, // eslint-disable-line @typescript-eslint/no-unused-vars
+  commissionRate,
 }: ProductVariationsProps) {
   const {
     isDialogOpen,
@@ -41,7 +41,6 @@ export function ProductVariations({
     newAttrValue,
     setNewAttrValue,
     errors,
-    commissionRate,
     handleAdd,
     handleEdit,
     handleSave,
@@ -52,7 +51,7 @@ export function ProductVariations({
     handleKeyDown,
     removeAttribute,
     calculateFinalPrice,
-  } = useProductVariations(variations, onChange, productName, organization); // 3. Pass to hook
+  } = useProductVariations(variations, onChange, productName, commissionRate);
 
   // Create a wrapper function to bridge the type gap
   const handleFormFieldChangeWrapper = (field: string, value: any) => {
@@ -198,7 +197,7 @@ export function ProductVariations({
                           >
                             {key}: {value}
                           </Badge>
-                        )
+                        ),
                       )}
                     </div>
                   )}

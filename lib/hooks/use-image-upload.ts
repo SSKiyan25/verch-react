@@ -30,7 +30,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
     // Check file type
     if (!allowedTypes.includes(file.type)) {
       return `Please select a valid image file. Allowed types: ${allowedTypes.join(
-        ", "
+        ", ",
       )}`;
     }
 
@@ -47,7 +47,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
   const uploadToTemporary = async (
     file: File,
     folder: string = "products",
-    filename?: string
+    filename?: string,
   ): Promise<ImageUploadResult> => {
     setIsUploading(true);
 
@@ -114,7 +114,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
   const uploadImage = async (
     file: File,
     folder: string,
-    filename?: string
+    filename?: string,
   ): Promise<ImageUploadResult> => {
     setIsUploading(true);
 
@@ -162,6 +162,13 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
         data: { publicUrl },
       } = supabase.storage.from(bucket).getPublicUrl(filePath);
 
+      console.log("[useImageUpload] Upload successful:", {
+        bucket,
+        filePath,
+        publicUrl,
+        urlFromEnv: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      });
+
       return {
         url: publicUrl,
         path: filePath,
@@ -180,13 +187,13 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
   // Upload multiple files to temporary storage
   const uploadMultipleToTemporary = async (
     files: File[],
-    folder: string = "products"
+    folder: string = "products",
   ): Promise<ImageUploadResult[]> => {
     setIsUploading(true);
 
     try {
       const uploadPromises = files.map((file, index) =>
-        uploadToTemporary(file, folder, `gallery_${index}`)
+        uploadToTemporary(file, folder, `gallery_${index}`),
       );
 
       const results = await Promise.all(uploadPromises);
@@ -220,7 +227,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
 
   const deleteImage = async (
     path: string,
-    isTemporary = false
+    isTemporary = false,
   ): Promise<void> => {
     try {
       const targetBucket = isTemporary ? tempBucket : bucket;
@@ -245,7 +252,7 @@ export function useImageUpload(options: UseImageUploadOptions = {}) {
   // Original multiple upload function (for backward compatibility)
   const uploadMultipleImages = async (
     files: File[],
-    folder: string
+    folder: string,
   ): Promise<ImageUploadResult[]> => {
     setIsUploading(true);
 

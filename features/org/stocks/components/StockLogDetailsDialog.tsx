@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ProductWithDetails, StockLog } from "@/lib/types/product";
+import { ProductWithDetails } from "@/lib/types/product";
+import type { StockLogEntry } from "@/lib/types/org-products";
 import {
   Dialog,
   DialogContent,
@@ -19,14 +20,13 @@ import {
   TrendingDown,
   Database,
   Hash,
-  Target,
   Loader2,
 } from "lucide-react";
 import { getVariationDisplayName } from "@/lib/utils/product-utils";
 import { createClient } from "@/lib/supabase/client";
 
 interface StockLogDetailsDialogProps {
-  log: StockLog | null;
+  log: StockLogEntry | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: ProductWithDetails;
@@ -105,23 +105,6 @@ export function StockLogDetailsDialog({
   const getActionColor = (action: string) => {
     const isIncrease = ["increase", "adjustment", "released"].includes(action);
     return isIncrease ? "text-green-600" : "text-red-600";
-  };
-
-  const getSourceTypeDescription = (sourceType: string | null) => {
-    if (!sourceType) return "No source information available";
-
-    switch (sourceType) {
-      case "variation_creation":
-        return "Stock was added during variation creation";
-      case "ARCHIVE_ACTION":
-        return "Stock was affected when variation was archived";
-      case "RESTORE_ACTION":
-        return "Stock was affected when variation was restored";
-      case "API_USER":
-        return "Manual stock adjustment by user";
-      default:
-        return "System generated stock change";
-    }
   };
 
   const getActionLabel = (action: string) => {
@@ -239,38 +222,6 @@ export function StockLogDetailsDialog({
               </CardContent>
             </Card>
           )}
-
-          {/* Source Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="w-4 h-4" />
-                Source Information
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div>
-                <div className="text-sm text-muted-foreground">Source Type</div>
-                {log.source_type ? (
-                  <Badge variant="secondary" className="mt-1">
-                    {log.source_type.replace(/_/g, " ")}
-                  </Badge>
-                ) : (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    No source type
-                  </div>
-                )}
-              </div>
-              <div>
-                <div className="text-sm text-muted-foreground">Description</div>
-                <div className="text-sm">
-                  {getSourceTypeDescription(
-                    log.source_type || "No Description Available"
-                  )}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Metadata */}
           <Card>

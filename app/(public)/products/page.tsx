@@ -1,7 +1,8 @@
 import { Suspense } from "react";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { getPublicProducts } from "@/lib/supabase/queries/products";
 import { getPublicCategories } from "@/lib/supabase/queries/categories";
+import { getCachedProductsPromotions } from "@/lib/data/public/promotions";
 import {
   ProductsGrid,
   ProductsFilter,
@@ -22,6 +23,28 @@ type Props = {
   searchParams: Promise<SearchParams>;
 };
 
+async function getCachedProducts(
+  page: number,
+  categoryId: string | undefined,
+  minPrice: number | undefined,
+  maxPrice: number | undefined,
+  search: string | undefined,
+) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("public-products");
+
+  return getPublicProducts({ page, categoryId, minPrice, maxPrice, search });
+}
+
+async function getCachedCategories() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("public-categories");
+
+  return getPublicCategories();
+}
+
 export default async function ProductsPage({ searchParams }: Props) {
   const {
     category,
@@ -36,27 +59,18 @@ export default async function ProductsPage({ searchParams }: Props) {
   const minPrice = min_price ? Number(min_price) : undefined;
   const maxPrice = max_price ? Number(max_price) : undefined;
 
-  const getCachedProducts = unstable_cache(
-    () => getPublicProducts({ page, categoryId, minPrice, maxPrice, search }),
-    [
-      "public-products",
-      String(page),
-      categoryId ?? "all",
-      String(minPrice ?? ""),
-      String(maxPrice ?? ""),
-      search ?? "",
-    ],
-    { revalidate: 60, tags: ["public-products"] },
-  );
-
-  const getCachedCategories = unstable_cache(
-    () => getPublicCategories(),
-    ["public-categories"],
-    { revalidate: 300, tags: ["public-categories"] },
-  );
-
   const [{ products, totalCount, totalPages, pageSize }, categories] =
-    await Promise.all([getCachedProducts(), getCachedCategories()]);
+    await Promise.all([
+      getCachedProducts(page, categoryId, minPrice, maxPrice, search),
+      getCachedCategories(),
+    ]);
+
+  // Fetch promotions for all products on the current page (batch query)
+  const productIds = products.map((p) => p.id);
+  const promotionsMap =
+    productIds.length > 0
+      ? await getCachedProductsPromotions(productIds)
+      : new Map();
 
   return (
     <div className="min-h-screen bg-background">
@@ -106,7 +120,7 @@ export default async function ProductsPage({ searchParams }: Props) {
               {totalCount} product{totalCount !== 1 ? "s" : ""}
             </p>
 
-            <ProductsGrid products={products} />
+            <ProductsGrid products={products} promotionsMap={promotionsMap} />
 
             {/* Pagination — client component, needs Suspense */}
             <Suspense fallback={null}>

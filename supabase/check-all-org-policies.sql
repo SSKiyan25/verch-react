@@ -1,0 +1,1 @@
+SELECT policyname, cmd FROM pg_policies WHERE schemaname = 'storage' AND tablename = 'objects' AND policyname ILIKE '%organization-images%' OR (schemaname = 'storage' AND tablename = 'objects' AND (policyname ILIKE '%authenticated%' OR policyname ILIKE '%public read%' OR policyname ILIKE '%delete own%')) ORDER BY policyname;

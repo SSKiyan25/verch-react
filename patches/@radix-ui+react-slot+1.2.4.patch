@@ -1,0 +1,34 @@
+diff --git a/node_modules/@radix-ui/react-slot/dist/index.mjs b/node_modules/@radix-ui/react-slot/dist/index.mjs
+index d7ea374..04897d0 100644
+--- a/node_modules/@radix-ui/react-slot/dist/index.mjs
++++ b/node_modules/@radix-ui/react-slot/dist/index.mjs
+@@ -39,17 +39,27 @@ function createSlot(ownerName) {
+ }
+ var Slot = /* @__PURE__ */ createSlot("Slot");
+ // @__NO_SIDE_EFFECTS__
++// PATCHED: Memoize composed ref to prevent React 19 infinite loop (radix-ui/primitives#3799)
+ function createSlotClone(ownerName) {
+   const SlotClone = React.forwardRef((props, forwardedRef) => {
+     let { children, ...slotProps } = props;
+     if (isLazyComponent(children) && typeof use === "function") {
+       children = use(children._payload);
+     }
++    // PATCHED: Extract childrenRef outside if block for memoization
++    const __childrenRef = React.isValidElement(children) ? getElementRef(children) : null;
++    // PATCHED: Memoize the composed ref to prevent ref identity changes on every render
++    const __composedRef = React.useMemo(
++      () => forwardedRef && __childrenRef
++        ? composeRefs(forwardedRef, __childrenRef)
++        : forwardedRef || __childrenRef || null,
++      [forwardedRef, __childrenRef]
++    );
+     if (React.isValidElement(children)) {
+-      const childrenRef = getElementRef(children);
++      const childrenRef = __childrenRef;
+       const props2 = mergeProps(slotProps, children.props);
+       if (children.type !== React.Fragment) {
+-        props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
++        props2.ref = __composedRef;
+       }
+       return React.cloneElement(children, props2);
+     }

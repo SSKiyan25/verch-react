@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import {
   fetchOrgSettings,
@@ -62,22 +62,22 @@ export async function getCachedOrgSettings(
   userId: string,
   orgId: string,
 ): Promise<OrgSettingsRow | null> {
-  // createClient() must be called OUTSIDE the unstable_cache callback
-  // It calls cookies() internally — calling it inside causes a runtime error
   const supabase = await createClient();
-
-  // Verify the user is authenticated before caching
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  return unstable_cache(
-    () => fetchOrgSettings(userId, orgId),
-    ["org-settings", orgId],
-    {
-      revalidate: false,
-      tags: [`org-settings-${orgId}`],
-    },
-  )();
+  return _getOrgSettingsCached(userId, orgId);
+}
+
+async function _getOrgSettingsCached(
+  userId: string,
+  orgId: string,
+): Promise<OrgSettingsRow | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`org-settings-${orgId}`);
+
+  return fetchOrgSettings(userId, orgId);
 }

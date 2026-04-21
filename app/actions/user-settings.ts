@@ -3,8 +3,10 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCachedUserProfile } from "@/lib/data/user";
 import { getCachedOrganization } from "@/lib/data/organization";
-import { revalidateTag } from "next/cache";
-import { CACHE_KEYS, getTag } from "@/lib/cache";
+import {
+  invalidateUserCache,
+  invalidateOrganizationCache,
+} from "@/lib/data/cache-helpers";
 
 export async function getUserSecurityStatus() {
   const supabase = await createClient();
@@ -74,12 +76,28 @@ export async function changeUserPasswordAction(data: {
 
   if (updateError) return { success: false, error: updateError.message };
 
+  // Update user's password change flag
   await supabase
     .from("users")
     .update({ has_changed_default_password: true })
     .eq("id", authUser.id);
 
-  revalidateTag(getTag(CACHE_KEYS.users.byId(authUser.id)), "default");
+  // Update organization status to 'active' on first password change
+  if (
+    userProfile.role === "organization_admin" &&
+    userProfile.organization_id
+  ) {
+    await supabase
+      .from("organizations")
+      .update({ status: "active" })
+      .eq("id", userProfile.organization_id)
+      .eq("status", "draft"); // Only update if currently in draft status
+
+    // Invalidate organization cache so the layout picks up the status change
+    invalidateOrganizationCache(userProfile.organization_id);
+  }
+
+  invalidateUserCache(authUser.id);
 
   return { success: true, message: "Password updated successfully" };
 }

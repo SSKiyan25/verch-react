@@ -19,7 +19,7 @@ import { Organization } from "@/lib/types/organization";
 
 interface PublicVisibilitySectionProps {
   organization: Organization;
-  onUpdate: (data: Partial<Organization>) => Promise<void>;
+  onUpdate: (isPublic: boolean) => Promise<void>;
   isSetupComplete: boolean;
   isLoading?: boolean;
 }
@@ -39,7 +39,7 @@ export function PublicVisibilitySection({
 
     setIsUpdating(true);
     try {
-      await onUpdate({ is_public: isPublic });
+      await onUpdate(isPublic);
     } catch (error) {
       console.error("Failed to update visibility:", error);
     } finally {

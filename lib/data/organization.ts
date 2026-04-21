@@ -1,7 +1,6 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server"; // For mutations
-import { cachedQuery, CACHE_KEYS, getTag } from "@/lib/cache";
-import { revalidateTag } from "next/cache";
 import {
   Organization,
   OrganizationRow,
@@ -10,31 +9,31 @@ import {
 
 // ✅ READ: Fully Cached
 export async function getCachedOrganization(
-  orgId: string
+  orgId: string,
 ): Promise<Organization | null> {
-  return cachedQuery(
-    async () => {
-      const supabase = createAdminClient();
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`organization-${orgId}`);
 
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("id", orgId)
-        .single();
+  const supabase = createAdminClient();
 
-      if (error) {
-        console.error("Error fetching organization:", error);
-        return null;
-      }
+  const { data, error } = await supabase
+    .from("organizations")
+    .select("*")
+    .eq("id", orgId)
+    .single();
 
-      return transformOrganizationRow(data as OrganizationRow);
-    },
-    // 👇 Use your CENTRALIZED keys (don't hardcode strings)
-    CACHE_KEYS.organizations.byId(orgId),
-    [getTag(CACHE_KEYS.organizations.byId(orgId))]
-  );
+  if (error) {
+    console.error("Error fetching organization:", error);
+    return null;
+  }
+
+  return transformOrganizationRow(data as OrganizationRow);
 }
 
+// ⚠️ MUTATION: Called during layout render (auto-activation logic)
+// Do NOT call revalidateTag here - this runs during render which is forbidden
+// Cache will expire naturally via cacheLife("hours")
 export async function activateOrganization(orgId: string) {
   const supabase = await createClient();
 
@@ -45,7 +44,6 @@ export async function activateOrganization(orgId: string) {
 
   if (error) throw error;
 
-  console.log(`[Cache] Invalidating organization: ${orgId}`);
-
-  revalidateTag(getTag(CACHE_KEYS.organizations.byId(orgId)), "default");
+  // Note: No cache invalidation here because this is called during render
+  // If explicit cache invalidation is needed, move this to a Server Action
 }

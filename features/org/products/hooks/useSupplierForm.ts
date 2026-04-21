@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Supplier,
   CreateSupplierParams,
@@ -12,6 +13,15 @@ import {
   supplierValidationRules,
   validateLinks as validateSupplierLinks,
 } from "../utils/supplier-validation";
+import {
+  createSupplierAction,
+  updateSupplierAction,
+  archiveSupplierAction,
+  linkSupplierToProductAction,
+  restoreSupplierAction,
+  getOrgSuppliersAction,
+} from "@/features/org/products/actions/supplierActions";
+// import { updateProductAction } from "@/features/org/products/actions/productActions";
 
 interface UseSupplierFormProps {
   productId: string;
@@ -26,6 +36,7 @@ export function useSupplierForm({
   currentSupplier,
   onSupplierUpdate,
 }: UseSupplierFormProps) {
+  const router = useRouter();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [archivedSuppliers, setArchivedSuppliers] = useState<Supplier[]>([]);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
@@ -34,7 +45,6 @@ export function useSupplierForm({
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
 
-  // Form state
   const [formData, setFormData] = useState<CreateSupplierParams>({
     name: "",
     description: "",
@@ -55,71 +65,102 @@ export function useSupplierForm({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     useValidation(formData, supplierValidationRules as any);
 
-  // Fetch existing suppliers (active and archived)
-  useEffect(() => {
-    const fetchSuppliers = async () => {
-      setLoadingSuppliers(true);
-      try {
-        // Fetch active suppliers
-        const activeResponse = await fetch(
-          `/api/organizations/${organizationId}/products/supplier`
+  // ─── Fetch suppliers via Server Actions (no REST API calls) ──────────────────
+
+  const fetchSuppliers = async () => {
+    setLoadingSuppliers(true);
+    try {
+      const [activeResult, archivedResult] = await Promise.all([
+        getOrgSuppliersAction(organizationId, false),
+        getOrgSuppliersAction(organizationId, true),
+      ]);
+
+      if (activeResult.success && activeResult.data) {
+        // Active result includes all (active + archived when includeArchived=true),
+        // so we always pass the correct flag. Filter just in case.
+        setSuppliers(
+          (activeResult.data as unknown as Supplier[]).filter(
+            (s) => !s.is_archived,
+          ),
         );
-        const activeResult = await activeResponse.json();
-
-        // Fetch archived suppliers
-        const archivedResponse = await fetch(
-          `/api/organizations/${organizationId}/products/supplier?archived=true`
+      } else if (!activeResult.success) {
+        console.error(
+          "[useSupplierForm] fetchSuppliers (active):",
+          activeResult.error,
         );
-        const archivedResult = await archivedResponse.json();
-
-        if (activeResponse.ok && activeResult.data) {
-          setSuppliers(activeResult.data);
-        }
-
-        if (archivedResponse.ok && archivedResult.data) {
-          setArchivedSuppliers(archivedResult.data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch suppliers:", error);
-      } finally {
-        setLoadingSuppliers(false);
       }
-    };
 
+      if (archivedResult.success && archivedResult.data) {
+        setArchivedSuppliers(
+          (archivedResult.data as unknown as Supplier[]).filter(
+            (s) => s.is_archived,
+          ),
+        );
+      } else if (!archivedResult.success) {
+        console.error(
+          "[useSupplierForm] fetchSuppliers (archived):",
+          archivedResult.error,
+        );
+      }
+    } catch (error) {
+      console.error(
+        "[useSupplierForm] fetchSuppliers unexpected error:",
+        error,
+      );
+    } finally {
+      setLoadingSuppliers(false);
+    }
+  };
+
+  useEffect(() => {
     fetchSuppliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
-  // Populate form with current supplier data
+  // 1. Calculate the enriched supplier right here so we can return it to the view
+  const enrichedSupplier =
+    suppliers.find((s) => s.id === currentSupplier?.id) ||
+    archivedSuppliers.find((s) => s.id === currentSupplier?.id) ||
+    currentSupplier;
+
+  // ─── Populate form when editing existing supplier ────────────────────────────
   useEffect(() => {
-    if (currentSupplier) {
+    if (enrichedSupplier) {
       setFormData({
-        name: currentSupplier.name,
-        description: currentSupplier.description || "",
-        contact_number: currentSupplier.contact_number || "",
-        contact_email: currentSupplier.contact_email || "",
-        address: currentSupplier.address || {
+        name: enrichedSupplier.name || "",
+        description: enrichedSupplier.description || "",
+        contact_number: enrichedSupplier.contact_number || "",
+        contact_email: enrichedSupplier.contact_email || "",
+        address: enrichedSupplier.address || {
           street: "",
           city: "",
           state: "",
           postal_code: "",
           country: "",
         },
-        links: currentSupplier.links || [],
+        links: enrichedSupplier.links || [],
         organization_id: organizationId,
       });
+      // It is safe to call this here, but we MUST NOT include it in the deps array below
       clearAllErrors();
     }
-  }, [currentSupplier, organizationId, clearAllErrors]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    currentSupplier?.id,
+    suppliers,
+    archivedSuppliers,
+    organizationId,
+    // REMOVED clearAllErrors to stop the infinite loop!
+  ]);
+
+  // ─── Form field handlers ──────────────────────────────────────────────────────
 
   const handleInputChange = (
     field: keyof CreateSupplierParams,
-    value: string
+    value: string,
   ) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    // Validate field on change if it has validation rules
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (supplierValidationRules[field]) {
       validateSingle(field, value);
     } else {
@@ -130,10 +171,7 @@ export function useSupplierForm({
   const handleAddressChange = (field: string, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      address: {
-        ...prev.address,
-        [field]: value,
-      },
+      address: { ...prev.address, [field]: value },
     }));
   };
 
@@ -142,11 +180,7 @@ export function useSupplierForm({
       ...prev,
       links: [
         ...(prev.links || []),
-        {
-          type: "website" as const,
-          url: "",
-          label: "",
-        },
+        { type: "website" as const, url: "", label: "" },
       ],
     }));
   };
@@ -154,12 +188,12 @@ export function useSupplierForm({
   const handleLinkChange = (
     index: number,
     field: keyof SupplierLink,
-    value: string
+    value: string,
   ) => {
     setFormData((prev) => ({
       ...prev,
       links: (prev.links || []).map((link, i) =>
-        i === index ? { ...link, [field]: value } : link
+        i === index ? { ...link, [field]: value } : link,
       ),
     }));
   };
@@ -171,50 +205,48 @@ export function useSupplierForm({
     }));
   };
 
+  // ─── Link existing supplier to product ───────────────────────────────────────
+
   const handleSelectExistingSupplier = async (supplierId: string) => {
     if (!supplierId) return;
 
     setSaving(true);
     try {
-      // Link existing supplier to product
-      const response = await fetch(
-        `/api/organizations/${organizationId}/products/${productId}/edit-product`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            supplier_id: supplierId,
-          }),
-        }
+      const result = await linkSupplierToProductAction(
+        organizationId,
+        productId,
+        { supplier_id: supplierId },
       );
 
-      if (!response.ok) throw new Error("Failed to link supplier");
+      if (!result.success) {
+        toast.error(result.error || "Failed to link supplier");
+        return;
+      }
 
-      // Find the supplier from the list
       const linkedSupplier = suppliers.find((s) => s.id === supplierId);
-
       toast.success("Supplier linked successfully");
-
-      // Update parent with the linked supplier data
+      router.refresh();
       if (linkedSupplier) {
         onSupplierUpdate?.(linkedSupplier);
       }
     } catch (error) {
-      console.error("Failed to link supplier:", error);
-      toast.error("Failed to link supplier");
+      console.error("[useSupplierForm] handleSelectExistingSupplier:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to link supplier",
+      );
     } finally {
       setSaving(false);
     }
   };
 
+  // ─── Save (create or update) supplier ────────────────────────────────────────
+
   const handleSaveSupplier = async () => {
-    // Validate all fields
     if (!validateAll(formData)) {
       toast.error("Please fix validation errors");
       return;
     }
 
-    // Validate links separately
     const linksValidation = validateSupplierLinks(formData.links || []);
     if (!linksValidation.isValid) {
       toast.error(linksValidation.error || "Invalid links");
@@ -226,196 +258,178 @@ export function useSupplierForm({
       let updatedSupplier: Supplier;
 
       if (currentSupplier) {
-        // Update existing supplier
-        const response = await fetch(
-          `/api/organizations/${organizationId}/products/supplier/${currentSupplier.id}`,
+        // ── Update existing supplier ──────────────────────────────────────────
+        const result = await updateSupplierAction(
+          organizationId,
+          currentSupplier.id,
           {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-          }
+            ...formData,
+            address: formData.address as unknown as Record<string, unknown>,
+          },
         );
 
-        const result = await response.json();
-        if (!response.ok) throw new Error("Failed to update supplier");
+        if (!result.success) {
+          toast.error(result.error || "Failed to update supplier");
+          return;
+        }
 
-        updatedSupplier = result.data;
+        updatedSupplier = result.data as unknown as Supplier;
         toast.success("Supplier updated successfully");
       } else {
-        // Create new supplier
-        const response = await fetch(
-          `/api/organizations/${organizationId}/products/supplier`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(formData),
-          }
+        // ── Create new supplier, then link it ─────────────────────────────────
+        const createResult = await createSupplierAction(organizationId, {
+          ...formData,
+          address: (formData.address || {}) as Record<string, unknown>,
+          links: (formData.links || []) as unknown[],
+        });
+
+        if (!createResult.success) {
+          toast.error(createResult.error || "Failed to create supplier");
+          return;
+        }
+
+        const newSupplier = createResult.data as unknown as Supplier;
+
+        const linkResult = await linkSupplierToProductAction(
+          organizationId,
+          productId,
+          { supplier_id: newSupplier.id },
         );
 
-        const result = await response.json();
-        if (!response.ok) throw new Error("Failed to create supplier");
-
-        const newSupplier = result.data;
-
-        // Link supplier to product
-        await fetch(
-          `/api/organizations/${organizationId}/products/${productId}/edit-product`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              supplier_id: newSupplier.id,
-            }),
-          }
-        );
+        if (!linkResult.success) {
+          // Supplier was created but linking failed — surface error so user can
+          // link manually from the selector without losing the new supplier.
+          toast.error(
+            linkResult.error ||
+              "Supplier created but could not be linked — try linking it from the selector",
+          );
+          // Refresh supplier list so the new supplier appears in the selector
+          await fetchSuppliers();
+          return;
+        }
 
         updatedSupplier = newSupplier;
         toast.success("Supplier created and linked successfully");
       }
 
-      // Update parent with the new/updated supplier data
+      router.refresh();
       onSupplierUpdate?.(updatedSupplier);
       setIsEditMode(false);
       clearAllErrors();
     } catch (error) {
-      console.error("Failed to save supplier:", error);
+      console.error("[useSupplierForm] handleSaveSupplier:", error);
       toast.error(
-        error instanceof Error ? error.message : "Failed to save supplier"
+        error instanceof Error ? error.message : "Failed to save supplier",
       );
     } finally {
       setSaving(false);
     }
   };
+
+  // ─── Unlink supplier from product ────────────────────────────────────────────
 
   const handleRemoveSupplier = async () => {
     if (!currentSupplier) return;
 
     setSaving(true);
     try {
-      // Unlink supplier from product
-      const response = await fetch(
-        `/api/organizations/${organizationId}/products/${productId}/edit-product`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            supplier_id: null,
-          }),
-        }
+      // Use linkSupplierToProductAction with null to unlink cleanly via RPC
+      const result = await linkSupplierToProductAction(
+        organizationId,
+        productId,
+        { supplier_id: null },
       );
 
-      if (!response.ok) throw new Error("Failed to remove supplier");
+      if (!result.success) {
+        toast.error(result.error || "Failed to remove supplier");
+        return;
+      }
 
       toast.success("Supplier unlinked from product");
-
-      // Update parent with null supplier
+      router.refresh();
       onSupplierUpdate?.(null);
     } catch (error) {
-      console.error("Failed to remove supplier:", error);
+      console.error("[useSupplierForm] handleRemoveSupplier:", error);
       toast.error("Failed to unlink supplier");
     } finally {
       setSaving(false);
     }
   };
 
+  // ─── Archive supplier (unlink + archive) ─────────────────────────────────────
+
   const handleArchiveSupplier = async () => {
     if (!currentSupplier) return;
 
     setArchiving(true);
     try {
-      // First, unlink from product
-      await fetch(
-        `/api/organizations/${organizationId}/products/${productId}/edit-product`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            supplier_id: null,
-          }),
-        }
+      // 1. Unlink from product first
+      const unlinkResult = await linkSupplierToProductAction(
+        organizationId,
+        productId,
+        { supplier_id: null },
       );
 
-      // Then archive the supplier
-      const response = await fetch(
-        `/api/organizations/${organizationId}/products/supplier/${currentSupplier.id}`,
-        {
-          method: "DELETE",
-        }
+      if (!unlinkResult.success) {
+        toast.error(
+          unlinkResult.error || "Failed to unlink supplier before archiving",
+        );
+        return;
+      }
+
+      // 2. Archive the supplier
+      const archiveResult = await archiveSupplierAction(
+        organizationId,
+        currentSupplier.id,
       );
 
-      if (!response.ok) throw new Error("Failed to archive supplier");
+      if (!archiveResult.success) {
+        // Supplier was unlinked but not archived — tell the user what happened
+        toast.error(
+          archiveResult.error || "Supplier unlinked but could not be archived",
+        );
+        router.refresh();
+        onSupplierUpdate?.(null);
+        return;
+      }
 
       toast.success("Supplier archived successfully");
-
-      // Update parent with null supplier
+      router.refresh();
       onSupplierUpdate?.(null);
 
-      // Refresh supplier lists
-      const activeResponse = await fetch(
-        `/api/organizations/${organizationId}/products/supplier`
-      );
-      const activeResult = await activeResponse.json();
-      if (activeResponse.ok && activeResult.data) {
-        setSuppliers(activeResult.data);
-      }
-
-      const archivedResponse = await fetch(
-        `/api/organizations/${organizationId}/products/supplier?archived=true`
-      );
-      const archivedResult = await archivedResponse.json();
-      if (archivedResponse.ok && archivedResult.data) {
-        setArchivedSuppliers(archivedResult.data);
-      }
+      // Refresh local supplier lists so the archived supplier moves correctly
+      await fetchSuppliers();
     } catch (error) {
-      console.error("Failed to archive supplier:", error);
+      console.error("[useSupplierForm] handleArchiveSupplier:", error);
       toast.error("Failed to archive supplier");
     } finally {
       setArchiving(false);
     }
   };
 
+  // ─── Restore archived supplier ────────────────────────────────────────────────
+
   const handleRestoreSupplier = async (supplierId: string) => {
     setSaving(true);
     try {
-      // Restore supplier
-      const response = await fetch(
-        `/api/organizations/${organizationId}/products/supplier/${supplierId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            is_archived: false,
-          }),
-        }
-      );
+      const result = await restoreSupplierAction(organizationId, supplierId);
 
-      if (!response.ok) throw new Error("Failed to restore supplier");
+      if (!result.success) {
+        toast.error(result.error || "Failed to restore supplier");
+        return;
+      }
 
       toast.success("Supplier restored successfully");
-
-      // Refresh supplier lists
-      const activeResponse = await fetch(
-        `/api/organizations/${organizationId}/products/supplier`
-      );
-      const activeResult = await activeResponse.json();
-      if (activeResponse.ok && activeResult.data) {
-        setSuppliers(activeResult.data);
-      }
-
-      const archivedResponse = await fetch(
-        `/api/organizations/${organizationId}/products/supplier?archived=true`
-      );
-      const archivedResult = await archivedResponse.json();
-      if (archivedResponse.ok && archivedResult.data) {
-        setArchivedSuppliers(archivedResult.data);
-      }
+      await fetchSuppliers();
     } catch (error) {
-      console.error("Failed to restore supplier:", error);
+      console.error("[useSupplierForm] handleRestoreSupplier:", error);
       toast.error("Failed to restore supplier");
     } finally {
       setSaving(false);
     }
   };
+
+  // ─── Reset ────────────────────────────────────────────────────────────────────
 
   const resetForm = () => {
     setFormData({
@@ -448,6 +462,7 @@ export function useSupplierForm({
     isEditMode,
     selectedSupplierId,
     errors,
+    enrichedSupplier,
     setIsEditMode,
     setSelectedSupplierId,
     handleInputChange,

@@ -1,0 +1,85 @@
+-- =============================================================================
+-- Admin Users Management — Schema Changes
+-- =============================================================================
+-- Phase 1: Add suspension tracking columns, indexes, and RLS policies
+-- =============================================================================
+
+-- Add suspension tracking columns
+ALTER TABLE public.users 
+  ADD COLUMN IF NOT EXISTS is_suspended BOOLEAN DEFAULT FALSE,
+  ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS suspended_by UUID REFERENCES public.users(id);
+
+-- Add indexes for filtering and sorting
+CREATE INDEX IF NOT EXISTS idx_users_role 
+  ON public.users(role) 
+  WHERE role IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_users_created_at 
+  ON public.users(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_users_is_suspended 
+  ON public.users(is_suspended) 
+  WHERE is_suspended = TRUE;
+
+-- Add comment to columnsget_admin_users_list
+COMMENT ON COLUMN public.users.is_suspended IS 'Whether the user account is suspended by platform admin';
+COMMENT ON COLUMN public.users.suspended_at IS 'Timestamp when the user was suspended';
+COMMENT ON COLUMN public.users.suspended_by IS 'Admin user who suspended this account';
+
+-- =============================================================================
+-- RLS Policies for Admin User Management
+-- =============================================================================
+
+-- Platform admins can update any user (for suspension management)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies 
+    WHERE schemaname = 'public' 
+      AND tablename = 'users' 
+      AND policyname = 'Platform admins can update users'
+  ) THEN
+    CREATE POLICY "Platform admins can update users" 
+      ON public.users 
+      FOR UPDATE 
+      TO authenticated
+      USING (
+        EXISTS (
+          SELECT 1 
+          FROM public.users AS admin_user
+          WHERE admin_user.id = auth.uid()
+            AND admin_user.role = 'admin'
+        )
+      );
+  END IF;
+END $$;
+
+-- Platform admins can view all users (already covered by "Enable read access for all users" but added for clarity)
+-- Note: The existing "Enable read access for all users" policy already allows SELECT for everyone
+
+-- =============================================================================
+-- Verification
+-- =============================================================================
+-- Run the following queries after executing this migration:
+--
+-- 1. Verify columns exist:
+--    SELECT column_name, data_type, is_nullable, column_default
+--    FROM information_schema.columns
+--    WHERE table_schema = 'public' 
+--      AND table_name = 'users' 
+--      AND column_name IN ('is_suspended', 'suspended_at', 'suspended_by');
+--
+-- 2. Verify indexes:
+--    SELECT indexname, indexdef 
+--    FROM pg_indexes 
+--    WHERE tablename = 'users' 
+--      AND schemaname = 'public'
+--      AND indexname LIKE 'idx_users_%';
+--
+-- 3. Verify policies:
+--    SELECT policyname, cmd, qual 
+--    FROM pg_policies 
+--    WHERE tablename = 'users' 
+--      AND schemaname = 'public';
+-- =============================================================================

@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { getPublicStores } from "@/lib/supabase/queries/stores";
 import {
   StoresHeader,
@@ -14,17 +14,22 @@ type Props = {
   }>;
 };
 
+async function getCachedStores(search: string | undefined, page: number) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("public-stores");
+
+  return getPublicStores({ search, page, pageSize: 20 });
+}
+
 export default async function StoresPage({ searchParams }: Props) {
   const { search, page: pageParam } = await searchParams;
   const page = pageParam ? Number(pageParam) : 1;
 
-  const getCachedStores = unstable_cache(
-    () => getPublicStores({ search, page, pageSize: 20 }),
-    ["public-stores", String(page), search ?? ""],
-    { revalidate: 60, tags: ["public-stores"] },
+  const { stores, totalCount, totalPages } = await getCachedStores(
+    search,
+    page,
   );
-
-  const { stores, totalCount, totalPages } = await getCachedStores();
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">

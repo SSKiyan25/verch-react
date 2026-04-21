@@ -14,7 +14,7 @@ interface ImageData {
 
 export function useImageManagement(
   organizationId: string,
-  onUpdate: (data: Partial<ImageData>) => Promise<void>
+  onUpdate: (data: Partial<ImageData>) => Promise<void>,
 ) {
   const [loadingStates, setLoadingStates] = useState({
     logo: false,
@@ -22,7 +22,11 @@ export function useImageManagement(
     gallery: false,
   });
 
-  const { uploadImage, deleteImage, isUploading } = useImageUpload();
+  const { uploadImage, deleteImage, isUploading } = useImageUpload({
+    bucket: "organization-images",
+    maxSize: 2 * 1024 * 1024, // 2MB
+    allowedTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
 
   const handleLogoUpload = async (file: File, currentData: ImageData) => {
     setLoadingStates((prev) => ({ ...prev, logo: true }));
@@ -36,12 +40,19 @@ export function useImageManagement(
       const result = await uploadImage(
         file,
         `organizations/${organizationId}/logo`,
-        "logo"
+        "logo",
       );
+
+      console.log("[useImageManagement] Logo upload result:", result);
 
       // Only update logo fields - preserve other data
       await onUpdate({
         ...currentData,
+        logo_image_url: result.url,
+        logo_image_path: result.path,
+      });
+
+      console.log("[useImageManagement] Calling onUpdate with:", {
         logo_image_url: result.url,
         logo_image_path: result.path,
       });
@@ -68,7 +79,7 @@ export function useImageManagement(
       const result = await uploadImage(
         file,
         `organizations/${organizationId}/cover`,
-        "cover"
+        "cover",
       );
 
       // Only update cover fields - preserve other data
@@ -94,7 +105,7 @@ export function useImageManagement(
     try {
       const result = await uploadImage(
         file,
-        `organizations/${organizationId}/gallery`
+        `organizations/${organizationId}/gallery`,
       );
 
       // Only update gallery images - preserve other data
@@ -165,7 +176,7 @@ export function useImageManagement(
 
   const handleRemoveGalleryImage = async (
     index: number,
-    currentData: ImageData
+    currentData: ImageData,
   ) => {
     setLoadingStates((prev) => ({ ...prev, gallery: true }));
 

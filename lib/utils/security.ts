@@ -2,11 +2,18 @@
 const MALICIOUS_PATTERNS = {
   // SQL Injection patterns
   SQL_INJECTION: [
+    // Looks for a quote immediately followed by a SQL command (e.g., ' OR, ' SELECT)
     /'(\s*(union|select|insert|update|delete|drop|create|alter|exec|execute|declare|cast|convert|script)\s*)/gi,
-    /(\b(union|select|insert|update|delete|drop|create|alter|exec|execute|declare|cast|convert)\b)/gi,
-    /('|\"|;|--|\*|\/\*|\*\/|xp_|sp_)/gi,
-    /((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/gi, // 'or
-    /\w*((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/gi, // '*or
+
+    // Removed the standalone \b(select|update|etc)\b check because it blocks normal English words.
+
+    // Removed standard quotes (' and ") and asterisks (*) from this list.
+    // Kept comment blocks and system procedures.
+    /(;|--|\/\*|\*\/|xp_|sp_)/gi,
+
+    // Looks for classic 'or injection
+    /((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/gi,
+    /\w*((\%27)|(\'))((\%6F)|o|(\%4F))((\%72)|r|(\%52))/gi,
   ],
 
   // XSS patterns
@@ -32,8 +39,13 @@ const MALICIOUS_PATTERNS = {
 
   // Command Injection patterns
   COMMAND_INJECTION: [
-    /(\||&|;|\$\(|\`|<|>)/g,
-    /(wget|curl|nc|netcat|bash|sh|cmd|powershell|python|perl|ruby|php)/gi,
+    // FIXED: Removed the extra pipe that was matching empty strings!
+    /(\||\$\(|\`|<|>)/g,
+
+    // ADDED \b (word boundaries) so it only matches exact words, not parts of words (like 'should')
+    /(\b(wget|curl|nc|netcat|bash|sh|cmd|powershell|python|perl|ruby|php)\b)/gi,
+
+    // This one is mostly fine, but keep an eye on it if users write paths
     /(\.\.|\/etc\/|\/bin\/|\/usr\/|\/var\/|\/tmp\/|\/home\/)/gi,
   ],
 
@@ -53,7 +65,8 @@ const MALICIOUS_PATTERNS = {
   // NoSQL Injection patterns
   NOSQL_INJECTION: [
     /(\$ne|\$gt|\$lt|\$gte|\$lte|\$in|\$nin|\$regex|\$where|\$exists)/gi,
-    /(\{|\}|\[|\]|\,|\:)/g,
+    // Removed the comma (\,) and colon (\:) to allow normal punctuation
+    /(\{|\}|\[|\])/g,
   ],
 
   // Template Injection patterns
@@ -92,7 +105,7 @@ export interface SecurityCheckResult {
 export const securityCheckers = {
   checkSQLInjection: (input: string): boolean => {
     return MALICIOUS_PATTERNS.SQL_INJECTION.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 
@@ -102,43 +115,43 @@ export const securityCheckers = {
 
   checkCommandInjection: (input: string): boolean => {
     return MALICIOUS_PATTERNS.COMMAND_INJECTION.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 
   checkPathTraversal: (input: string): boolean => {
     return MALICIOUS_PATTERNS.PATH_TRAVERSAL.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 
   checkLDAPInjection: (input: string): boolean => {
     return MALICIOUS_PATTERNS.LDAP_INJECTION.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 
   checkNoSQLInjection: (input: string): boolean => {
     return MALICIOUS_PATTERNS.NOSQL_INJECTION.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 
   checkTemplateInjection: (input: string): boolean => {
     return MALICIOUS_PATTERNS.TEMPLATE_INJECTION.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 
   checkMaliciousExtensions: (filename: string): boolean => {
     return MALICIOUS_PATTERNS.MALICIOUS_EXTENSIONS.some((pattern) =>
-      pattern.test(filename)
+      pattern.test(filename),
     );
   },
 
   checkSuspiciousURLs: (input: string): boolean => {
     return MALICIOUS_PATTERNS.SUSPICIOUS_URLS.some((pattern) =>
-      pattern.test(input)
+      pattern.test(input),
     );
   },
 };
@@ -151,7 +164,7 @@ export const validateInputSecurity = (
     allowURLs?: boolean;
     maxLength?: number;
     fieldType?: "email" | "name" | "description" | "filename" | "general";
-  } = {}
+  } = {},
 ): SecurityCheckResult => {
   const threats: string[] = [];
   let severity = SecuritySeverity.LOW;
@@ -264,7 +277,7 @@ export const sanitizeInput = (
     allowHTML?: boolean;
     allowURLs?: boolean;
     maxLength?: number;
-  } = {}
+  } = {},
 ): string => {
   if (!input || typeof input !== "string") return "";
 
@@ -306,7 +319,7 @@ export const rateLimitingUtils = {
   checkRateLimit: (
     identifier: string,
     maxAttempts: number = 5,
-    windowMs: number = 300000
+    windowMs: number = 300000,
   ): boolean => {
     const now = Date.now();
     const attemptData = rateLimitingUtils.attempts.get(identifier);
@@ -354,7 +367,7 @@ export const logSecurityEvent = (
     userAgent?: string;
     ip?: string;
     timestamp?: Date;
-  }
+  },
 ): void => {
   const logEntry = {
     event,

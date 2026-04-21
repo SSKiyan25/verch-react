@@ -35,7 +35,11 @@ interface UseCheckoutOrgSummaryReturn {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function computeDiscount(
+/**
+ * Compute discount for order-level promotions (organization/order target types).
+ * Applies to the entire subtotal.
+ */
+function computeOrderLevelDiscount(
   subtotal: number,
   promo: {
     discount_type: string;
@@ -58,6 +62,34 @@ function computeDiscount(
   return 0; // free_item: no monetary discount shown
 }
 
+/**
+ * Compute discount for product-level promotions.
+ * Applies only to matching products in the cart.
+ */
+function computeProductLevelDiscount(
+  items: CheckoutCartItem[],
+  promo: ApplicablePromotion | null,
+): number {
+  if (!promo || !promo.is_eligible) return 0;
+  if (promo.discount_type === "free_item") return 0; // no monetary discount
+
+  // Sum discounts for all standalone items (bundles don't get product-level promotions)
+  let totalDiscount = 0;
+  for (const item of items) {
+    if (item.bundleInstanceId !== null) continue; // skip bundle components
+
+    const itemSubtotal = item.unitPriceSnapshot * item.quantity;
+    if (promo.discount_type === "percentage") {
+      totalDiscount += Math.round(itemSubtotal * (promo.discount_value / 100) * 100) / 100;
+    } else if (promo.discount_type === "fixed") {
+      // For fixed discount, apply per unit (capped at unit price), then multiply by quantity
+      const discountPerUnit = Math.min(promo.discount_value, item.unitPriceSnapshot);
+      totalDiscount += discountPerUnit * item.quantity;
+    }
+  }
+  return totalDiscount;
+}
+
 // ─── Pure function (safe inside useMemo / map) ──────────────────────────────
 
 export function computeOrgSummary({
@@ -75,20 +107,47 @@ export function computeOrgSummary({
   );
   const subtotal = itemsTotal + bundlesTotal;
 
+  // Separate product-level and order-level promotions
   const eligibleAutoPromos = applicablePromotions.filter(
     (p) => p.trigger_type === "auto" && p.is_eligible,
   );
-  const bestEligibleAutoPromo =
-    eligibleAutoPromos.length > 0
-      ? eligibleAutoPromos.reduce((best, p) => {
-          const bestAmt = computeDiscount(subtotal, best);
-          const pAmt = computeDiscount(subtotal, p);
-          return pAmt > bestAmt ? p : best;
-        })
-      : null;
+  
+  const productLevelPromos = eligibleAutoPromos.filter(
+    (p) => p.target_type === "product"
+  );
+  const orderLevelPromos = eligibleAutoPromos.filter(
+    (p) => p.target_type === "organization" || p.target_type === "order"
+  );
 
-  const autoDiscount = computeDiscount(subtotal, bestEligibleAutoPromo);
-  const voucherDiscount = computeDiscount(subtotal, appliedVoucher);
+  // Find best product-level promo (if any)
+  const bestProductPromo = productLevelPromos.length > 0
+    ? productLevelPromos.reduce((best, p) => {
+        const bestAmt = computeProductLevelDiscount(items, best);
+        const pAmt = computeProductLevelDiscount(items, p);
+        return pAmt > bestAmt ? p : best;
+      })
+    : null;
+
+  // Find best order-level promo (if any)
+  const bestOrderPromo = orderLevelPromos.length > 0
+    ? orderLevelPromos.reduce((best, p) => {
+        const bestAmt = computeOrderLevelDiscount(subtotal, best);
+        const pAmt = computeOrderLevelDiscount(subtotal, p);
+        return pAmt > bestAmt ? p : best;
+      })
+    : null;
+
+  // Calculate discounts
+  const productDiscount = computeProductLevelDiscount(items, bestProductPromo);
+  const orderDiscount = computeOrderLevelDiscount(subtotal, bestOrderPromo);
+  
+  // Choose the  better promo (product-level OR order-level, not both)
+  const bestEligibleAutoPromo = productDiscount > orderDiscount ? bestProductPromo : bestOrderPromo;
+  const autoDiscount = Math.max(productDiscount, orderDiscount);
+
+  // Voucher discount (always order-level)
+  const voucherDiscount = computeOrderLevelDiscount(subtotal, appliedVoucher);
+  
   const totalDiscount = autoDiscount + voucherDiscount;
   const orgTotal = Math.max(0, subtotal - totalDiscount);
 

@@ -6,7 +6,10 @@ import {
   imagesSchema,
   type ImagesInput,
 } from "@/features/org/settings/schemas/orgSettingsSchemas";
-import { invalidateOrgSettingsCache } from "@/lib/data/cache-helpers";
+import {
+  invalidateOrgSettingsCache,
+  invalidateOrganizationCache,
+} from "@/lib/data/cache-helpers";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -68,17 +71,25 @@ export async function updateImagesAction(
     }
 
     console.log("[updateImagesAction] Updating with payload:", updatePayload);
+    console.log("[updateImagesAction] Organization ID:", orgId);
 
-    const { error: updateError } = await supabase
+    const { data: updateData, error: updateError } = await supabase
       .from("organizations")
       .update(updatePayload)
-      .eq("id", orgId);
+      .eq("id", orgId)
+      .select();
+
+    console.log("[updateImagesAction] Update result:", {
+      updateData,
+      updateError,
+    });
 
     if (updateError) return { success: false, error: updateError.message };
 
     // 5. Invalidate cache
     console.log("[updateImagesAction] Invalidating cache for org:", orgId);
     invalidateOrgSettingsCache(orgId);
+    invalidateOrganizationCache(orgId); // ← Also invalidate layout cache
 
     // 6. Return
     return { success: true };

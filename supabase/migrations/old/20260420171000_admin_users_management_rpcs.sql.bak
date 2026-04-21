@@ -1,0 +1,416 @@
+-- =============================================================================
+-- Admin Users Management RPCs — Phase 2
+-- =============================================================================
+-- This migration creates the RPC functions for admin user management.
+-- Depends on: 20260420170000_admin_users_management_schema.sql
+-- =============================================================================
+
+-- ============================================================================
+-- get_admin_users_list
+-- =============================================================================
+-- Purpose: Fetch paginated list of all users with search and role filtering
+-- Parameters:
+--   p_search       TEXT    — Search in full_name or email (ILIKE)
+--   p_role_filter  TEXT    — Filter by role (exact match)
+--   p_page         INT     — Page number (1-indexed, default 1)
+--   p_page_size    INT     — Items per page (default 20)
+--
+-- Returns TABLE:
+--   out_id                          UUID
+--   out_full_name                   TEXT
+--   out_email                       TEXT
+--   out_avatar_url                  TEXT
+--   out_role                        TEXT
+--   out_is_suspended                BOOLEAN
+--   out_organization_id             UUID
+--   out_organization_name           TEXT
+--   out_student_verification_status TEXT
+--   out_created_at                  TIMESTAMPTZ
+--   out_total_count                 BIGINT
+--
+-- Auth: Platform admin only
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS public.get_admin_users_list(TEXT, TEXT, INT, INT);
+
+CREATE OR REPLACE FUNCTION public.get_admin_users_list(
+  p_search       TEXT DEFAULT NULL,
+  p_role_filter  TEXT DEFAULT NULL,
+  p_page         INT  DEFAULT 1,
+  p_page_size    INT  DEFAULT 20
+)
+RETURNS TABLE (
+  out_id                          UUID,
+  out_full_name                   TEXT,
+  out_email                       TEXT,
+  out_avatar_url                  TEXT,
+  out_role                        TEXT,
+  out_is_suspended                BOOLEAN,
+  out_organization_id             UUID,
+  out_organization_name           TEXT,
+  out_student_verification_status TEXT,
+  out_created_at                  TIMESTAMPTZ,
+  out_total_count                 BIGINT
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_calling_user_role TEXT;
+  v_offset            INT;
+BEGIN
+  -- ==========================================
+  -- Auth Check: Platform admin only
+  -- ==========================================
+  SELECT role INTO v_calling_user_role
+  FROM public.users
+  WHERE id = auth.uid();
+
+  IF v_calling_user_role IS NULL OR v_calling_user_role != 'admin' THEN
+    RAISE EXCEPTION 'Unauthorized: Only platform admins can view user list';
+  END IF;
+
+  -- ==========================================
+  -- Calculate offset
+  -- ==========================================
+  v_offset := (GREATEST(p_page, 1) - 1) * p_page_size;
+
+  -- ==========================================
+  -- Main Query with Filters
+  -- ==========================================
+  RETURN QUERY
+  WITH filtered_users AS (
+    SELECT 
+      u.id,
+      u.full_name,
+      u.avatar_url,
+      u.role,
+      u.is_suspended,
+      u.organization_id,
+      u.created_at,
+      au.email,
+      o.name AS org_name,
+      si.status AS student_status,
+      COUNT(*) OVER() AS total_count
+    FROM public.users u
+    INNER JOIN auth.users au ON au.id = u.id
+    LEFT JOIN public.organizations o ON o.id = u.organization_id
+    LEFT JOIN public.student_info si ON si.user_id = u.id
+    WHERE 
+      -- Search filter (name or email)
+      (
+        p_search IS NULL 
+        OR u.full_name ILIKE '%' || p_search || '%'
+        OR au.email ILIKE '%' || p_search || '%'
+      )
+      -- Role filter
+      AND (p_role_filter IS NULL OR u.role = p_role_filter)
+    ORDER BY u.created_at DESC
+    LIMIT p_page_size
+    OFFSET v_offset
+  )
+  SELECT
+    fu.id,
+    fu.full_name::TEXT,
+    fu.email::TEXT,
+    fu.avatar_url::TEXT,
+    fu.role::TEXT,
+    fu.is_suspended,
+    fu.organization_id,
+    fu.org_name::TEXT,
+    fu.student_status::TEXT,
+    fu.created_at,
+    fu.total_count
+  FROM filtered_users fu;
+END;
+$$;
+
+-- ============================================================================
+-- get_admin_user_detail
+-- =============================================================================
+-- Purpose: Fetch full details for a single user
+-- Parameters:
+--   p_user_id  UUID  — Target user ID
+--
+-- Returns TABLE:
+--   out_id                     UUID
+--   out_full_name              TEXT
+--   out_email                  TEXT
+--   out_avatar_url             TEXT
+--   out_contact_number         TEXT
+--   out_role                   TEXT
+--   out_is_suspended           BOOLEAN
+--   out_suspended_at           TIMESTAMPTZ
+--   out_organization_id        UUID
+--   out_organization_name      TEXT
+--   out_student_status         TEXT
+--   out_student_info_id        UUID
+--   out_has_agreed_to_terms    BOOLEAN
+--   out_created_at             TIMESTAMPTZ
+--   out_updated_at             TIMESTAMPTZ
+--
+-- Auth: Platform admin only
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS public.get_admin_user_detail(UUID);
+
+CREATE OR REPLACE FUNCTION public.get_admin_user_detail(
+  p_user_id UUID
+)
+RETURNS TABLE (
+  out_id                     UUID,
+  out_full_name              TEXT,
+  out_email                  TEXT,
+  out_avatar_url             TEXT,
+  out_contact_number         TEXT,
+  out_role                   TEXT,
+  out_is_suspended           BOOLEAN,
+  out_suspended_at           TIMESTAMPTZ,
+  out_organization_id        UUID,
+  out_organization_name      TEXT,
+  out_student_status         TEXT,
+  out_student_info_id        UUID,
+  out_has_agreed_to_terms    BOOLEAN,
+  out_created_at             TIMESTAMPTZ,
+  out_updated_at             TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_calling_user_role TEXT;
+BEGIN
+  -- ==========================================
+  -- Auth Check: Platform admin only
+  -- ==========================================
+  SELECT role INTO v_calling_user_role
+  FROM public.users
+  WHERE id = auth.uid();
+
+  IF v_calling_user_role IS NULL OR v_calling_user_role != 'admin' THEN
+    RAISE EXCEPTION 'Unauthorized: Only platform admins can view user details';
+  END IF;
+
+  -- ==========================================
+  -- Main Query
+  -- ==========================================
+  RETURN QUERY
+  SELECT
+    u.id,
+    u.full_name::TEXT,
+    au.email::TEXT,
+    u.avatar_url::TEXT,
+    u.contact_number::TEXT,
+    u.role::TEXT,
+    u.is_suspended,
+    u.suspended_at,
+    u.organization_id,
+    o.name::TEXT AS organization_name,
+    si.status::TEXT AS student_status,
+    si.id AS student_info_id,
+    u.has_agreed_to_terms,
+    u.created_at,
+    u.updated_at
+  FROM public.users u
+  INNER JOIN auth.users au ON au.id = u.id
+  LEFT JOIN public.organizations o ON o.id = u.organization_id
+  LEFT JOIN public.student_info si ON si.user_id = u.id
+  WHERE u.id = p_user_id;
+END;
+$$;
+
+-- ============================================================================
+-- suspend_user
+-- =============================================================================
+-- Purpose: Suspend a user account
+-- Parameters:
+--   p_user_id  UUID  — User to suspend
+--   p_reason   TEXT  — Reason for suspension (for audit log)
+--
+-- Returns: void
+--
+-- Auth: Platform admin only
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS public.suspend_user(UUID, TEXT);
+
+CREATE OR REPLACE FUNCTION public.suspend_user(
+  p_user_id UUID,
+  p_reason  TEXT
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_calling_user_role TEXT;
+  v_calling_user_id   UUID;
+BEGIN
+  -- ==========================================
+  -- Auth Check: Platform admin only
+  -- ==========================================
+  v_calling_user_id := auth.uid();
+  
+  SELECT role INTO v_calling_user_role
+  FROM public.users
+  WHERE id = v_calling_user_id;
+
+  IF v_calling_user_role IS NULL OR v_calling_user_role != 'admin' THEN
+    RAISE EXCEPTION 'Unauthorized: Only platform admins can suspend users';
+  END IF;
+
+  -- ==========================================
+  -- Prevent self-suspension
+  -- ==========================================
+  IF p_user_id = v_calling_user_id THEN
+    RAISE EXCEPTION 'Cannot suspend your own account';
+  END IF;
+
+  -- ==========================================
+  -- Update user suspension status
+  -- ==========================================
+  UPDATE public.users
+  SET 
+    is_suspended = TRUE,
+    suspended_at = NOW(),
+    suspended_by = v_calling_user_id,
+    updated_at = NOW()
+  WHERE id = p_user_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'User not found: %', p_user_id;
+  END IF;
+
+  -- Note: Audit logging can be added here if needed
+  -- INSERT INTO admin_audit_log (action, user_id, performed_by, reason, created_at)
+  -- VALUES ('suspend_user', p_user_id, v_calling_user_id, p_reason, NOW());
+END;
+$$;
+
+-- ============================================================================
+-- unsuspend_user
+-- =============================================================================
+-- Purpose: Unsuspend a user account
+-- Parameters:
+--   p_user_id  UUID  — User to unsuspend
+--
+-- Returns: void
+--
+-- Auth: Platform admin only
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS public.unsuspend_user(UUID);
+
+CREATE OR REPLACE FUNCTION public.unsuspend_user(
+  p_user_id UUID
+)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_calling_user_role TEXT;
+BEGIN
+  -- ==========================================
+  -- Auth Check: Platform admin only
+  -- ==========================================
+  SELECT role INTO v_calling_user_role
+  FROM public.users
+  WHERE id = auth.uid();
+
+  IF v_calling_user_role IS NULL OR v_calling_user_role != 'admin' THEN
+    RAISE EXCEPTION 'Unauthorized: Only platform admins can unsuspend users';
+  END IF;
+
+  -- ==========================================
+  -- Update user suspension status
+  -- ==========================================
+  UPDATE public.users
+  SET 
+    is_suspended = FALSE,
+    suspended_at = NULL,
+    suspended_by = NULL,
+    updated_at = NOW()
+  WHERE id = p_user_id;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'User not found: %', p_user_id;
+  END IF;
+END;
+$$;
+
+-- ============================================================================
+-- admin_reset_password
+-- =============================================================================
+-- Purpose: Trigger password reset email for a user (via Supabase Auth)
+--
+-- Note: This RPC doesn't actually send the email — it's handled by the
+-- Server Action which will call Supabase Admin API. This RPC exists for
+-- consistency and potential audit logging.
+--
+-- Parameters:
+--   p_user_id  UUID  — User who needs password reset
+--
+-- Returns: TEXT (email address for Server Action to use)
+--
+-- Auth: Platform admin only
+-- ============================================================================
+
+DROP FUNCTION IF EXISTS public.admin_reset_password(UUID);
+
+CREATE OR REPLACE FUNCTION public.admin_reset_password(
+  p_user_id UUID
+)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_calling_user_role TEXT;
+  v_user_email        TEXT;
+BEGIN
+  -- ==========================================
+  -- Auth Check: Platform admin only
+  -- ==========================================
+  SELECT role INTO v_calling_user_role
+  FROM public.users
+  WHERE id = auth.uid();
+
+  IF v_calling_user_role IS NULL OR v_calling_user_role != 'admin' THEN
+    RAISE EXCEPTION 'Unauthorized: Only platform admins can reset passwords';
+  END IF;
+
+  -- ==========================================
+  -- Get user email from auth.users
+  -- ==========================================
+  SELECT email INTO v_user_email
+  FROM auth.users
+  WHERE id = p_user_id;
+
+  IF v_user_email IS NULL THEN
+    RAISE EXCEPTION 'User not found: %', p_user_id;
+  END IF;
+
+  -- Note: Audit logging can be added here if needed
+  -- INSERT INTO admin_audit_log (action, user_id, performed_by, created_at)
+  -- VALUES ('reset_password', p_user_id, auth.uid(), NOW());
+
+  RETURN v_user_email;
+END;
+$$;
+
+-- =============================================================================
+-- Grant Permissions
+-- =============================================================================
+
+GRANT EXECUTE ON FUNCTION public.get_admin_users_list TO authenticated;
+GRANT EXECUTE ON FUNCTION public.get_admin_user_detail TO authenticated;
+GRANT EXECUTE ON FUNCTION public.suspend_user TO authenticated;
+GRANT EXECUTE ON FUNCTION public.unsuspend_user TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_reset_password TO authenticated;
+
+-- =============================================================================
+-- Reload Schema Cache
+-- =============================================================================
+
+NOTIFY pgrst, 'reload schema';

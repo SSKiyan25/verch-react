@@ -9,7 +9,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { PaginationInfo } from "../hooks/useProducts";
+
+// Moved from deleted useProducts hook
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
 
 interface ProductsPaginationProps {
   pagination: PaginationInfo;

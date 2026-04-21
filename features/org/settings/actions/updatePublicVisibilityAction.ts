@@ -1,13 +1,17 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { revalidateTag } from "next/cache";
 import { z } from "zod";
 import {
   publicVisibilitySchema,
   type PublicVisibilityInput,
 } from "@/features/org/settings/schemas/orgSettingsSchemas";
-import { invalidateOrgSettingsCache } from "@/lib/data/cache-helpers";
+import {
+  invalidateOrgSettingsCache,
+  invalidatePublicStoresCache,
+  invalidateOrganizationCache,
+} from "@/lib/data/cache-helpers";
+import { calculateSetupCompletion } from "@/lib/utils/org-setup-helpers";
 
 type ActionResult = { success: true } | { success: false; error: string };
 
@@ -46,22 +50,39 @@ export async function updatePublicVisibilityAction(
     // 3. Zod validate
     const validated = publicVisibilitySchema.parse(input);
 
-    // 4. Supabase mutation
+    // 4. Fetch current org to calculate setup completion
+    const { data: currentOrg, error: fetchError } = await supabase
+      .from("organizations")
+      .select("*")
+      .eq("id", orgId)
+      .single();
+
+    if (fetchError || !currentOrg) {
+      return { success: false, error: "Organization not found" };
+    }
+
+    // Calculate setup completion with the visibility update
+    const mergedData = { ...currentOrg, is_public: validated.is_public };
+    const isSetupComplete = calculateSetupCompletion(mergedData);
+
+    // 5. Supabase mutation
     const { error: updateError } = await supabase
       .from("organizations")
       .update({
         is_public: validated.is_public,
+        is_setup_complete: isSetupComplete, // Auto-sync setup completion
         last_modified: new Date().toISOString(),
       })
       .eq("id", orgId);
 
     if (updateError) return { success: false, error: updateError.message };
 
-    // 5. Invalidate cache (two tags)
+    // 6. Invalidate cache (three tags)
     invalidateOrgSettingsCache(orgId);
-    revalidateTag("public-stores", "default");
+    invalidateOrganizationCache(orgId); // ← Also invalidate layout cache
+    invalidatePublicStoresCache();
 
-    // 6. Return
+    // 7. Return
     return { success: true };
   } catch (err) {
     if (err instanceof z.ZodError) {

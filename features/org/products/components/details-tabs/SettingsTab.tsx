@@ -28,6 +28,7 @@ interface SettingsTabProps {
 export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
   const [organizationId, setOrganizationId] = useState<string | null>(null);
 
+  console.log("[SettingsTab] Render - Product:", product);
   const [formData, setFormData] = useState({
     status: product.status || "draft",
     is_approved: product.is_approved || false,
@@ -60,7 +61,7 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
       onSuccess: (updatedProduct) => {
         console.log(
           "[SettingsTab] ✅ Product settings updated:",
-          updatedProduct
+          updatedProduct,
         );
 
         // Show success toast

@@ -11,7 +11,9 @@ import {
 
 interface OrgSubtotal {
   orgName: string;
-  subtotal: number;
+  originalSubtotal: number;
+  discountAmount: number;
+  finalSubtotal: number;
 }
 
 interface CartOrderSummaryProps {
@@ -46,9 +48,12 @@ export function CartOrderSummary({
       asChild={!isDisabled}
     >
       {isDisabled ? (
-        "Proceed to Checkout"
+        "Place Order"
       ) : (
-        <Link href={checkoutHref}>Proceed to Checkout</Link>
+        <Link href={checkoutHref}>
+          Place Order · ₱
+          {total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+        </Link>
       )}
     </Button>
   );
@@ -58,22 +63,47 @@ export function CartOrderSummary({
       <h2 className="font-semibold">Order Summary</h2>
       <Separator />
 
-      {/* Per-org subtotals */}
-      <div className="space-y-2">
+      {/* Per-org subtotals with discount breakdown */}
+      <div className="space-y-3">
         {orgSubtotals.map((org) => (
-          <div
-            key={org.orgName}
-            className="flex items-center justify-between text-sm"
-          >
-            <span className="text-muted-foreground truncate mr-2">
+          <div key={org.orgName} className="space-y-1">
+            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
               {org.orgName}
-            </span>
-            <span>
-              ₱
-              {org.subtotal.toLocaleString("en-PH", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>
+                ₱
+                {org.originalSubtotal.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
+            </div>
+
+            {org.discountAmount > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  Auto discount
+                </span>
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  -₱
+                  {org.discountAmount.toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between text-sm font-semibold">
+              <span>Org total</span>
+              <span>
+                ₱
+                {org.finalSubtotal.toLocaleString("en-PH", {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
+            </div>
           </div>
         ))}
       </div>
@@ -87,7 +117,7 @@ export function CartOrderSummary({
       <Separator />
 
       <div className="flex items-center justify-between">
-        <span className="font-semibold">Total</span>
+        <span className="font-semibold">Grand Total</span>
         <span className="font-semibold text-lg">
           ₱{total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
         </span>

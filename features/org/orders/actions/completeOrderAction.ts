@@ -86,11 +86,7 @@ export async function completeOrderAction(
     }
 
     // 6. Fetch order detail for PDF content
-    const orderDetail = await fetchOrgOrderDetail(
-      supabase,
-      user.id,
-      validated.orderId,
-    );
+    const orderDetail = await fetchOrgOrderDetail(user.id, validated.orderId);
 
     if (!orderDetail) {
       return { success: false, error: "Failed to fetch order detail for PDF" };

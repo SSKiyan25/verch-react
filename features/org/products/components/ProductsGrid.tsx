@@ -1,22 +1,18 @@
 "use client";
 
-import { ProductWithDetails } from "@/lib/types/product";
+import { OrgProductListItem } from "@/lib/types/org-products";
 import { ProductCard } from "./ProductCard";
 
 interface ProductsGridProps {
-  products: ProductWithDetails[];
-  onProductUpdate: (product: ProductWithDetails) => void;
+  products: OrgProductListItem[];
+  orgId: string;
 }
 
-export function ProductsGrid({ products, onProductUpdate }: ProductsGridProps) {
+export function ProductsGrid({ products, orgId }: ProductsGridProps) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 items-stretch">
       {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          onProductUpdate={onProductUpdate}
-        />
+        <ProductCard key={product.id} product={product} orgId={orgId} />
       ))}
     </div>
   );

@@ -2,6 +2,7 @@
 
 import { MapPin, Store as StoreIcon } from "lucide-react";
 import type { CartOrg } from "@/lib/supabase/queries/user/cart";
+import type { ProductPromotionsMap } from "@/lib/types/public-promotions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -21,6 +22,7 @@ interface CartOrgSectionProps {
   onOpenFulfillment: (org: CartOrg) => void;
   isAllOrgSelected: boolean;
   orgSelectedSubtotal: number;
+  promotionsMap: ProductPromotionsMap;
 }
 
 export function CartOrgSection({
@@ -36,6 +38,7 @@ export function CartOrgSection({
   onOpenFulfillment,
   isAllOrgSelected,
   orgSelectedSubtotal,
+  promotionsMap,
 }: CartOrgSectionProps) {
   const fulfillmentLabel =
     org.fulfillment_method === "delivery" ? "Delivery" : "Pickup";
@@ -86,17 +89,27 @@ export function CartOrgSection({
 
       {/* Items */}
       <div className="divide-y">
-        {org.standalone_items.map((item) => (
-          <CartItemRow
-            key={item.item_id}
-            item={item}
-            quantity={quantities[item.item_id] ?? item.quantity}
-            selected={selectedItems.has(item.item_id)}
-            onSelect={onSelectItem}
-            onQuantityChange={onQuantityChange}
-            onRemove={onRemoveItem}
-          />
-        ))}
+        {org.standalone_items.map((item) => {
+          // Get best eligible promotion for this product (if any)
+          const productPromotions = promotionsMap.get(item.product_id) ?? [];
+          const promotion =
+            productPromotions.find((p) => p.isEligible) ??
+            productPromotions[0] ??
+            null;
+
+          return (
+            <CartItemRow
+              key={item.item_id}
+              item={item}
+              quantity={quantities[item.item_id] ?? item.quantity}
+              selected={selectedItems.has(item.item_id)}
+              onSelect={onSelectItem}
+              onQuantityChange={onQuantityChange}
+              onRemove={onRemoveItem}
+              promotion={promotion}
+            />
+          );
+        })}
         {org.bundle_groups.map((group) => (
           <div key={group.bundle_instance_id} className="p-3">
             <CartBundleGroup

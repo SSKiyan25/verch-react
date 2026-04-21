@@ -29,8 +29,8 @@ export default function RootLayout({
           name="description"
           content="Your e-commerce platform for Visayas State University student organization merchandise"
         />
-        <link rel="icon" href="/enhanced-logo-final.svg" />
-        <link rel="apple-touch-icon" href="/images/enhanced-logo-final.png" />
+        <link rel="icon" href="/logo-verch.webp" />
+        <link rel="apple-touch-icon" href="/logo-verch.webp" />
         <meta name="theme-color" content="#3b82f6" />
       </head>
       <body

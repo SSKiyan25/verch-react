@@ -1,14 +1,16 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PublicShell } from "@/components/layouts/public-shell";
 import { getCachedUserProfile } from "@/lib/data/user";
 import { getCachedCartCount } from "@/lib/data/cart";
+import { Skeleton } from "@/components/ui/skeleton";
 
-export default async function PublicLayout({
+async function PublicLayoutContent({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   const supabase = await createClient();
 
   // Get authenticated user (if any)
@@ -50,5 +52,30 @@ export default async function PublicLayout({
     <PublicShell user={currentUser} cartCount={cartCount}>
       {children}
     </PublicShell>
+  );
+}
+
+function PublicLayoutFallback({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-screen">
+      <div className="h-16 border-b flex items-center px-4">
+        <Skeleton className="h-8 w-32" />
+      </div>
+      <main>{children}</main>
+    </div>
+  );
+}
+
+export default function PublicLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <Suspense
+      fallback={<PublicLayoutFallback>{children}</PublicLayoutFallback>}
+    >
+      <PublicLayoutContent>{children}</PublicLayoutContent>
+    </Suspense>
   );
 }

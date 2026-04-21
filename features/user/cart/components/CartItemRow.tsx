@@ -4,10 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import { Trash2, Info } from "lucide-react";
 import type { CartItem } from "@/lib/supabase/queries/user/cart";
+import type { ProductActivePromotion } from "@/lib/types/public-promotions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { CartQuantityStepper } from "./CartQuantityStepper";
 import { CartIssueWarning } from "./CartIssueWarning";
+import { CartItemPrice } from "./CartItemPrice";
 import { cn } from "@/lib/utils";
 
 interface CartItemRowProps {
@@ -21,6 +23,7 @@ interface CartItemRowProps {
     delta: number,
   ) => void;
   onRemove: (itemId: string, quantity: number) => void;
+  promotion?: ProductActivePromotion | null;
 }
 
 export function CartItemRow({
@@ -30,6 +33,7 @@ export function CartItemRow({
   onSelect,
   onQuantityChange,
   onRemove,
+  promotion,
 }: CartItemRowProps) {
   const [dismissedPriceChange, setDismissedPriceChange] = useState(false);
 
@@ -103,22 +107,14 @@ export function CartItemRow({
               )}
             </p>
           )}
-          <div className="flex items-baseline gap-2">
-            <span className="text-sm font-semibold">
-              ₱
-              {item.current_price.toLocaleString("en-PH", {
-                minimumFractionDigits: 2,
-              })}
-            </span>
-            {item.price_changed && (
-              <span className="text-xs text-muted-foreground line-through">
-                ₱
-                {item.unit_price_snapshot.toLocaleString("en-PH", {
-                  minimumFractionDigits: 2,
-                })}
-              </span>
-            )}
-          </div>
+          <CartItemPrice
+            currentPrice={item.current_price}
+            quantity={quantity}
+            priceChanged={item.price_changed}
+            snapshotPrice={item.unit_price_snapshot}
+            promotion={promotion}
+            showSubtotal={false}
+          />
         </div>
 
         {/* Stepper */}
@@ -135,12 +131,12 @@ export function CartItemRow({
 
         {/* Subtotal */}
         <div className="hidden sm:block w-20 text-right">
-          <p className="text-sm font-semibold">
-            ₱
-            {(item.current_price * quantity).toLocaleString("en-PH", {
-              minimumFractionDigits: 2,
-            })}
-          </p>
+          <CartItemPrice
+            currentPrice={item.current_price}
+            quantity={quantity}
+            promotion={promotion}
+            showSubtotal={true}
+          />
         </div>
 
         {/* Remove */}

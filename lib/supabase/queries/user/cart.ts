@@ -1,4 +1,5 @@
-import { SupabaseClient } from "@supabase/supabase-js";
+// import { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -114,13 +115,15 @@ export type SetCartFulfillmentResult = {
 };
 
 // ---------------------------------------------------------------------------
-// Raw RPC helpers (accept supabase client as arg — safe inside unstable_cache)
+// Raw RPC helpers
+// Fetchers create their own client internally (required for Next.js 16 "use cache")
+// See: .agent/learnings/nextjs/2026-04-16-supabase-client-in-cache-scope.md
 // ---------------------------------------------------------------------------
 
-export async function fetchCartItems(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<CartItem[]> {
+export async function fetchCartItems(userId: string): Promise<CartItem[]> {
+  // ✅ Create fresh server client inside fetcher
+  const supabase = await createClient();
+
   const { data, error } = await supabase.rpc("get_cart", {
     p_user_id: userId,
   });
@@ -169,10 +172,10 @@ export async function fetchCartItems(
   }));
 }
 
-export async function fetchCartCount(
-  supabase: SupabaseClient,
-  userId: string,
-): Promise<number> {
+export async function fetchCartCount(userId: string): Promise<number> {
+  // ✅ Create fresh server client inside fetcher
+  const supabase = await createClient();
+
   const { data, error } = await supabase.rpc("get_cart_count", {
     p_user_id: userId,
   });
@@ -182,9 +185,11 @@ export async function fetchCartCount(
 }
 
 export async function fetchCartValidation(
-  supabase: SupabaseClient,
   userId: string,
 ): Promise<CartValidationIssue[]> {
+  // ✅ Create fresh server client inside fetcher
+  const supabase = await createClient();
+
   const { data, error } = await supabase.rpc("validate_cart", {
     p_user_id: userId,
   });

@@ -42,3 +42,8 @@ next-env.d.ts
 
 .agent
 .agents
+.github
+
+types_database.ts
+
+supabase/.temp/

@@ -45,7 +45,7 @@ export default async function CheckoutPage({
 
   // 3. Fetch all cart items via RPC (same path as the cart page — handles RLS,
   //    joins, and returns all fields we need), then filter to selected IDs.
-  const allCartItems = await fetchCartItems(supabase, user.id);
+  const allCartItems = await fetchCartItems(user.id);
   const selectedCartItems = allCartItems.filter((item) =>
     cartItemIds.includes(item.item_id),
   );

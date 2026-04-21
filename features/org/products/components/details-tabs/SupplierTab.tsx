@@ -31,6 +31,7 @@ export function SupplierTab({
     isEditMode,
     selectedSupplierId,
     errors,
+    enrichedSupplier,
     setIsEditMode,
     setSelectedSupplierId,
     handleInputChange,
@@ -56,8 +57,15 @@ export function SupplierTab({
       });
     },
   });
+  // console.log("SupplierTab render", {
+  //   currentSupplier,
+  //   isEditMode,
+  //   selectedSupplierId,
+  //   suppliers,
+  //   archivedSuppliers,
+  // });
 
-  const hasSupplier = !!currentSupplier && !isEditMode;
+  const hasSupplier = !!enrichedSupplier && !isEditMode;
 
   return (
     <div className="space-y-6">
@@ -79,7 +87,7 @@ export function SupplierTab({
       {hasSupplier ? (
         /* Existing Supplier View */
         <SupplierView
-          supplier={currentSupplier}
+          supplier={enrichedSupplier}
           onEdit={() => setIsEditMode(true)}
           onRemove={handleRemoveSupplier}
           onArchive={handleArchiveSupplier}

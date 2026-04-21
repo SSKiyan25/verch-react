@@ -32,6 +32,10 @@ const fmt = (amount: number) =>
     .format(amount)
     .replace("PHP", "₱");
 
+/**
+ * Compute discount for order-level promotions (organization/order target types).
+ * This function  handles both auto promotions and vouchers.
+ */
 function computeDiscount(
   subtotal: number,
   promo: {

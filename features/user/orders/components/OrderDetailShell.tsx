@@ -49,21 +49,25 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
 
   const [copied, setCopied] = useState(false);
 
-  const copyOrderId = useCallback(() => {
-    void navigator.clipboard.writeText(order.order_id).then(() => {
+  const copyOrderNumber = useCallback(() => {
+    void navigator.clipboard.writeText(order.order_number).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  }, [order.order_id]);
+  }, [order.order_number]);
 
-  const shortId = order.order_id.slice(0, 8).toUpperCase();
   const formattedDate = format(new Date(order.created_at), "PPP");
   const statusLabel = STATUS_LABELS[order.status];
 
   return (
-    <div className="w-full mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6">
       {/* Back navigation */}
-      <Button variant="ghost" size="sm" asChild className="-ml-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        asChild
+        className="-ml-2 hover:bg-muted/50"
+      >
         <Link href="/user/orders">
           <ChevronLeft className="h-4 w-4 mr-1" />
           Back to Orders
@@ -71,44 +75,51 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       </Button>
 
       {/* Order header */}
-      <div className="space-y-1">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold">{order.org_name}</h1>
+      <div className="space-y-2">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight">
+              {order.org_name}
+            </h1>
             <button
               type="button"
-              onClick={copyOrderId}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mt-0.5"
-              aria-label="Copy order ID"
+              onClick={copyOrderNumber}
+              className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+              aria-label="Copy order number"
             >
-              <span className="font-mono">#{shortId}…</span>
+              <span className="font-mono font-medium">
+                #{order.order_number}
+              </span>
               {copied ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
+                <Check className="h-3.5 w-3.5 text-green-600 dark:text-green-500" />
               ) : (
-                <Copy className="h-3.5 w-3.5" />
+                <Copy className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
               )}
             </button>
           </div>
           <Badge
-            className={cn(STATUS_BADGE_CLASSES[statusBadgeVariant], "text-xs")}
+            className={cn(
+              STATUS_BADGE_CLASSES[statusBadgeVariant],
+              "text-sm px-3 py-1.5",
+            )}
           >
             {statusLabel}
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground">{formattedDate}</p>
+        <p className="text-sm text-muted-foreground">{formattedDate}</p>
       </div>
 
       {/* Status timeline */}
-      <Card>
-        <CardContent className="pt-5 pb-4">
+      <Card className="shadow-sm">
+        <CardContent className="pt-6 pb-5">
           <OrderStatusTimeline order={order} />
         </CardContent>
       </Card>
 
       {/* Order items */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Items</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">Order Items</CardTitle>
         </CardHeader>
         <CardContent>
           <OrderItemsTable items={order.items} />
@@ -116,9 +127,9 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       </Card>
 
       {/* Financial summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Order Summary</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">Order Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <OrderFinancialSummary
@@ -133,9 +144,11 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       </Card>
 
       {/* Payment section */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Payment</CardTitle>
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg font-semibold">
+            Payment Information
+          </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <OrderPaymentSection order={order} />
@@ -157,7 +170,7 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
 
       {/* Cancel action */}
       {canCancel && (
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-2">
           <CancelOrderDialog
             orderId={order.order_id}
             orderStatus={order.status}

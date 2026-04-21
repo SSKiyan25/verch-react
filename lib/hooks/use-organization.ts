@@ -53,6 +53,12 @@ export function useOrganization(
         name: initialData.name,
         description: initialData.description,
         last_modified: initialData.last_modified,
+        // ✅ Track visibility and status fields
+        is_public: initialData.is_public,
+        is_setup_complete: initialData.is_setup_complete,
+        status: initialData.status,
+        // ✅ Track settings changes
+        settings: initialData.settings,
       });
 
       // Only update if the data has actually changed

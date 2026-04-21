@@ -1,5 +1,6 @@
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createAnonClient } from "@supabase/supabase-js";
 
 export type CustomerProfile = {
   id: string;
@@ -17,13 +18,22 @@ export type CustomerUserProfile = {
   default_fulfillment: "pickup" | "delivery";
 };
 
-// ─── Raw fetchers (accept supabase client as argument) ────────────────────────
+// ─── Anon client for "use cache" scope ───────────────────────────────────────
+// Plain anon client — safe inside "use cache" (does not call cookies())
+// See: .agent/learnings/nextjs/2026-04-16-cookies-in-cache-scope.md
+const anonSupabase = createAnonClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
+
+// ─── Raw fetchers (fetch data for customer profiles) ─────────────────────────
+// IMPORTANT: These use anonSupabase (not createClient from server.ts)
+// because they are called from "use cache" scope where cookies() is forbidden.
 
 async function fetchCustomerProfile(
-  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<CustomerProfile | null> {
-  const { data, error } = await supabase
+  const { data, error } = await anonSupabase
     .from("users")
     .select(
       "id, full_name, avatar_url, contact_number, has_agreed_to_terms, is_verified, role",
@@ -40,10 +50,9 @@ async function fetchCustomerProfile(
 }
 
 async function fetchCustomerUserProfile(
-  supabase: Awaited<ReturnType<typeof createClient>>,
   userId: string,
 ): Promise<CustomerUserProfile | null> {
-  const { data, error } = await supabase
+  const { data, error } = await anonSupabase
     .from("user_profiles")
     .select("id, bio, default_fulfillment")
     .eq("id", userId)
@@ -75,64 +84,127 @@ import {
 export async function getCachedUserProfileData(
   userId: string,
 ): Promise<UserProfileData | null> {
-  return unstable_cache(
-    () => fetchUserProfile(userId),
-    ["user-profile-data", userId],
-    { revalidate: 60, tags: [`user-profile-data-${userId}`] },
-  )();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) return null;
+  return _getUserProfileDataCached(userId);
+}
+
+async function _getUserProfileDataCached(
+  userId: string,
+): Promise<UserProfileData | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`user-profile-data-${userId}`);
+  return fetchUserProfile(userId);
 }
 
 export async function getCachedUserAddresses(
   userId: string,
 ): Promise<UserAddress[]> {
-  return unstable_cache(
-    () => fetchUserAddresses(userId),
-    ["user-addresses", userId],
-    { revalidate: 60, tags: [`user-addresses-${userId}`] },
-  )();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) return [];
+  return _getUserAddressesCached(userId);
+}
+
+async function _getUserAddressesCached(userId: string): Promise<UserAddress[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`user-addresses-${userId}`);
+  return fetchUserAddresses(userId);
 }
 
 export async function getCachedStudentInfo(
   userId: string,
 ): Promise<StudentInfo | null> {
-  return unstable_cache(
-    () => fetchStudentInfo(userId),
-    ["student-info", userId],
-    { revalidate: 60, tags: [`student-info-${userId}`] },
-  )();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) return null;
+  return _getStudentInfoCached(userId);
+}
+
+async function _getStudentInfoCached(
+  userId: string,
+): Promise<StudentInfo | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`student-info-${userId}`);
+  return fetchStudentInfo(userId);
 }
 
 export async function getCachedUserMemberships(
   userId: string,
 ): Promise<UserMembership[]> {
-  return unstable_cache(
-    () => fetchUserMemberships(userId),
-    ["user-memberships", userId],
-    { revalidate: 60, tags: [`user-memberships-${userId}`] },
-  )();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) return [];
+  return _getUserMembershipsCached(userId);
+}
+
+async function _getUserMembershipsCached(
+  userId: string,
+): Promise<UserMembership[]> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`user-memberships-${userId}`);
+  return fetchUserMemberships(userId);
 }
 
 export async function getCachedCustomerProfile(
   userId: string,
 ): Promise<CustomerProfile | null> {
-  // createClient() (cookies()) is called HERE — outside unstable_cache
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return unstable_cache(
-    () => fetchCustomerProfile(supabase, userId),
-    ["customer-profile", userId],
-    { revalidate: 60, tags: [`customer-profile-${userId}`] },
-  )();
+  if (!user || user.id !== userId) return null;
+  // ✅ Don't pass supabase client into cached scope
+  return _getCustomerProfileCached(userId);
+}
+
+async function _getCustomerProfileCached(
+  userId: string,
+): Promise<CustomerProfile | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`customer-profile-${userId}`);
+  // ✅ Fetcher creates its own client internally
+  return fetchCustomerProfile(userId);
 }
 
 export async function getCachedCustomerUserProfile(
   userId: string,
 ): Promise<CustomerUserProfile | null> {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  return unstable_cache(
-    () => fetchCustomerUserProfile(supabase, userId),
-    ["customer-user-profile", userId],
-    { revalidate: 60, tags: [`customer-user-profile-${userId}`] },
-  )();
+  if (!user || user.id !== userId) return null;
+  // ✅ Don't pass supabase client into cached scope
+  return _getCustomerUserProfileCached(userId);
+}
+
+async function _getCustomerUserProfileCached(
+  userId: string,
+): Promise<CustomerUserProfile | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`customer-user-profile-${userId}`);
+  // ✅ Fetcher creates its own client internally
+  return fetchCustomerUserProfile(userId);
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProductWithDetails } from "@/lib/types/product";
+import { OrgProductListItem } from "@/lib/types/org-products";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,34 +21,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
-import { EditProductModal } from "./edit/EditProductModal";
 
 interface ProductCardProps {
-  product: ProductWithDetails;
-  onProductUpdate: (product: ProductWithDetails) => void;
+  product: OrgProductListItem;
+  orgId: string;
 }
 
-export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
+export function ProductCard({ product, orgId }: ProductCardProps) {
   const router = useRouter();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const lowestPrice =
-    product.variations?.reduce((min, v) => Math.min(min, v.price), Infinity) ||
-    0;
-  const highestPrice =
-    product.variations?.reduce((max, v) => Math.max(max, v.price), 0) || 0;
-
-  const priceDisplay =
-    lowestPrice === highestPrice
-      ? `₱${lowestPrice.toFixed(2)}`
-      : `₱${lowestPrice.toFixed(2)} – ₱${highestPrice.toFixed(2)}`;
-
-  const totalStock =
-    product.variations?.reduce((t, v) => t + v.available_quantity, 0) || 0;
-
+  const totalStock = product.total_stock;
   const isLowStock = totalStock < 10 && totalStock > 0;
-  const isOutOfStock = totalStock === 0;
+  const isOutOfStock = totalStock === 0 && !product.can_pre_order;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -136,7 +121,9 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
                 <DropdownMenuItem onClick={() => setDetailsModalOpen(true)}>
                   <Eye className="w-3.5 h-3.5 mr-2" /> View Details
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                <DropdownMenuItem
+                  onClick={() => router.push(`/org/products/${product.id}`)}
+                >
                   <Edit className="w-3.5 h-3.5 mr-2" /> Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem
@@ -155,9 +142,9 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
         <CardContent className="p-3 flex flex-col flex-1 gap-1.5">
           {/* Category — fixed min-height so cards without category don't collapse */}
           <div className="min-h-[16px]">
-            {product.category && (
+            {product.category_name && (
               <span className="text-[10px] text-slate-400 uppercase tracking-wide font-medium">
-                {product.category.name}
+                {product.category_name}
               </span>
             )}
           </div>
@@ -168,23 +155,24 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
           </h3>
 
           {/* Price */}
-          <p className="text-sm font-bold text-slate-900">{priceDisplay}</p>
+          <p className="text-sm font-bold text-slate-900">Contact for price</p>
 
           {/* Stock + variants */}
           <div className="flex items-center justify-between text-xs">
             <span className={`font-medium ${getStockColor()}`}>
-              {isOutOfStock ? "Out of stock" : `${totalStock} in stock`}
+              {isOutOfStock
+                ? product.can_pre_order
+                  ? "Pre-order"
+                  : "Out of stock"
+                : `${totalStock} in stock`}
             </span>
             <span className="text-slate-400">
-              {product.variations?.length || 0} variant
-              {product.variations?.length !== 1 ? "s" : ""}
+              {product.variation_count || 0} variant
+              {(product.variation_count || 0) !== 1 ? "s" : ""}
             </span>
           </div>
 
-          {/* Orders */}
-          <p className="text-[11px] text-slate-400">
-            {product.total_orders} orders
-          </p>
+          {/* Orders - removed as not available in list data */}
 
           {/* Buttons */}
           <div className="flex gap-1.5 mt-auto flex-col md:flex-row pt-2">
@@ -196,29 +184,15 @@ export function ProductCard({ product, onProductUpdate }: ProductCardProps) {
             >
               <Eye className="w-3 h-3 mr-1" /> View
             </Button>
-            {/* <Button
-              variant="outline"
-              size="sm"
-              className="flex-1 h-7 p-1 text-xs"
-              onClick={() => router.push(`/org/products/${product.id}/stocks`)}
-            >
-              <Package className="w-3 h-3 mr-1" /> Stock
-            </Button> */}
           </div>
         </CardContent>
       </Card>
 
       <ProductDetailsModal
-        product={product}
+        productId={product.id}
+        orgId={orgId}
         open={detailsModalOpen}
         onOpenChange={setDetailsModalOpen}
-        onProductUpdate={onProductUpdate}
-      />
-      <EditProductModal
-        product={product}
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        onSave={onProductUpdate}
       />
     </>
   );

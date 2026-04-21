@@ -30,7 +30,7 @@ export function StockHeader({
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => router.back()}
+            onClick={() => router.push("/org/products")}
             className="p-2 h-8 w-8"
           >
             <ArrowLeft className="w-4 h-4" />

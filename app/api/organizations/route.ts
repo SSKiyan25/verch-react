@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 // GET /api/organizations - List organizations
@@ -52,6 +52,19 @@ export async function POST(request: NextRequest) {
     console.log("Auth user created:", authUser.user.id);
 
     try {
+      // Step 1.5: Generate a safe, unique 4-character order prefix
+      // Takes up to 2 letters from the name + 2 random alphanumeric chars
+      // This prevents the unique index (idx_organizations_order_prefix) from failing
+      const cleanName = formData.name
+        .replace(/[^a-zA-Z0-9]/g, "")
+        .toUpperCase();
+      const basePrefix = cleanName.substring(0, 2).padEnd(2, "X");
+      const randomSuffix = Math.random()
+        .toString(36)
+        .substring(2, 4)
+        .toUpperCase();
+      const generatedPrefix = basePrefix + randomSuffix;
+
       // Step 2: Create organization record
       const organizationData = {
         id: authUser.user.id, // Use auth user ID as organization ID
@@ -89,6 +102,7 @@ export async function POST(request: NextRequest) {
               verifiedBy: "email_verification",
             }
           : {},
+        order_prefix: generatedPrefix, // ✅ Fixed: Passes the valid 4-character string
       };
 
       const { data: organization, error: orgError } = await supabase

@@ -13,40 +13,26 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { X, Plus, AlertCircle, Wand2, Loader2 } from "lucide-react";
 import { CreateProductData } from "@/lib/types/product";
+import type { PublicCategory } from "@/lib/supabase/queries/categories";
 import { useState } from "react";
 import { useProductValidation } from "../hooks/useProductValidation";
 import { useProductHelpers } from "../hooks/useProductHelpers";
-import { useCategories } from "../hooks/useCategories";
 import { toast } from "sonner";
-// import { useParams } from "next/navigation";
 
 interface ProductBasicInfoProps {
   data: CreateProductData;
   onChange: (updates: Partial<CreateProductData>) => void;
+  categories: PublicCategory[];
 }
 
-export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
-  // const params = useParams(); // Add this import if not present
-  // console.log("🔍 ProductBasicInfo params:", params); // Debug log
+export function ProductBasicInfo({
+  data,
+  onChange,
+  categories,
+}: ProductBasicInfoProps) {
   const [keywordInput, setKeywordInput] = useState("");
-  const [isCustomCategoryOpen, setIsCustomCategoryOpen] = useState(false);
-  const [customCategoryName, setCustomCategoryName] = useState("");
-
-  // Use the categories hook
-  const {
-    categories,
-    isLoading: categoriesLoading,
-    isCreating: categoryCreating,
-    createCategory,
-  } = useCategories();
 
   const {
     errors,
@@ -64,7 +50,7 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
 
   const { isGeneratingKeywords, generateKeywords } = useProductHelpers(
     data,
-    onChange
+    onChange,
   );
 
   const handleNameChange = (value: string) => {
@@ -80,36 +66,9 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
   };
 
   const handleCategoryChange = (value: string) => {
-    if (value === "create_new") {
-      setIsCustomCategoryOpen(true);
-      return;
-    }
-
     onChange({ category_id: value });
     validateCategory(value);
     clearError("category_id");
-  };
-
-  const handleCreateCustomCategory = async () => {
-    if (!customCategoryName.trim() || customCategoryName.trim().length < 2) {
-      toast.error("Category name must be at least 2 characters long");
-      return;
-    }
-
-    const newCategory = await createCategory({
-      name: customCategoryName.trim(),
-    });
-
-    if (newCategory) {
-      // Set the newly created category as selected
-      onChange({ category_id: newCategory.id });
-      validateCategory(newCategory.id);
-      clearError("category_id");
-
-      // Close dialog and reset form
-      setIsCustomCategoryOpen(false);
-      setCustomCategoryName("");
-    }
   };
 
   const handleAddKeyword = () => {
@@ -219,18 +178,11 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
           <Select
             value={data.category_id ?? undefined}
             onValueChange={handleCategoryChange}
-            disabled={categoriesLoading}
           >
             <SelectTrigger
               className={errors.category_id ? "border-red-500" : ""}
             >
-              <SelectValue
-                placeholder={
-                  categoriesLoading
-                    ? "Loading categories..."
-                    : "Select category"
-                }
-              />
+              <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
               {categories.map((category) => (
@@ -238,15 +190,6 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
                   {category.name}
                 </SelectItem>
               ))}
-              <SelectItem
-                value="create_new"
-                className="text-blue-600 font-medium"
-              >
-                <div className="flex items-center gap-2">
-                  <Plus className="w-3 h-3" />
-                  Create New Category
-                </div>
-              </SelectItem>
             </SelectContent>
           </Select>
           {errors.category_id && (
@@ -359,71 +302,6 @@ export function ProductBasicInfo({ data, onChange }: ProductBasicInfoProps) {
             )}
           </div>
         </div>
-
-        {/* Custom Category Dialog */}
-        <Dialog
-          open={isCustomCategoryOpen}
-          onOpenChange={setIsCustomCategoryOpen}
-        >
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Category</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="category-name">Category Name*</Label>
-                <Input
-                  id="category-name"
-                  placeholder="e.g., Electronics, Clothing, etc."
-                  value={customCategoryName}
-                  onChange={(e) => setCustomCategoryName(e.target.value)}
-                  maxLength={100}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      handleCreateCustomCategory();
-                    }
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Choose a descriptive name for your new category
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsCustomCategoryOpen(false);
-                    setCustomCategoryName("");
-                  }}
-                  className="flex-1"
-                  disabled={categoryCreating}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCreateCustomCategory}
-                  disabled={
-                    !customCategoryName.trim() ||
-                    customCategoryName.trim().length < 2 ||
-                    categoryCreating
-                  }
-                  className="flex-1"
-                >
-                  {categoryCreating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    "Create Category"
-                  )}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </CardContent>
     </Card>
   );

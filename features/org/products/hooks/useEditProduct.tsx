@@ -2,8 +2,10 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ProductWithDetails, UpdateProductData } from "@/lib/types/product";
+import { ProductWithDetails } from "@/lib/types/product";
+import { UpdateProductInput } from "@/lib/types/org-products";
 import { validateInputSecurity } from "@/lib/utils/security"; // Adjust path as needed
+import { updateProductAction } from "@/features/org/products/actions/productActions";
 
 interface UseEditProductProps {
   onSuccess?: (updatedProduct: ProductWithDetails) => void;
@@ -26,7 +28,7 @@ export function useEditProduct({
   // 1. Unified Validation Logic
   // This combines your specific business rules (length, etc.) with your generic Security Utils
   const validateUpdateData = useCallback(
-    (data: Partial<UpdateProductData>): ValidationResult => {
+    (data: Partial<UpdateProductInput>): ValidationResult => {
       const errors: Record<string, string> = {};
 
       // Helper to quickly check security for any string field
@@ -81,7 +83,11 @@ export function useEditProduct({
       }
 
       // Price / Discount Logic
-      if (data.discount_value !== undefined && data.discount_value < 0) {
+      if (
+        data.discount_value !== undefined &&
+        data.discount_value !== null &&
+        data.discount_value < 0
+      ) {
         errors.discount_value = "Discount value cannot be negative";
       }
 
@@ -90,7 +96,7 @@ export function useEditProduct({
         errors,
       };
     },
-    []
+    [],
   );
 
   // 2. The Update Function
@@ -98,7 +104,7 @@ export function useEditProduct({
     async (
       organizationId: string,
       productId: string,
-      updateData: Partial<UpdateProductData>
+      updateData: Partial<UpdateProductInput>,
     ) => {
       setIsLoading(true);
       setGlobalError(null);
@@ -114,25 +120,27 @@ export function useEditProduct({
 
         // console.log("Data to be sent to API:", updateData);
 
-        // B. API Call
-        const response = await fetch(
-          `/api/organizations/${organizationId}/products/${productId}/edit-product`,
-          {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(updateData),
-          }
+        // B. API Call - Use Server Action
+        const result = await updateProductAction(
+          organizationId,
+          productId,
+          updateData,
         );
 
-        const result = await response.json();
-
-        if (!response.ok) {
-          throw new Error(result.message || "Failed to update product");
+        if (!result.success) {
+          console.error(
+            "[updateProductAction] Server returned error:",
+            result.error,
+          );
+          throw new Error(result.error || "Failed to update product");
         }
 
-        // C. Success
+        // C. Success - Call onSuccess with fresh data
+        // Note: We don't call router.refresh() here because it creates race conditions
+        // with client-side refetches. Let the parent component handle cache refresh.
         if (onSuccess && result.data) {
-          onSuccess(result.data);
+          // Cast OrgProductDetail to ProductWithDetails for callback compatibility
+          onSuccess(result.data as any);
         }
 
         return result.data;
@@ -150,7 +158,7 @@ export function useEditProduct({
         setIsLoading(false);
       }
     },
-    [onSuccess, onError, validateUpdateData]
+    [onSuccess, onError, validateUpdateData],
   );
 
   const clearErrors = useCallback(() => {

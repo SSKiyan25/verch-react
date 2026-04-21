@@ -1,3 +1,5 @@
+"use client";
+
 // import Image from "next/image";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,7 +30,7 @@ export function LoadingScreen({
     <div
       className={cn(
         "fixed inset-0 flex flex-col items-center justify-center bg-background z-50 w-full",
-        className
+        className,
       )}
     >
       <div className="bg-card p-8 rounded-xl shadow-xl flex flex-col items-center max-w-md mx-4 border border-border">

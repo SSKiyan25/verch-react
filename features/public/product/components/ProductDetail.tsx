@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import type { PublicProductDetail } from "@/lib/supabase/queries/products";
+import type { ProductActivePromotion } from "@/lib/types/public-promotions";
 import { useProductVariant } from "../hooks/useProductVariant";
 import { useAddToCart } from "../hooks/useAddToCart";
 import { ProductBreadcrumb } from "./ProductBreadcrumb";
@@ -18,11 +19,13 @@ import { MiniCartDrawer, type MiniCartInfo } from "./MiniCartDrawer";
 type ProductDetailProps = {
   product: PublicProductDetail;
   isAuthenticated: boolean;
+  promotions?: ProductActivePromotion[];
 };
 
 export function ProductDetail({
   product,
   isAuthenticated,
+  promotions = [],
 }: ProductDetailProps) {
   const {
     selectedVariation,
@@ -98,6 +101,7 @@ export function ProductDetail({
             <ProductInfo
               product={product}
               selectedVariation={selectedVariation}
+              promotions={promotions}
             />
 
             {/* 2. Variant cards + CTA — visually grouped */}

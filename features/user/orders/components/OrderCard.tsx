@@ -78,15 +78,15 @@ function OrgAvatar({
   );
 }
 
-// ─── Copy Order ID ────────────────────────────────────────────────────────────
+// ─── Copy Order Number ────────────────────────────────────────────────────────
 
-function CopyableOrderId({ orderId }: { orderId: string }) {
+function CopyableOrderNumber({ orderNumber }: { orderNumber: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    void navigator.clipboard.writeText(orderId).then(() => {
+    void navigator.clipboard.writeText(orderNumber).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
@@ -95,10 +95,10 @@ function CopyableOrderId({ orderId }: { orderId: string }) {
   return (
     <button
       onClick={handleCopy}
-      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors group"
-      aria-label="Copy order ID"
+      className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors group"
+      aria-label="Copy order number"
     >
-      <span className="font-mono">{orderId.slice(0, 8)}…</span>
+      <span className="font-mono">#{orderNumber}</span>
       {copied ? (
         <Check className="h-3 w-3 text-green-500" />
       ) : (
@@ -137,49 +137,54 @@ export function OrderCard({ order }: OrderCardProps) {
       tabIndex={0}
       onKeyDown={(e) => e.key === "Enter" && router.push(detailHref)}
     >
-      <Card className="w-full transition-shadow group-hover:shadow-md">
-        <CardContent className="p-4 sm:p-5 space-y-3">
+      <Card className="w-full transition-all duration-200 group-hover:shadow-lg border-border group-hover:border-primary/30">
+        <CardContent className="p-4 sm:p-6 space-y-4">
           {/* Row 1: org + status */}
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
               <OrgAvatar name={order.org_name} logoUrl={order.org_logo_url} />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground truncate">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-sm font-semibold text-foreground truncate leading-tight">
                   {order.org_name}
                 </p>
-                <CopyableOrderId orderId={order.order_id} />
+                <CopyableOrderNumber orderNumber={order.order_number} />
               </div>
             </div>
-            <span
+            <Badge
               className={cn(
-                "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border shrink-0",
+                "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border shrink-0",
                 STATUS_BADGE_CLASSES[statusBadgeVariant],
               )}
             >
               {STATUS_LABELS[order.status]}
-            </span>
+            </Badge>
           </div>
 
           {/* Row 2: meta info */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2.5 text-muted-foreground">
               {order.fulfillment_method === "pickup" ? (
-                <Store className="h-3.5 w-3.5 shrink-0" />
+                <Store className="h-4 w-4 shrink-0" />
               ) : (
-                <Truck className="h-3.5 w-3.5 shrink-0" />
+                <Truck className="h-4 w-4 shrink-0" />
               )}
-              <span>{itemCountLabel}</span>
-              <span className="text-foreground/30">·</span>
-              <span className="font-medium text-foreground">
+              <span className="text-sm">{itemCountLabel}</span>
+              <span className="text-muted-foreground/50">•</span>
+              <span className="font-semibold text-foreground">
                 {formattedTotal}
               </span>
             </div>
-            <span className="text-xs">{formattedDate}</span>
+            <span className="text-xs text-muted-foreground">
+              {formattedDate}
+            </span>
           </div>
 
           {/* Row 3: payment status + CTA */}
-          <div className="flex items-center justify-between gap-2 pt-0.5">
-            <Badge variant="secondary" className="text-xs font-normal">
+          <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
+            <Badge
+              variant="secondary"
+              className="text-xs font-normal px-2.5 py-0.5"
+            >
               {PAYMENT_STATUS_LABELS[order.payment_status]}
             </Badge>
 
@@ -188,23 +193,28 @@ export function OrderCard({ order }: OrderCardProps) {
               onClick={(e) => e.stopPropagation()}
             >
               {showUploadProof && (
-                <Button size="sm" asChild>
-                  <Link href={detailHref}>Upload Payment Proof</Link>
+                <Button size="sm" className="h-8" asChild>
+                  <Link href={detailHref}>Upload Proof</Link>
                 </Button>
               )}
               {showReuploadProof && (
-                <Button size="sm" variant="destructive" asChild>
-                  <Link href={detailHref}>Re-upload Proof</Link>
+                <Button size="sm" variant="destructive" className="h-8" asChild>
+                  <Link href={detailHref}>Re-upload</Link>
                 </Button>
               )}
               {showAwaitingReview && (
-                <span className="text-xs text-muted-foreground">
-                  Awaiting payment review
+                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  Under Review
                 </span>
               )}
               {showCancel && (
-                <Button size="sm" variant="destructive" asChild>
-                  <Link href={detailHref}>Cancel Order</Link>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  asChild
+                >
+                  <Link href={detailHref}>Cancel</Link>
                 </Button>
               )}
             </div>

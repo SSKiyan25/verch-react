@@ -49,14 +49,22 @@ export const publicVisibilitySchema = z.object({
 });
 
 export const imagesSchema = z.object({
-  logo_image_url: z.string().url().nullable().optional(),
+  logo_image_url: z
+    .string()
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
+    .optional(),
   logo_image_path: z.string().nullable().optional(),
-  cover_image_url: z.string().url().nullable().optional(),
+  cover_image_url: z
+    .string()
+    .transform((val) => (val === "" ? null : val))
+    .nullable()
+    .optional(),
   cover_image_path: z.string().nullable().optional(),
   images_url: z
     .array(
       z.object({
-        url: z.string().url(),
+        url: z.string(),
         path: z.string(),
       }),
     )

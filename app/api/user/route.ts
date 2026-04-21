@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { invalidateCache, CACHE_KEYS, getTag } from "@/lib/cache";
+import { invalidateUserCache } from "@/lib/data/cache-helpers";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "User already exists" },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -53,12 +53,12 @@ export async function POST(request: NextRequest) {
       console.error("User creation error:", insertError);
       return NextResponse.json(
         { error: "Failed to create user" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Invalidate cache for new user
-    invalidateCache(getTag(CACHE_KEYS.users.byId(newUser.id)));
+    invalidateUserCache(newUser.id);
 
     return NextResponse.json({
       success: true,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
     console.error("User creation error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

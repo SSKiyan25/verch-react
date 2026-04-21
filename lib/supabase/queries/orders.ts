@@ -1,4 +1,5 @@
 import { SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -18,11 +19,12 @@ export type PaymentStatus =
   | "rejected";
 export type InvoiceStatus = "draft" | "issued" | "void";
 export type FulfillmentMethod = "pickup" | "delivery";
-export type DiscountType = "percentage" | "fixed";
+export type DiscountType = "percentage" | "fixed" | "free_item";
 export type TriggerType = "auto" | "voucher";
 
 export type UserOrderListItem = {
   order_id: string;
+  order_number: string;
   org_id: string;
   org_name: string;
   org_logo_url: string | null;
@@ -65,6 +67,7 @@ export type OrderDetailPromotion = {
 
 export type OrderDetail = {
   order_id: string;
+  order_number: string;
   org_id: string;
   org_name: string;
   status: OrderStatus;
@@ -113,6 +116,7 @@ export type ApplicablePromotion = {
   name: string;
   description: string | null;
   trigger_type: TriggerType;
+  target_type: "product" | "organization" | "order";
   discount_type: DiscountType;
   discount_value: number;
   minimum_order_amount: number | null;
@@ -139,14 +143,18 @@ function parseJsonField<T>(value: unknown): T {
 }
 
 // ─── Query Functions ──────────────────────────────────────────────────────────
+// Fetchers create their own client internally (required for Next.js 16 "use cache")
+// See: .agent/learnings/nextjs/2026-04-16-supabase-client-in-cache-scope.md
 
 export async function fetchUserOrders(
-  supabase: SupabaseClient,
   userId: string,
   status?: OrderStatus,
   page?: number,
   pageSize?: number,
 ): Promise<UserOrderListItem[]> {
+  // ✅ Create fresh server client inside fetcher
+  const supabase = await createClient();
+
   const { data, error } = await supabase.rpc("get_user_orders", {
     p_user_id: userId,
     p_status: status ?? null,
@@ -161,6 +169,7 @@ export async function fetchUserOrders(
 
   return rows.map((row) => ({
     order_id: row.out_order_id as string,
+    order_number: row.out_order_number as string,
     org_id: row.out_org_id as string,
     org_name: row.out_org_name as string,
     org_logo_url: (row.out_org_logo_url as string) ?? null,
@@ -176,10 +185,12 @@ export async function fetchUserOrders(
 }
 
 export async function fetchOrderDetail(
-  supabase: SupabaseClient,
   userId: string,
   orderId: string,
 ): Promise<OrderDetail> {
+  // ✅ Create fresh server client inside fetcher
+  const supabase = await createClient();
+
   const { data, error } = await supabase.rpc("get_order_detail", {
     p_user_id: userId,
     p_order_id: orderId,
@@ -226,6 +237,7 @@ export async function fetchOrderDetail(
 
   return {
     order_id: row.out_order_id as string,
+    order_number: row.out_order_number as string,
     org_id: row.out_org_id as string,
     org_name: row.out_org_name as string,
     status: row.out_status as OrderStatus,
@@ -323,6 +335,7 @@ export async function fetchApplicablePromotions(
     name: row.out_name as string,
     description: (row.out_description as string) ?? null,
     trigger_type: row.out_trigger_type as TriggerType,
+    target_type: (row.out_target_type as "product" | "organization" | "order") ?? "order",
     discount_type: row.out_discount_type as DiscountType,
     discount_value: Number(row.out_discount_value),
     minimum_order_amount:

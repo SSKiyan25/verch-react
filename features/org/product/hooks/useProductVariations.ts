@@ -9,7 +9,6 @@ import {
 } from "@/lib/hooks/use-input-validation";
 import { generateSku, validateSku } from "@/lib/utils/sku-generator";
 import { toast } from "sonner";
-import { Organization } from "@/lib/types/organization";
 
 interface VariationFormData extends Omit<CreateVariationData, "product_id"> {
   attributes: Record<string, string>;
@@ -19,8 +18,7 @@ export function useProductVariations(
   variations: CreateVariationData[],
   onChange: (variations: CreateVariationData[]) => void,
   productName: string = "Product",
-  // ⚡ Pass organization directly
-  organization: Organization | null
+  commissionRate: number = 0,
 ) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -34,12 +32,6 @@ export function useProductVariations(
   });
   const [newAttrKey, setNewAttrKey] = useState("");
   const [newAttrValue, setNewAttrValue] = useState("");
-
-  // ⚡ Get commission rate directly from passed prop
-  // Note: Ensure your Organization type includes 'settings'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const settings = organization?.settings as any;
-  const commissionRate = settings?.commissionRate || 0.05;
 
   // Validation rules for variation form
   const validationRules = {
@@ -94,7 +86,7 @@ export function useProductVariations(
 
   const { errors, validateAll, validateSingle, clearAllErrors } = useValidation(
     formData,
-    validationRules
+    validationRules,
   );
 
   const resetForm = () => {
@@ -168,7 +160,7 @@ export function useProductVariations(
 
     if (formData.sku) {
       const isDuplicate = variations.some(
-        (v, index) => v.sku === formData.sku && index !== editingIndex
+        (v, index) => v.sku === formData.sku && index !== editingIndex,
       );
       if (isDuplicate) {
         toast.error("SKU already exists in another variation");
@@ -238,7 +230,7 @@ export function useProductVariations(
   const handleFormFieldChange = (
     field: keyof VariationFormData,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    value: any
+    value: any,
   ) => {
     let processedValue = value;
 

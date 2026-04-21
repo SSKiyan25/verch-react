@@ -91,7 +91,7 @@ const productValidationRules = {
   discount_type: {
     required: false,
     custom: (value: string) => {
-      const validTypes = ["none", "percentage", "fixed_amount"];
+      const validTypes = ["none", "percentage", "fixed"];
       if (value && !validTypes.includes(value)) {
         return "Invalid discount type";
       }

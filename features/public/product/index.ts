@@ -11,3 +11,8 @@ export { OrgProductsSection } from "./components/OrgProductsSection";
 export { ProductReviews } from "./components/ProductReviews";
 export { useProductVariant } from "./hooks/useProductVariant";
 export { useAddToCart } from "./hooks/useAddToCart";
+
+// Promotions components
+export { PromotionBadge } from "./components/PromotionBadge";
+export { PriceWithPromotion } from "./components/PriceWithPromotion";
+export { PromotionsList } from "./components/PromotionsList";

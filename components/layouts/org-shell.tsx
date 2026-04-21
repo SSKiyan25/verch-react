@@ -28,6 +28,7 @@ import {
   Users,
   Settings,
   BarChart3,
+  Percent,
 } from "lucide-react";
 
 // Define Navigation Items here (Static Data)
@@ -43,6 +44,12 @@ const orgNavItems = [
     url: "/org/products",
     icon: Package,
     iconName: "Package",
+  },
+  {
+    title: "Promotions",
+    url: "/org/promotions",
+    icon: Percent,
+    iconName: "Percent",
   },
   {
     title: "Orders",
@@ -80,20 +87,20 @@ interface OrgShellProps {
     avatar: string;
     role: string;
   };
-  isSetupComplete: boolean;
+  requiresPasswordChange: boolean;
   organizationLogo?: string;
 }
 
 export function OrgShell({
   children,
   user,
-  isSetupComplete,
+  requiresPasswordChange,
   organizationLogo,
 }: OrgShellProps) {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Handle Client-Side Redirection for Setup
+  // Handle Client-Side Redirection for Password Change
 
   const userForSidebar = {
     ...user,
@@ -101,11 +108,11 @@ export function OrgShell({
   };
 
   useEffect(() => {
-    if (!isSetupComplete && !pathname.startsWith("/org/settings")) {
-      console.log("⚠️ Setup incomplete. Redirecting to settings...");
+    if (requiresPasswordChange && !pathname.startsWith("/org/settings")) {
+      console.log("⚠️ Password change required. Redirecting to settings...");
       router.replace("/org/settings");
     }
-  }, [isSetupComplete, pathname, router]);
+  }, [requiresPasswordChange, pathname, router]);
 
   const breadcrumbs = generateBreadcrumbs(pathname);
 

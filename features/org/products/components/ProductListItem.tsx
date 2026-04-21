@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ProductWithDetails } from "@/lib/types/product";
+import { OrgProductListItem } from "@/lib/types/org-products";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,49 +21,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
-// import { StockManagementDialog } from "./stock/StockManagementDialog";
-import { EditProductModal } from "./edit/EditProductModal";
 
 interface ProductListItemProps {
-  product: ProductWithDetails;
-  onProductUpdate: (product: ProductWithDetails) => void;
+  product: OrgProductListItem;
+  orgId: string;
 }
 
-export function ProductListItem({
-  product,
-  onProductUpdate,
-}: ProductListItemProps) {
+export function ProductListItem({ product, orgId }: ProductListItemProps) {
   const router = useRouter();
   const [detailsModalOpen, setDetailsModalOpen] = useState(false);
-  // const [stockModalOpen, setStockModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
 
-  const lowestPrice =
-    product.variations?.reduce(
-      (min, variation) => Math.min(min, variation.price),
-      Infinity
-    ) || 0;
-
-  const highestPrice =
-    product.variations?.reduce(
-      (max, variation) => Math.max(max, variation.price),
-      0
-    ) || 0;
-
-  const priceDisplay =
-    lowestPrice === highestPrice
-      ? `₱${lowestPrice.toFixed(2)}`
-      : `₱${lowestPrice.toFixed(2)} - ₱${highestPrice.toFixed(2)}`;
-
-  // Calculate total stock across variations
-  const totalStock =
-    product.variations?.reduce(
-      (total, variation) => total + variation.available_quantity,
-      0
-    ) || 0;
+  const totalStock = product.total_stock;
 
   const isLowStock = totalStock < 10 && totalStock > 0;
-  const isOutOfStock = totalStock === 0;
+  const isOutOfStock = totalStock === 0 && !product.can_pre_order;
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -139,9 +110,9 @@ export function ProductListItem({
                     <Badge className={getStatusColor(product.status)}>
                       {formatStatus(product.status)}
                     </Badge>
-                    {product.category && (
+                    {product.category_name && (
                       <Badge variant="outline" className="text-xs">
-                        {product.category.name}
+                        {product.category_name}
                       </Badge>
                     )}
                   </div>
@@ -151,10 +122,8 @@ export function ProductListItem({
                   </p>
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span>Sales: ₱{product.total_sales.toLocaleString()}</span>
-                    <span>Orders: {product.total_orders}</span>
                     <span className="font-medium text-foreground">
-                      {priceDisplay}
+                      Contact for price
                     </span>
                     <span className={`font-medium ${getStockColor()}`}>
                       Stock: {totalStock}
@@ -194,7 +163,11 @@ export function ProductListItem({
                         <Eye className="w-4 h-4 mr-2" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setEditModalOpen(true)}>
+                      <DropdownMenuItem
+                        onClick={() =>
+                          router.push(`/org/products/${product.id}`)
+                        }
+                      >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Product
                       </DropdownMenuItem>
@@ -213,20 +186,11 @@ export function ProductListItem({
 
       {/* Modals */}
       <ProductDetailsModal
-        product={product}
+        productId={product.id}
+        orgId={orgId}
         open={detailsModalOpen}
         onOpenChange={setDetailsModalOpen}
-        onProductUpdate={onProductUpdate}
       />
-
-      <EditProductModal
-        product={product}
-        open={editModalOpen}
-        onOpenChange={setEditModalOpen}
-        onSave={onProductUpdate}
-      />
-
-      {/* Removed StockManagementDialog - now navigates to dedicated page */}
     </>
   );
 }

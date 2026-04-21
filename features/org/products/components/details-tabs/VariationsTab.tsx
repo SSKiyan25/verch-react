@@ -30,15 +30,19 @@ import { ArchiveVariationDialog } from "./ArchiveVariationDialog";
 
 interface VariationsTabProps {
   product: ProductWithDetails;
+  orgId: string;
+  isLoadingProduct?: boolean;
   onProductUpdate?: (product: ProductWithDetails) => void;
 }
 
 export function VariationsTab({
   product,
+  orgId,
+  isLoadingProduct = false,
   onProductUpdate,
 }: VariationsTabProps) {
   const [localVariations, setLocalVariations] = useState<ProductVariation[]>(
-    product.variations || []
+    product.variations || [],
   );
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [variationToArchive, setVariationToArchive] =
@@ -57,7 +61,7 @@ export function VariationsTab({
     handleRestore,
   } = useVariationModal({
     productId: product.id,
-    organizationId: product.organization_id,
+    organizationId: orgId,
     onVariationCreate: (newVariation) => {
       setLocalVariations((prev) => [...prev, newVariation]);
       onProductUpdate?.({
@@ -67,25 +71,25 @@ export function VariationsTab({
     },
     onVariationUpdate: (updatedVariation) => {
       setLocalVariations((prev) =>
-        prev.map((v) => (v.id === updatedVariation.id ? updatedVariation : v))
+        prev.map((v) => (v.id === updatedVariation.id ? updatedVariation : v)),
       );
       onProductUpdate?.({
         ...product,
         variations: localVariations.map((v) =>
-          v.id === updatedVariation.id ? updatedVariation : v
+          v.id === updatedVariation.id ? updatedVariation : v,
         ),
       });
     },
     onVariationDelete: (variationId) => {
       setLocalVariations((prev) =>
         prev.map((v) =>
-          v.id === variationId ? { ...v, is_archived: true } : v
-        )
+          v.id === variationId ? { ...v, is_archived: true } : v,
+        ),
       );
       onProductUpdate?.({
         ...product,
         variations: localVariations.map((v) =>
-          v.id === variationId ? { ...v, is_archived: true } : v
+          v.id === variationId ? { ...v, is_archived: true } : v,
         ),
       });
     },
@@ -119,6 +123,29 @@ export function VariationsTab({
   // Count variations for display
   const activeCount = localVariations.filter((v) => !v.is_archived).length;
   const archivedCount = localVariations.filter((v) => v.is_archived).length;
+
+  // Show loading skeleton while fetching product details
+  if (isLoadingProduct) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="space-y-2">
+            <div className="h-6 w-48 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+          </div>
+          <div className="h-9 w-32 bg-muted animate-pulse rounded" />
+        </div>
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-32 rounded-lg bg-muted animate-pulse border"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -223,7 +250,7 @@ export function VariationsTab({
                               >
                                 {key}: {String(value)}
                               </Badge>
-                            )
+                            ),
                           )}
                         </div>
                       )}

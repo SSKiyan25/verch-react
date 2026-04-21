@@ -19,11 +19,15 @@ export function useOrganizationImages() {
     gallery: false,
   });
 
-  const { uploadImage, deleteImage, isUploading } = useImageUpload();
+  const { uploadImage, deleteImage, isUploading } = useImageUpload({
+    bucket: "organization-images",
+    maxSize: 2 * 1024 * 1024, // 2MB
+    allowedTypes: ["image/jpeg", "image/png", "image/webp"],
+  });
 
   const uploadLogo = async (
     file: File,
-    organizationId: string
+    organizationId: string,
   ): Promise<ImageUploadResult> => {
     setLoadingStates((prev) => ({ ...prev, logo: true }));
 
@@ -31,7 +35,7 @@ export function useOrganizationImages() {
       const result = await uploadImage(
         file,
         `organizations/${organizationId}/logo`,
-        "logo"
+        "logo",
       );
       return result;
     } finally {
@@ -41,7 +45,7 @@ export function useOrganizationImages() {
 
   const uploadCover = async (
     file: File,
-    organizationId: string
+    organizationId: string,
   ): Promise<ImageUploadResult> => {
     setLoadingStates((prev) => ({ ...prev, cover: true }));
 
@@ -49,7 +53,7 @@ export function useOrganizationImages() {
       const result = await uploadImage(
         file,
         `organizations/${organizationId}/cover`,
-        "cover"
+        "cover",
       );
       return result;
     } finally {
@@ -59,14 +63,14 @@ export function useOrganizationImages() {
 
   const uploadGalleryImage = async (
     file: File,
-    organizationId: string
+    organizationId: string,
   ): Promise<ImageUploadResult> => {
     setLoadingStates((prev) => ({ ...prev, gallery: true }));
 
     try {
       const result = await uploadImage(
         file,
-        `organizations/${organizationId}/gallery`
+        `organizations/${organizationId}/gallery`,
       );
       return result;
     } finally {

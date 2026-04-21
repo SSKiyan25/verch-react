@@ -202,7 +202,10 @@ export function useOrganizationSettings({
             ? "Organization is now publicly visible"
             : "Organization visibility updated",
         );
+
+        // Refresh to get updated data from server
         router.refresh();
+
         return { success: true };
       } catch (err) {
         const errorMessage =

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { StockLog } from "@/lib/types/product";
+import { getStockLogsAction } from "@/features/org/products/actions/stockActions";
+import type { StockLogEntry } from "@/lib/types/org-products";
 
 interface UseStockHistoryOptions {
   organizationId: string;
@@ -11,15 +12,11 @@ interface UseStockHistoryOptions {
   search?: string;
 }
 
-interface StockHistoryResponse {
-  success: boolean;
-  data: StockLog[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
+interface StockHistoryPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 export function useStockHistory({
@@ -31,8 +28,8 @@ export function useStockHistory({
   variationId = "all",
   search = "",
 }: UseStockHistoryOptions) {
-  const [data, setData] = useState<StockLog[]>([]);
-  const [pagination, setPagination] = useState({
+  const [data, setData] = useState<StockLogEntry[]>([]);
+  const [pagination, setPagination] = useState<StockHistoryPagination>({
     page: 1,
     limit: 10,
     total: 0,
@@ -47,31 +44,31 @@ export function useStockHistory({
       setError(null);
 
       try {
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: limit.toString(),
-        });
-
-        if (action !== "all") params.append("action", action);
-        if (variationId !== "all") params.append("variationId", variationId);
-        if (search) params.append("search", search);
-
-        const response = await fetch(
-          `/api/organizations/${organizationId}/products/${productId}/stock-history?${params}`
+        // Use server action instead of API route
+        const result = await getStockLogsAction(
+          organizationId,
+          productId,
+          variationId === "all" ? null : variationId,
+          page,
+          limit,
         );
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch stock history");
+        if (!result.success) {
+          throw new Error(result.error || "Failed to fetch stock history");
         }
 
-        const result: StockHistoryResponse = await response.json();
+        // TypeScript now knows result.data exists after success check
+        const logs = result.data?.logs ?? [];
+        const totalCount = result.data?.totalCount ?? 0;
 
-        if (result.success) {
-          setData(result.data);
-          setPagination(result.pagination);
-        } else {
-          throw new Error("Failed to fetch stock history");
-        }
+        // Map the result to match expected format
+        setData(logs);
+        setPagination({
+          page,
+          limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / limit),
+        });
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Unknown error"));
       } finally {

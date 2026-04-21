@@ -3,9 +3,11 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductCard } from "./ProductCard";
 import type { PublicProductListItem } from "@/lib/supabase/queries/products";
+import type { ProductPromotionsMap } from "@/lib/types/public-promotions";
 
 type Props = {
   products: PublicProductListItem[];
+  promotionsMap?: ProductPromotionsMap;
   isLoading?: boolean;
   skeletonCount?: number;
 };
@@ -42,6 +44,7 @@ function EmptyState() {
 
 export function ProductsGrid({
   products,
+  promotionsMap,
   isLoading = false,
   skeletonCount = 8,
 }: Props) {
@@ -55,7 +58,11 @@ export function ProductsGrid({
         <EmptyState />
       ) : (
         products.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard
+            key={product.id}
+            product={product}
+            promotions={promotionsMap?.get(product.id)}
+          />
         ))
       )}
     </div>

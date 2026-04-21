@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     if (!type || !["terms", "privacy"].includes(type)) {
       return NextResponse.json(
         { error: "Invalid content type" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
