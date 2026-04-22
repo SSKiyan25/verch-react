@@ -34,11 +34,7 @@ export default async function OrgOrderDetailPage({ params }: PageProps) {
   }
 
   const { orderId } = await params;
-  const order = await getCachedOrgOrderDetail(
-    user.id,
-    orderId,
-    userRecord.organization_id,
-  );
+  const order = await getCachedOrgOrderDetail(user.id, orderId);
 
   // console.log("Fetched order detail for orderId:", orderId, "Order:", order);
   // console.log("Order number:", order?.order_number);
