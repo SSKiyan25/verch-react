@@ -203,8 +203,6 @@ export default async function CheckoutPage({
       // Applicable promotions (LIVE — not cached)
       // Guard against empty array: passing [] to the RPC causes PostgreSQL
       // error 42804 because the driver can't resolve [] to uuid[].
-      // Also wrapped in try/catch so a DB-side return-type mismatch (also
-      // 42804) degrades gracefully rather than crashing the checkout page.
       const applicablePromotions =
         orgCartItemIds.length > 0
           ? await fetchApplicablePromotions(
@@ -212,7 +210,10 @@ export default async function CheckoutPage({
               user.id,
               orgId,
               orgCartItemIds,
-            ).catch(() => [])
+            ).catch((err) => {
+              console.error(`Error fetching promotions for org ${orgId}:`, err);
+              return [];
+            })
           : [];
 
       const fulfillment = fulfillmentMap.get(orgId);

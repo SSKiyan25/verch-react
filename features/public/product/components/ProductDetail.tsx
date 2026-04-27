@@ -148,12 +148,13 @@ export function ProductDetail({
       {/* Variant sheet — confirm selected variant + quantity */}
       <ProductVariantSheet
         open={isSheetOpen}
-        onOpenChange={(open) => !open && closeSheet()}
+        onOpenChange={(open) => !open && !isPending && closeSheet()}
         mode={sheetMode}
         variations={normalizedVariations}
         selectedVariation={selectedVariation}
         onSelectVariation={selectVariation}
         onConfirm={handleSheetConfirm}
+        isPending={isPending}
       />
 
       {/* Mini cart drawer — shown after successful add to cart */}

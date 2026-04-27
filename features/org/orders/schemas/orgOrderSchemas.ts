@@ -13,6 +13,14 @@ export const updateOrderStatusSchema = z.object({
   newStatus: z.enum(["confirmed", "preparing", "ready"]),
 });
 
+export const cancelOrderSchema = z.object({
+  orderId: z.string().uuid(),
+  reason: z
+    .string()
+    .min(10, "Please provide a reason (at least 10 characters)")
+    .max(500),
+});
+
 export const voidInvoiceSchema = z.object({
   invoiceId: z.string().uuid(),
   voidReason: z
@@ -35,6 +43,7 @@ export const reissueInvoiceSchema = z.object({
 
 export type RejectProofInput = z.infer<typeof rejectProofSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof updateOrderStatusSchema>;
+export type CancelOrderInput = z.infer<typeof cancelOrderSchema>;
 export type VoidInvoiceInput = z.infer<typeof voidInvoiceSchema>;
 export type ConfirmPaymentInput = z.infer<typeof confirmPaymentSchema>;
 export type CompleteOrderInput = z.infer<typeof completeOrderSchema>;

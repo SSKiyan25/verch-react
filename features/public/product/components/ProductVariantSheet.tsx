@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Minus, Plus } from "lucide-react";
+import { Loader2, Minus, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +42,7 @@ type Props = {
   selectedVariation: PublicProductVariationDetail | null;
   onSelectVariation: (variation: PublicProductVariationDetail) => void;
   onConfirm: (quantity: number) => void;
+  isPending?: boolean;
 };
 
 export function ProductVariantSheet({
@@ -52,6 +53,7 @@ export function ProductVariantSheet({
   selectedVariation,
   onSelectVariation,
   onConfirm,
+  isPending = false,
 }: Props) {
   const isMobile = useIsMobile();
   const [quantity, setQuantity] = useState(1);
@@ -152,11 +154,13 @@ export function ProductVariantSheet({
                 <button
                   key={variation.id}
                   type="button"
-                  disabled={!selectable}
-                  onClick={() => selectable && onSelectVariation(variation)}
+                  disabled={!selectable || isPending}
+                  onClick={() =>
+                    !isPending && selectable && onSelectVariation(variation)
+                  }
                   className={cn(
                     "w-full px-5 py-3 text-left transition-colors",
-                    selectable
+                    selectable && !isPending
                       ? "hover:bg-muted/50 cursor-pointer"
                       : "opacity-50 cursor-not-allowed",
                     isSelected &&
@@ -291,14 +295,23 @@ export function ProductVariantSheet({
         <div className="shrink-0 border-t bg-background px-5 py-4">
           <Button
             className="w-full"
-            disabled={!selectedVariation || !canConfirm || !!qtyWarning}
+            disabled={
+              !selectedVariation || !canConfirm || !!qtyWarning || isPending
+            }
             onClick={() => onConfirm(quantity)}
           >
-            {!selectedVariation
-              ? "Select a variant to continue"
-              : mode === "preorder"
-                ? "Confirm Pre-order"
-                : "Add to Cart"}
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : !selectedVariation ? (
+              "Select a variant to continue"
+            ) : mode === "preorder" ? (
+              "Confirm Pre-order"
+            ) : (
+              "Add to Cart"
+            )}
           </Button>
         </div>
       </SheetContent>

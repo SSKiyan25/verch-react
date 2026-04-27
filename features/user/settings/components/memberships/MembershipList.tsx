@@ -114,6 +114,9 @@ export function MembershipList({
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           userId={userId}
+          onSuccess={() => {
+            setSuccessMsg("Application submitted successfully!");
+          }}
         />
       )}
     </div>

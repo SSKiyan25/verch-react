@@ -19,6 +19,8 @@ interface OrgSummary {
   orgId: string;
   orgName: string;
   subtotal: number;
+  autoDiscount: number;
+  voucherDiscount: number;
   discountAmount: number;
   orgTotal: number;
   bestAutoPromo: ApplicablePromotion | null;
@@ -126,6 +128,8 @@ export function useCheckout({
           orgId: group.orgId,
           orgName: group.orgName,
           subtotal: summary.subtotal,
+          autoDiscount: summary.autoDiscount,
+          voucherDiscount: summary.voucherDiscount,
           discountAmount: summary.totalDiscount,
           orgTotal: summary.orgTotal,
           bestAutoPromo: summary.bestEligibleAutoPromo,
@@ -230,7 +234,18 @@ export function useCheckout({
 
       if (Object.keys(errors).length === 0) {
         // All orgs succeeded
-        router.push("/user/orders?placed=true");
+        // Check if any order is a GCash payment
+        const gcashOrder = result.results.find(
+          (r) => r.paymentMethod === "gcash" && r.orderId !== null,
+        );
+
+        if (gcashOrder && gcashOrder.orderId) {
+          // Redirect to GCash payment page for first GCash order
+          router.push(`/user/payment/${gcashOrder.orderId}`);
+        } else {
+          // All cash orders, go to orders list
+          router.push("/user/orders?placed=true");
+        }
       } else {
         setPlaceErrors(errors);
       }

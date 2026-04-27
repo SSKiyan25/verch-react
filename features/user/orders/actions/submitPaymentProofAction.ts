@@ -8,6 +8,15 @@ const SubmitPaymentProofSchema = z.object({
   orderId: z.string().uuid(),
   proofPath: z.string().min(1, "Proof path is required"),
   proofUrl: z.string().min(1, "Proof URL is required"),
+  proofAmount: z
+    .number()
+    .positive("Amount must be greater than zero")
+    .multipleOf(0.01, "Amount must have at most 2 decimal places"),
+  proofReferenceCode: z
+    .string()
+    .min(1, "Reference code is required")
+    .max(100, "Reference code is too long")
+    .transform((s) => s.trim().toUpperCase()),
 });
 
 type SubmitPaymentProofResult =
@@ -18,6 +27,8 @@ export async function submitPaymentProofAction(input: {
   orderId: string;
   proofPath: string;
   proofUrl: string;
+  proofAmount: number;
+  proofReferenceCode: string;
 }): Promise<SubmitPaymentProofResult> {
   try {
     const supabase = await createClient();
@@ -47,6 +58,8 @@ export async function submitPaymentProofAction(input: {
       p_order_id: validated.orderId,
       p_proof_url: validated.proofUrl,
       p_proof_path: validated.proofPath,
+      p_proof_amount: validated.proofAmount,
+      p_proof_reference_code: validated.proofReferenceCode,
     });
 
     if (error) return { success: false, error: error.message };

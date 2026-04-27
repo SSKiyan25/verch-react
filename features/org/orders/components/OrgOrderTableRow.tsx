@@ -2,78 +2,31 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, Package, Truck } from "lucide-react";
+import { Package, Truck, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { OrgOrderRowActions } from "./OrgOrderRowActions";
+import { useUpdateOrderStatus } from "@/features/org/orders/hooks/useUpdateOrderStatus";
+import {
+  type OptimisticOrderPatch,
+  getNextStatus,
+} from "@/features/org/orders/hooks/useOptimisticOrderStatus";
 import type { OrgOrderListItem } from "@/lib/supabase/queries/org-orders";
-
-// ─── Badge color maps ─────────────────────────────────────────────────────────
-
-const STATUS_COLORS: Record<string, string> = {
-  pending:
-    "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400",
-  confirmed:
-    "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400",
-  preparing:
-    "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-900/30 dark:text-purple-400",
-  ready:
-    "bg-teal-100 text-teal-800 border-teal-200 dark:bg-teal-900/30 dark:text-teal-400",
-  completed:
-    "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400",
-  cancelled:
-    "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400",
-};
-
-const PAYMENT_STATUS_COLORS: Record<string, string> = {
-  pending:
-    "bg-gray-100 text-gray-800 border-gray-200 dark:bg-gray-900/30 dark:text-gray-400",
-  proof_submitted:
-    "bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400",
-  confirmed:
-    "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400",
-  rejected:
-    "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400",
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  confirmed: "Confirmed",
-  preparing: "Preparing",
-  ready: "Ready",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
-const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  proof_submitted: "Proof Submitted",
-  confirmed: "Confirmed",
-  rejected: "Rejected",
-};
-
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  gcash: "GCash",
-  cash: "Cash on Pickup",
-};
-
-// ─── Helper functions ─────────────────────────────────────────────────────────
-
-function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatCurrency(amount: number): string {
-  return `₱${amount.toLocaleString("en-PH", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+import {
+  STATUS_COLORS,
+  STATUS_LABELS,
+  PAYMENT_STATUS_COLORS,
+  PAYMENT_STATUS_LABELS,
+  PAYMENT_METHOD_LABELS,
+  formatCurrency,
+  formatDate,
+} from "../constants";
 
 // ─── Customer Avatar ──────────────────────────────────────────────────────────
 
@@ -114,34 +67,82 @@ function CustomerAvatar({
 
 type OrgOrderTableRowProps = {
   order: OrgOrderListItem;
+  userRole: string;
+  addOptimistic: (patch: OptimisticOrderPatch) => void;
+  isSelected: boolean;
+  onToggle: (id: string) => void;
 };
 
-export function OrgOrderTableRow({ order }: OrgOrderTableRowProps) {
+export function OrgOrderTableRow({
+  order,
+  userRole,
+  addOptimistic,
+  isSelected,
+  onToggle,
+}: OrgOrderTableRowProps) {
+  const { advanceStatus, isUpdating } = useUpdateOrderStatus(
+    order.id,
+    order.status,
+  );
+
+  const canAdvance =
+    !["completed", "cancelled", "ready"].includes(order.status) &&
+    order.payment_status === "confirmed";
+
+  const nextStatus = getNextStatus(order.status);
+
+  async function handleStatusClick() {
+    if (!canAdvance || !nextStatus || isUpdating) return;
+    addOptimistic({ orderId: order.id, patch: { status: nextStatus } });
+    await advanceStatus();
+  }
+
   return (
-    <tr className="border-b transition-colors hover:bg-muted/50 group">
+    <tr
+      className={cn(
+        "group transition-colors duration-200 hover:bg-muted/40",
+        isSelected && "bg-[#D4AF37]/[0.08] hover:bg-[#D4AF37]/[0.12]",
+      )}
+    >
+      {/* Checkbox */}
+      <td className="w-10 px-3 py-3 align-middle">
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={() => onToggle(order.id)}
+          aria-label={`Select order ${order.order_number}`}
+          className="cursor-pointer"
+        />
+      </td>
       {/* Customer */}
-      <td className="px-3 py-3">
+      <td className="px-3 py-3.5 align-middle">
         <Link
           href={`/org/orders/${order.id}`}
-          className="flex items-center gap-2 group-hover:text-primary transition-colors"
+          className="flex items-center gap-3 transition-colors duration-200 group-hover:text-primary cursor-pointer"
         >
           <CustomerAvatar
             name={order.customer_name}
             avatarUrl={order.customer_avatar_url}
           />
-          <span className="text-sm font-medium truncate max-w-[120px]">
-            {order.customer_name}
-          </span>
+          <div className="min-w-0">
+            <span className="block truncate text-sm font-medium max-w-[140px]">
+              {order.customer_name}
+            </span>
+            <span className="block text-xs text-muted-foreground">
+              Customer
+            </span>
+          </div>
         </Link>
       </td>
 
       {/* Order # and date */}
-      <td className="px-3 py-3">
+      <td className="px-3 py-3.5 align-middle">
         <Link
           href={`/org/orders/${order.id}`}
-          className="block group-hover:text-primary transition-colors"
+          className="block transition-colors duration-200 group-hover:text-primary cursor-pointer"
         >
-          <div className="text-sm font-medium">{order.order_number}</div>
+          <div className="text-sm font-semibold tracking-tight">
+            {order.order_number}
+          </div>
           <div className="text-xs text-muted-foreground">
             {formatDate(order.created_at)}
           </div>
@@ -149,15 +150,18 @@ export function OrgOrderTableRow({ order }: OrgOrderTableRowProps) {
       </td>
 
       {/* Items */}
-      <td className="px-3 py-3">
-        <span className="text-sm text-muted-foreground">
+      <td className="px-3 py-3.5 align-middle">
+        <span className="text-sm font-medium text-foreground">
           {order.item_count} {order.item_count === 1 ? "item" : "items"}
         </span>
       </td>
 
       {/* Fulfillment */}
-      <td className="px-3 py-3">
-        <Badge variant="outline" className="gap-1">
+      <td className="px-3 py-3.5 align-middle">
+        <Badge
+          variant="outline"
+          className="gap-1 rounded-full border-border/70 bg-background/80 px-2.5 py-1 text-xs"
+        >
           {order.fulfillment_method === "delivery" ? (
             <>
               <Truck className="h-3 w-3" />
@@ -173,15 +177,15 @@ export function OrgOrderTableRow({ order }: OrgOrderTableRowProps) {
       </td>
 
       {/* Payment */}
-      <td className="px-3 py-3">
+      <td className="px-3 py-3.5 align-middle">
         <div className="space-y-1">
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {PAYMENT_METHOD_LABELS[order.payment_method]}
           </div>
           <Badge
             variant="outline"
             className={cn(
-              "text-xs",
+              "rounded-full px-2.5 py-1 text-xs",
               PAYMENT_STATUS_COLORS[order.payment_status],
             )}
           >
@@ -191,18 +195,54 @@ export function OrgOrderTableRow({ order }: OrgOrderTableRowProps) {
       </td>
 
       {/* Status */}
-      <td className="px-3 py-3">
-        <Badge
-          variant="outline"
-          className={cn("text-xs", STATUS_COLORS[order.status])}
-        >
-          {STATUS_LABELS[order.status]}
-        </Badge>
+      <td className="px-3 py-3.5 align-middle">
+        {canAdvance && nextStatus ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleStatusClick}
+                disabled={isUpdating}
+                className={cn(
+                  "rounded-full px-2.5 py-1 text-xs font-medium border transition-all duration-200",
+                  "cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed",
+                  "group/status relative overflow-hidden",
+                  STATUS_COLORS[order.status],
+                )}
+              >
+                {/* Normal state */}
+                <span className="inline-flex items-center gap-1 group-hover/status:hidden">
+                  {STATUS_LABELS[order.status]}
+                </span>
+                {/* Hover state: show next status */}
+                <span className="hidden items-center gap-1 group-hover/status:inline-flex">
+                  {STATUS_LABELS[order.status]}
+                  <ArrowRight className="h-3 w-3" />
+                  {STATUS_LABELS[nextStatus]}
+                </span>
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              Click to advance to{" "}
+              <span className="font-semibold">{STATUS_LABELS[nextStatus]}</span>
+            </TooltipContent>
+          </Tooltip>
+        ) : (
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs",
+              STATUS_COLORS[order.status],
+            )}
+          >
+            {STATUS_LABELS[order.status]}
+          </Badge>
+        )}
       </td>
 
       {/* Total */}
-      <td className="px-3 py-3 text-right">
-        <div className="text-sm font-semibold">
+      <td className="px-3 py-3.5 text-right align-middle">
+        <div className="text-sm font-semibold tracking-tight">
           {formatCurrency(order.total_amount)}
         </div>
         <div className="text-xs text-muted-foreground">
@@ -211,13 +251,12 @@ export function OrgOrderTableRow({ order }: OrgOrderTableRowProps) {
       </td>
 
       {/* Actions */}
-      <td className="px-3 py-3 text-right">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href={`/org/orders/${order.id}`}>
-            View
-            <ArrowRight className="h-4 w-4 ml-1" />
-          </Link>
-        </Button>
+      <td className="px-3 py-3.5 text-right align-middle">
+        <OrgOrderRowActions
+          order={order}
+          userRole={userRole}
+          addOptimistic={addOptimistic}
+        />
       </td>
     </tr>
   );

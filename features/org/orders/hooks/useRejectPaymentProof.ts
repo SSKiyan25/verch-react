@@ -19,6 +19,7 @@ export function useRejectPaymentProof(orderId: string) {
       });
       if (!result.success) {
         toast.error(result.error);
+        router.refresh(); // revert optimistic update
         return;
       }
       toast.success("Payment proof rejected.");
@@ -28,6 +29,7 @@ export function useRejectPaymentProof(orderId: string) {
       toast.error(
         err instanceof Error ? err.message : "Failed to reject proof",
       );
+      router.refresh(); // revert optimistic update
     } finally {
       setIsRejecting(false);
     }

@@ -10,9 +10,7 @@ import {
 } from "@/lib/data/cache-helpers";
 import { rejectProofSchema } from "@/features/org/orders/schemas/orgOrderSchemas";
 
-type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+import { ActionResult } from '@/lib/types/actions';
 
 export async function rejectPaymentProofAction(
   input: z.infer<typeof rejectProofSchema>,

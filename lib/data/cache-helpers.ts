@@ -23,11 +23,9 @@ export function invalidateStudentInfoCache(userId: string) {
   revalidateTag(`user-memberships-${userId}`, "default");
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function invalidateMembershipsCache(_userId: string) {
-  // Force user's memberships page to refresh
-  // Note: userId param kept for API consistency, but not needed for path-based revalidation
-  revalidatePath("/user/dashboard", "page");
+export function invalidateMembershipsCache(userId: string) {
+  revalidateTag(`user-memberships-${userId}`, "default");
+  revalidatePath("/user/settings/memberships", "page");
 }
 
 // Invalidate cache for public stores when org or product changes

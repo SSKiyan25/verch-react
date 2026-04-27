@@ -36,58 +36,43 @@ interface UseCheckoutOrgSummaryReturn {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Compute discount for order-level promotions (organization/order target types).
- * Applies to the entire subtotal.
+ * Get the best eligible auto-apply promotion based on calculated_discount.
+ * The RPC now calculates the exact discount amount, so we just compare them.
  */
-function computeOrderLevelDiscount(
-  subtotal: number,
-  promo: {
-    discount_type: string;
-    discount_value: number;
-    is_eligible?: boolean;
-    is_valid?: boolean;
-  } | null,
-): number {
-  if (!promo) return 0;
-  // auto promo guard
-  if ("is_eligible" in promo && promo.is_eligible === false) return 0;
-  // voucher guard
-  if ("is_valid" in promo && promo.is_valid === false) return 0;
-  if (promo.discount_type === "percentage") {
-    return Math.round(subtotal * (promo.discount_value / 100) * 100) / 100;
-  }
-  if (promo.discount_type === "fixed") {
-    return Math.min(promo.discount_value, subtotal);
-  }
-  return 0; // free_item: no monetary discount shown
+function getBestAutoPromotion(
+  promotions: ApplicablePromotion[],
+): ApplicablePromotion | null {
+  const eligible = promotions.filter(
+    (p) => p.trigger_type === "auto" && p.is_eligible,
+  );
+  if (eligible.length === 0) return null;
+
+  // Return the promo with the highest calculated_discount
+  return eligible.reduce((best, p) =>
+    p.calculated_discount > best.calculated_discount ? p : best,
+  );
 }
 
 /**
- * Compute discount for product-level promotions.
- * Applies only to matching products in the cart.
+ * Compute discount from voucher validation result (order-level only).
+ * For vouchers, the backend validate_voucher_code RPC handles the calculation.
  */
-function computeProductLevelDiscount(
-  items: CheckoutCartItem[],
-  promo: ApplicablePromotion | null,
+function computeVoucherDiscount(
+  subtotal: number,
+  voucher: {
+    discount_type: string;
+    discount_value: number;
+    is_valid?: boolean;
+  } | null,
 ): number {
-  if (!promo || !promo.is_eligible) return 0;
-  if (promo.discount_type === "free_item") return 0; // no monetary discount
-
-  // Sum discounts for all standalone items (bundles don't get product-level promotions)
-  let totalDiscount = 0;
-  for (const item of items) {
-    if (item.bundleInstanceId !== null) continue; // skip bundle components
-
-    const itemSubtotal = item.unitPriceSnapshot * item.quantity;
-    if (promo.discount_type === "percentage") {
-      totalDiscount += Math.round(itemSubtotal * (promo.discount_value / 100) * 100) / 100;
-    } else if (promo.discount_type === "fixed") {
-      // For fixed discount, apply per unit (capped at unit price), then multiply by quantity
-      const discountPerUnit = Math.min(promo.discount_value, item.unitPriceSnapshot);
-      totalDiscount += discountPerUnit * item.quantity;
-    }
+  if (!voucher || !voucher.is_valid) return 0;
+  if (voucher.discount_type === "percentage") {
+    return Math.round(subtotal * (voucher.discount_value / 100) * 100) / 100;
   }
-  return totalDiscount;
+  if (voucher.discount_type === "fixed") {
+    return Math.min(voucher.discount_value, subtotal);
+  }
+  return 0; // free_item: no monetary discount shown
 }
 
 // ─── Pure function (safe inside useMemo / map) ──────────────────────────────
@@ -107,47 +92,14 @@ export function computeOrgSummary({
   );
   const subtotal = itemsTotal + bundlesTotal;
 
-  // Separate product-level and order-level promotions
-  const eligibleAutoPromos = applicablePromotions.filter(
-    (p) => p.trigger_type === "auto" && p.is_eligible,
-  );
-  
-  const productLevelPromos = eligibleAutoPromos.filter(
-    (p) => p.target_type === "product"
-  );
-  const orderLevelPromos = eligibleAutoPromos.filter(
-    (p) => p.target_type === "organization" || p.target_type === "order"
-  );
+  // Find the best auto-apply promotion (RPC already calculated exact discounts)
+  const bestEligibleAutoPromo = getBestAutoPromotion(applicablePromotions);
+  const autoDiscount = bestEligibleAutoPromo?.calculated_discount ?? 0;
 
-  // Find best product-level promo (if any)
-  const bestProductPromo = productLevelPromos.length > 0
-    ? productLevelPromos.reduce((best, p) => {
-        const bestAmt = computeProductLevelDiscount(items, best);
-        const pAmt = computeProductLevelDiscount(items, p);
-        return pAmt > bestAmt ? p : best;
-      })
-    : null;
 
-  // Find best order-level promo (if any)
-  const bestOrderPromo = orderLevelPromos.length > 0
-    ? orderLevelPromos.reduce((best, p) => {
-        const bestAmt = computeOrderLevelDiscount(subtotal, best);
-        const pAmt = computeOrderLevelDiscount(subtotal, p);
-        return pAmt > bestAmt ? p : best;
-      })
-    : null;
+  // Voucher discount (computed from voucher validation result)
+  const voucherDiscount = computeVoucherDiscount(subtotal, appliedVoucher);
 
-  // Calculate discounts
-  const productDiscount = computeProductLevelDiscount(items, bestProductPromo);
-  const orderDiscount = computeOrderLevelDiscount(subtotal, bestOrderPromo);
-  
-  // Choose the  better promo (product-level OR order-level, not both)
-  const bestEligibleAutoPromo = productDiscount > orderDiscount ? bestProductPromo : bestOrderPromo;
-  const autoDiscount = Math.max(productDiscount, orderDiscount);
-
-  // Voucher discount (always order-level)
-  const voucherDiscount = computeOrderLevelDiscount(subtotal, appliedVoucher);
-  
   const totalDiscount = autoDiscount + voucherDiscount;
   const orgTotal = Math.max(0, subtotal - totalDiscount);
 

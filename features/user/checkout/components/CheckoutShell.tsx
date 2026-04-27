@@ -116,8 +116,8 @@ export function CheckoutShell({
                 orgId: s.orgId,
                 orgName: s.orgName,
                 subtotal: s.subtotal,
-                appliedVoucher: s.appliedVoucher,
-                applicableAutoPromo: s.bestAutoPromo,
+                autoDiscount: s.autoDiscount,
+                voucherDiscount: s.voucherDiscount,
               }))}
               isPlacing={isPlacing}
               onPlaceOrder={() => void placeOrder()}

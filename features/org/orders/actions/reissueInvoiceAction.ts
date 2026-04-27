@@ -16,14 +16,8 @@ import {
 } from "@/lib/firebase/storage-helpers";
 import { fetchOrgOrderDetail } from "@/lib/supabase/queries/org-orders";
 
-type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+import { ActionResult } from '@/lib/types/actions';
 
-function buildInvoiceNumber(sequenceNumber: number): string {
-  const year = new Date().getFullYear();
-  return `INV-${year}-${String(sequenceNumber).padStart(5, "0")}`;
-}
 
 export async function reissueInvoiceAction(
   input: z.infer<typeof reissueInvoiceSchema>,
@@ -110,10 +104,9 @@ export async function reissueInvoiceAction(
 
     const rpcRow = (rpcData as unknown[])[0] as Record<string, unknown>;
     const newInvoiceId = rpcRow.out_invoice_id as string;
-    const newSequenceNumber = rpcRow.out_invoice_sequence_number as number;
+    const newInvoiceNumber = rpcRow.out_invoice_number as string;
 
-    // 8. Build new invoice number
-    const newInvoiceNumber = buildInvoiceNumber(newSequenceNumber);
+    // 8. Invoice number from RPC
 
     // 9. Delete old PDF from Firebase if it exists
     if (oldPdfPath) {

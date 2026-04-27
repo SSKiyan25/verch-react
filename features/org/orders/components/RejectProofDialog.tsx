@@ -19,13 +19,21 @@ type Props = {
   orderId: string;
   isOpen: boolean;
   onClose: () => void;
+  /** Called immediately before the rejection request fires — use for optimistic UI updates. */
+  onOptimisticReject?: () => void;
 };
 
-export function RejectProofDialog({ orderId, isOpen, onClose }: Props) {
+export function RejectProofDialog({
+  orderId,
+  isOpen,
+  onClose,
+  onOptimisticReject,
+}: Props) {
   const [rejectionNote, setRejectionNote] = useState("");
   const { rejectProof, isRejecting } = useRejectPaymentProof(orderId);
 
   const handleReject = async () => {
+    onOptimisticReject?.();
     await rejectProof(rejectionNote);
     setRejectionNote("");
   };

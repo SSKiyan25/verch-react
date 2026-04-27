@@ -2,17 +2,13 @@
 
 import { Separator } from "@/components/ui/separator";
 import { PlaceOrderButton } from "@/features/user/checkout/components/PlaceOrderButton";
-import type {
-  ApplicablePromotion,
-  VoucherValidationResult,
-} from "@/lib/supabase/queries/orders";
 
 interface OrgCheckoutSummary {
   orgId: string;
   orgName: string;
   subtotal: number;
-  appliedVoucher: VoucherValidationResult | null;
-  applicableAutoPromo: ApplicablePromotion | null;
+  autoDiscount: number;
+  voucherDiscount: number;
 }
 
 interface CheckoutOrderSummaryProps {
@@ -32,29 +28,6 @@ const fmt = (amount: number) =>
     .format(amount)
     .replace("PHP", "₱");
 
-/**
- * Compute discount for order-level promotions (organization/order target types).
- * This function  handles both auto promotions and vouchers.
- */
-function computeDiscount(
-  subtotal: number,
-  promo: {
-    discount_type: string;
-    discount_value: number;
-    is_eligible?: boolean;
-    is_valid?: boolean;
-  } | null,
-): number {
-  if (!promo) return 0;
-  if ("is_eligible" in promo && promo.is_eligible === false) return 0;
-  if ("is_valid" in promo && promo.is_valid === false) return 0;
-  if (promo.discount_type === "percentage")
-    return Math.round(subtotal * (promo.discount_value / 100) * 100) / 100;
-  if (promo.discount_type === "fixed")
-    return Math.min(promo.discount_value, subtotal);
-  return 0;
-}
-
 export function CheckoutOrderSummary({
   orgGroups,
   isPlacing,
@@ -67,15 +40,7 @@ export function CheckoutOrderSummary({
       <h2 className="font-semibold text-base">Order Summary</h2>
 
       {orgGroups.map((org, idx) => {
-        const autoDiscount = computeDiscount(
-          org.subtotal,
-          org.applicableAutoPromo,
-        );
-        const voucherDiscount = computeDiscount(
-          org.subtotal,
-          org.appliedVoucher,
-        );
-        const totalDiscount = autoDiscount + voucherDiscount;
+        const totalDiscount = org.autoDiscount + org.voucherDiscount;
         const orgTotal = Math.max(0, org.subtotal - totalDiscount);
 
         return (
@@ -88,16 +53,16 @@ export function CheckoutOrderSummary({
               <span className="text-muted-foreground">Subtotal</span>
               <span>{fmt(org.subtotal)}</span>
             </div>
-            {autoDiscount > 0 && (
+            {org.autoDiscount > 0 && (
               <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
                 <span>Auto discount</span>
-                <span>-{fmt(autoDiscount)}</span>
+                <span>-{fmt(org.autoDiscount)}</span>
               </div>
             )}
-            {voucherDiscount > 0 && (
+            {org.voucherDiscount > 0 && (
               <div className="flex justify-between text-sm text-green-700 dark:text-green-400">
                 <span>Voucher</span>
-                <span>-{fmt(voucherDiscount)}</span>
+                <span>-{fmt(org.voucherDiscount)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm font-medium">

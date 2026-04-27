@@ -15,6 +15,7 @@ export function useConfirmPayment(orderId: string) {
       const result = await confirmPaymentAction({ orderId });
       if (!result.success) {
         toast.error(result.error);
+        router.refresh(); // revert optimistic update
         return;
       }
       toast.success("Payment confirmed. Draft invoice created.");
@@ -23,6 +24,7 @@ export function useConfirmPayment(orderId: string) {
       toast.error(
         err instanceof Error ? err.message : "Failed to confirm payment",
       );
+      router.refresh(); // revert optimistic update
     } finally {
       setIsConfirming(false);
     }

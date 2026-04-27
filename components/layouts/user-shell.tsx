@@ -105,7 +105,7 @@ export function UserShell({
     setCount(cartCount);
   }, [cartCount, setCount]);
 
-  console.log("UserShell render - cartCount:", cartCount);
+  // console.log("UserShell render - cartCount:", cartCount);
 
   // Gate: if onboarding incomplete, only allow /user/settings/contact
   useEffect(() => {

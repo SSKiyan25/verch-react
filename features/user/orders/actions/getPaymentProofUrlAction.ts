@@ -29,16 +29,40 @@ export async function getPaymentProofUrlAction(input: {
 
     const validated = GetPaymentProofUrlSchema.parse(input);
 
-    // Verify the proof_path belongs to an order owned by the caller
-    const { data, error: verifyError } = await supabase
+    // Verify the proof_path belongs to an order owned by the caller, or caller is org staff/admin
+    const { data: paymentData, error: verifyError } = await supabase
       .from("order_payments")
-      .select("order_id, orders!inner(user_id)")
+      .select("order_id, orders!inner(user_id, organization_id)")
       .eq("proof_path", validated.proofPath)
-      .eq("orders.user_id", user.id)
       .single();
 
-    if (verifyError || !data) {
+    if (verifyError || !paymentData) {
       return { success: false, error: "Payment proof not found" };
+    }
+
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("role, organization_id")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || !userData) {
+      return { success: false, error: "User not found" };
+    }
+
+    const orderInfo = Array.isArray(paymentData.orders) ? paymentData.orders[0] : (paymentData.orders as any);
+    if (!orderInfo) {
+      return { success: false, error: "Order details not found" };
+    }
+
+    const isCustomer = orderInfo.user_id === user.id;
+    const isOrgStaff =
+      ["organization_admin", "organization_manager", "organization_staff"].includes(userData.role) &&
+      userData.organization_id === orderInfo.organization_id;
+    const isAdmin = userData.role === "admin";
+
+    if (!isCustomer && !isOrgStaff && !isAdmin) {
+      return { success: false, error: "Unauthorized access to payment proof" };
     }
 
     const url = await getSignedDownloadUrl(

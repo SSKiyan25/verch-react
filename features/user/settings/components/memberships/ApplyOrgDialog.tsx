@@ -29,12 +29,14 @@ interface ApplyOrgDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   userId: string;
+  onSuccess?: () => void;
 }
 
 export function ApplyOrgDialog({
   open,
   onOpenChange,
   userId,
+  onSuccess,
 }: ApplyOrgDialogProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -166,6 +168,7 @@ export function ApplyOrgDialog({
     }
 
     setIsSubmitting(false);
+    onSuccess?.();
     onOpenChange(false);
     resetState();
     router.refresh();

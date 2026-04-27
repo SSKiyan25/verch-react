@@ -50,6 +50,7 @@ export function useUpdateOrderStatus(
       });
       if (!result.success) {
         toast.error(result.error);
+        router.refresh(); // revert optimistic update
         return;
       }
       toast.success(`Order status updated to ${nextStatus}.`);
@@ -58,6 +59,7 @@ export function useUpdateOrderStatus(
       toast.error(
         err instanceof Error ? err.message : "Failed to update status",
       );
+      router.refresh(); // revert optimistic update
     } finally {
       setIsUpdating(false);
     }

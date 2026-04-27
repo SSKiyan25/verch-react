@@ -13,14 +13,8 @@ import { generateInvoicePdf } from "@/lib/pdf/invoiceGenerator";
 import { uploadInvoicePdf } from "@/lib/firebase/storage-helpers";
 import { fetchOrgOrderDetail } from "@/lib/supabase/queries/org-orders";
 
-type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+import { ActionResult } from '@/lib/types/actions';
 
-function buildInvoiceNumber(sequenceNumber: number): string {
-  const year = new Date().getFullYear();
-  return `INV-${year}-${String(sequenceNumber).padStart(5, "0")}`;
-}
 
 export async function confirmPaymentAction(
   input: z.infer<typeof confirmPaymentSchema>,
@@ -84,7 +78,7 @@ export async function confirmPaymentAction(
 
     const rpcRow = (rpcData as unknown[])[0] as Record<string, unknown>;
     const invoiceId = rpcRow.out_invoice_id as string;
-    const invoiceSequenceNumber = rpcRow.out_invoice_sequence_number as number;
+    const invoiceNumber = rpcRow.out_invoice_number as string;
 
     // 6. Fetch order detail for PDF content
     const orderDetail = await fetchOrgOrderDetail(user.id, validated.orderId);
@@ -100,8 +94,7 @@ export async function confirmPaymentAction(
       .eq("id", orgId)
       .single();
 
-    // 7. Build invoice number
-    const invoiceNumber = buildInvoiceNumber(invoiceSequenceNumber);
+    // 7. Invoice number from RPC
 
     // 8. Generate draft PDF
     const pdfBuffer = await generateInvoicePdf(

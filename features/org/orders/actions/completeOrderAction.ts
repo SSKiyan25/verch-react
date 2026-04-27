@@ -12,16 +12,8 @@ import { completeOrderSchema } from "@/features/org/orders/schemas/orgOrderSchem
 import { generateInvoicePdf } from "@/lib/pdf/invoiceGenerator";
 import { uploadInvoicePdf } from "@/lib/firebase/storage-helpers";
 import { fetchOrgOrderDetail } from "@/lib/supabase/queries/org-orders";
-
-type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
-
-function buildInvoiceNumber(sequenceNumber: number): string {
-  const year = new Date().getFullYear();
-  return `INV-${year}-${String(sequenceNumber).padStart(5, "0")}`;
-}
-
+import { ActionResult } from "@/lib/types/actions";
+import { buildInvoiceNumber } from "@/lib/utils/invoice";
 export async function completeOrderAction(
   input: z.infer<typeof completeOrderSchema>,
 ): Promise<ActionResult> {

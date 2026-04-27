@@ -31,9 +31,25 @@ export async function getOrgGCashSettingsAction(
 
     if (error || !org) return { success: true, gcash: null };
 
-    const settings = org.settings as Record<string, unknown> | null;
-    const gcash = settings?.gcash as GCashSettings | undefined;
+    const rawSettings = org.settings;
+    console.log(
+      "[getOrgGCashSettingsAction] Raw settings for orgId:",
+      orgId,
+      rawSettings,
+    );
+    const settings: Record<string, unknown> | null =
+      typeof rawSettings === "string"
+        ? JSON.parse(rawSettings)
+        : (rawSettings as Record<string, unknown> | null);
 
+    const gcash = settings?.gcash as GCashSettings | undefined;
+    // console.log("[getOrgGCashSettingsAction] orgId:", orgId, "gcash:", gcash);
+    // console.log(
+    //   "[getOrgGCashSettingsAction] orgId:",
+    //   orgId,
+    //   "gcash exists:",
+    //   !!gcash,
+    // );
     return { success: true, gcash: gcash ?? null };
   } catch (err) {
     console.error("[getOrgGCashSettingsAction]", err);

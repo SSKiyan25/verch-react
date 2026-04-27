@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useUpdateOrderStatus } from "@/features/org/orders/hooks/useUpdateOrderStatus";
 import { useCompleteOrder } from "@/features/org/orders/hooks/useCompleteOrder";
 import type { OrgOrderDetail } from "@/lib/supabase/queries/org-orders";
+import { useState } from "react";
+import { CancelOrderDialog } from "./CancelOrderDialog";
 
 type Props = {
   order: OrgOrderDetail;
@@ -16,6 +18,7 @@ export function OrgOrderStatusControls({ order, userRole }: Props) {
     order.status,
   );
   const { completeOrder, isCompleting } = useCompleteOrder(order.id);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const canAdvance = [
     "organization_admin",
@@ -23,6 +26,9 @@ export function OrgOrderStatusControls({ order, userRole }: Props) {
     "organization_staff",
   ].includes(userRole);
   const canComplete = ["organization_admin", "organization_manager"].includes(
+    userRole,
+  );
+  const canCancel = ["organization_admin", "organization_manager"].includes(
     userRole,
   );
 
@@ -46,6 +52,25 @@ export function OrgOrderStatusControls({ order, userRole }: Props) {
         <p className="text-sm text-muted-foreground">
           Confirm payment to advance order status.
         </p>
+        
+        {canCancel && (
+          <Button
+            onClick={() => setIsCancelDialogOpen(true)}
+            variant="destructive"
+            size="sm"
+            className="w-full mt-4"
+          >
+            Cancel Order
+          </Button>
+        )}
+
+        {canCancel && (
+          <CancelOrderDialog
+            orderId={order.id}
+            isOpen={isCancelDialogOpen}
+            onClose={() => setIsCancelDialogOpen(false)}
+          />
+        )}
       </div>
     );
   }
@@ -91,6 +116,28 @@ export function OrgOrderStatusControls({ order, userRole }: Props) {
         <p className="text-xs text-amber-600 dark:text-amber-400">
           Payment must be confirmed before completing the order.
         </p>
+      )}
+
+      {/* Cancel Order */}
+      {["confirmed"].includes(order.status) && canCancel && (
+        <div className="pt-2">
+          <Button
+            onClick={() => setIsCancelDialogOpen(true)}
+            variant="destructive"
+            size="sm"
+            className="w-full"
+          >
+            Cancel Order
+          </Button>
+        </div>
+      )}
+
+      {canCancel && (
+        <CancelOrderDialog
+          orderId={order.id}
+          isOpen={isCancelDialogOpen}
+          onClose={() => setIsCancelDialogOpen(false)}
+        />
       )}
     </div>
   );

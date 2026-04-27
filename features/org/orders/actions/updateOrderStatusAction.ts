@@ -10,9 +10,7 @@ import {
 } from "@/lib/data/cache-helpers";
 import { updateOrderStatusSchema } from "@/features/org/orders/schemas/orgOrderSchemas";
 
-type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+import { ActionResult } from '@/lib/types/actions';
 
 export async function updateOrderStatusAction(
   input: z.infer<typeof updateOrderStatusSchema>,
@@ -70,13 +68,14 @@ export async function updateOrderStatusAction(
     // 5. Validate input
     const validated = updateOrderStatusSchema.parse(input);
 
-    // 6. Direct update
-    const { error: updateError } = await supabase
-      .from("orders")
-      .update({ status: validated.newStatus })
-      .eq("id", validated.orderId);
+    // 6. Call RPC to update status
+    const { error: rpcError } = await supabase.rpc("update_order_status", {
+      p_admin_user_id: user.id,
+      p_order_id: validated.orderId,
+      p_new_status: validated.newStatus,
+    });
 
-    if (updateError) return { success: false, error: updateError.message };
+    if (rpcError) return { success: false, error: rpcError.message };
 
     // 7. Invalidate all three caches
     invalidateOrgOrdersCache(orgId);

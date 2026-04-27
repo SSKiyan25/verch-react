@@ -15,6 +15,7 @@ export function useCompleteOrder(orderId: string) {
       const result = await completeOrderAction({ orderId });
       if (!result.success) {
         toast.error(result.error);
+        router.refresh(); // revert optimistic update
         return;
       }
       toast.success("Order completed. Final invoice issued.");
@@ -23,6 +24,7 @@ export function useCompleteOrder(orderId: string) {
       toast.error(
         err instanceof Error ? err.message : "Failed to complete order",
       );
+      router.refresh(); // revert optimistic update
     } finally {
       setIsCompleting(false);
     }

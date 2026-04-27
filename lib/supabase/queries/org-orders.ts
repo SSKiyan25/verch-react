@@ -56,6 +56,16 @@ export type OrgOrderItem = {
   bundle_name_snapshot: string | null;
 };
 
+export type OrgOrderPromotion = {
+  promotion_id: string;
+  name: string;
+  discount_type: string;
+  discount_value: number;
+  discount_amount: number;
+  trigger_type: string;
+  voucher_code: string | null;
+};
+
 export type OrgOrderDetail = {
   id: string;
   order_number: string;
@@ -69,6 +79,10 @@ export type OrgOrderDetail = {
   notes: string | null;
   cancellation_reason: string | null;
   cancelled_at: string | null;
+  rejection_note: string | null;
+  organization_id: string;
+  organization_name: string;
+  commission_rate: number;
   subtotal: number;
   discount_amount: number;
   total_amount: number;
@@ -77,6 +91,8 @@ export type OrgOrderDetail = {
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   proof_path: string | null;
+  proof_amount: number | null;
+  proof_reference_code: string | null;
   proof_submitted_at: string | null;
   invoice_id: string | null;
   invoice_number: string | null;
@@ -85,6 +101,7 @@ export type OrgOrderDetail = {
   invoice_pdf_path: string | null;
   invoice_issued_at: string | null;
   items: OrgOrderItem[];
+  promotions: OrgOrderPromotion[];
   created_at: string;
   updated_at: string;
 };
@@ -199,6 +216,21 @@ export async function fetchOrgOrderDetail(
     },
   );
 
+  const promotions: OrgOrderPromotion[] = ((r.out_promotions as unknown[]) ?? []).map(
+    (promo) => {
+      const p = promo as Record<string, unknown>;
+      return {
+        promotion_id: p.promotion_id as string,
+        name: p.name as string,
+        discount_type: p.discount_type as string,
+        discount_value: Number(p.discount_value),
+        discount_amount: Number(p.discount_amount),
+        trigger_type: p.trigger_type as string,
+        voucher_code: (p.voucher_code as string) ?? null,
+      };
+    },
+  );
+
   return {
     id: r.out_order_id as string,
     order_number: r.out_order_number as string,
@@ -213,6 +245,10 @@ export async function fetchOrgOrderDetail(
     notes: (r.out_notes as string) ?? null,
     cancellation_reason: (r.out_cancellation_reason as string) ?? null,
     cancelled_at: (r.out_cancelled_at as string) ?? null,
+    rejection_note: (r.out_rejection_note as string) ?? null,
+    organization_id: r.out_organization_id as string,
+    organization_name: r.out_organization_name as string,
+    commission_rate: Number(r.out_commission_rate ?? 0),
     subtotal: Number(r.out_subtotal ?? r.out_total_amount),
     discount_amount: Number(r.out_discount_amount ?? 0),
     total_amount: Number(r.out_total_amount),
@@ -221,6 +257,8 @@ export async function fetchOrgOrderDetail(
     payment_method: r.out_payment_method as PaymentMethod,
     payment_status: r.out_payment_status as PaymentStatus,
     proof_path: (r.out_proof_path as string) ?? null,
+    proof_amount: r.out_proof_amount != null ? Number(r.out_proof_amount) : null,
+    proof_reference_code: (r.out_proof_reference_code as string) ?? null,
     proof_submitted_at: (r.out_proof_submitted_at as string) ?? null,
     invoice_id: (r.out_invoice_id as string) ?? null,
     invoice_number: (r.out_invoice_number as string) ?? null,
@@ -232,6 +270,7 @@ export async function fetchOrgOrderDetail(
     invoice_pdf_path: (r.out_invoice_pdf_path as string) ?? null,
     invoice_issued_at: (r.out_invoice_issued_at as string) ?? null,
     items,
+    promotions,
     created_at: r.out_created_at as string,
     updated_at: r.out_updated_at as string,
   };

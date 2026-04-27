@@ -2,27 +2,26 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { ExternalLink, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { ExternalLink, CheckCircle2, XCircle, Clock, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useConfirmPayment } from "@/features/org/orders/hooks/useConfirmPayment";
 import { useRejectPaymentProof } from "@/features/org/orders/hooks/useRejectPaymentProof";
 import { RejectProofDialog } from "@/features/org/orders/components/RejectProofDialog";
 import { getPaymentProofUrlAction } from "@/features/user/orders/actions/getPaymentProofUrlAction";
+import { GCashPaymentProofModal } from "@/features/org/orders/components/GCashPaymentProofModal";
 import type { OrgOrderDetail } from "@/lib/supabase/queries/org-orders";
+import { PAYMENT_METHOD_LABELS } from "../constants";
 
 type Props = {
   order: OrgOrderDetail;
   userRole: string;
 };
 
-const PAYMENT_METHOD_LABELS: Record<string, string> = {
-  gcash: "GCash",
-  cash: "Cash on Pickup",
-};
 
 export function OrgPaymentReviewPanel({ order, userRole }: Props) {
   const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [isProofModalOpen, setIsProofModalOpen] = useState(false);
   const { confirmPayment, isConfirming } = useConfirmPayment(order.id);
   const { isDialogOpen, setIsDialogOpen } = useRejectPaymentProof(order.id);
 
@@ -91,20 +90,30 @@ export function OrgPaymentReviewPanel({ order, userRole }: Props) {
           )}
         </div>
 
-        {/* Proof image (if submitted or confirmed) */}
-        {proofUrl &&
-          ["proof_submitted", "confirmed", "rejected"].includes(
-            order.payment_status,
-          ) && (
-            <div className="space-y-2">
-              <span className="text-xs text-muted-foreground">
-                Payment Proof:
-              </span>
+        {/* Proof details (if submitted or confirmed) */}
+        {["proof_submitted", "confirmed", "rejected"].includes(
+          order.payment_status,
+        ) && (
+          <div className="space-y-2">
+            <span className="text-xs text-muted-foreground">
+              Payment Proofs:
+            </span>
+
+            {order.payment_method === "gcash" ? (
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => setIsProofModalOpen(true)}
+              >
+                <Eye className="h-4 w-4 text-muted-foreground" />
+                View GCash Details
+              </Button>
+            ) : proofUrl ? (
               <a
                 href={proofUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block group"
+                className="block group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
               >
                 <div className="relative w-full aspect-[3/4] rounded-md overflow-hidden border hover:opacity-90 transition-opacity">
                   <Image
@@ -119,8 +128,13 @@ export function OrgPaymentReviewPanel({ order, userRole }: Props) {
                   <ExternalLink className="h-3 w-3" />
                 </span>
               </a>
-            </div>
-          )}
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                No proof image provided.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Actions based on payment status */}
         {order.payment_status === "pending" && (
@@ -176,9 +190,17 @@ export function OrgPaymentReviewPanel({ order, userRole }: Props) {
         )}
 
         {order.payment_status === "rejected" && (
-          <p className="text-xs text-muted-foreground">
-            Awaiting customer to resubmit proof.
-          </p>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">
+              Awaiting customer to resubmit proof.
+            </p>
+            {order.rejection_note && (
+              <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/10 p-2 rounded border border-red-100 dark:border-red-900/30">
+                <span className="font-semibold">Reason:</span>{" "}
+                {order.rejection_note}
+              </p>
+            )}
+          </div>
         )}
       </div>
 
@@ -186,6 +208,14 @@ export function OrgPaymentReviewPanel({ order, userRole }: Props) {
         orderId={order.id}
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
+      />
+
+      <GCashPaymentProofModal
+        isOpen={isProofModalOpen}
+        onClose={() => setIsProofModalOpen(false)}
+        proofUrl={proofUrl}
+        amount={order.proof_amount}
+        referenceCode={order.proof_reference_code}
       />
     </div>
   );

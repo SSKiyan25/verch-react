@@ -25,7 +25,7 @@ export type TriggerType = "auto" | "voucher";
 export type UserOrderListItem = {
   order_id: string;
   order_number: string;
-  org_id: string;
+  organization_id: string;
   org_name: string;
   org_logo_url: string | null;
   status: OrderStatus;
@@ -68,7 +68,7 @@ export type OrderDetailPromotion = {
 export type OrderDetail = {
   order_id: string;
   order_number: string;
-  org_id: string;
+  organization_id: string;
   org_name: string;
   status: OrderStatus;
   fulfillment_method: FulfillmentMethod;
@@ -87,6 +87,8 @@ export type OrderDetail = {
   payment_method: PaymentMethod;
   payment_status: PaymentStatus;
   proof_path: string | null;
+  proof_amount: number | null;
+  proof_reference_code: string | null;
   rejection_note: string | null;
   invoice_id: string | null;
   invoice_number: string | null;
@@ -120,6 +122,7 @@ export type ApplicablePromotion = {
   discount_type: DiscountType;
   discount_value: number;
   minimum_order_amount: number | null;
+  calculated_discount: number;
   is_eligible: boolean;
   ineligible_reason: string | null;
 };
@@ -170,7 +173,7 @@ export async function fetchUserOrders(
   return rows.map((row) => ({
     order_id: row.out_order_id as string,
     order_number: row.out_order_number as string,
-    org_id: row.out_org_id as string,
+    organization_id: row.out_org_id as string,
     org_name: row.out_org_name as string,
     org_logo_url: (row.out_org_logo_url as string) ?? null,
     status: row.out_status as OrderStatus,
@@ -238,7 +241,7 @@ export async function fetchOrderDetail(
   return {
     order_id: row.out_order_id as string,
     order_number: row.out_order_number as string,
-    org_id: row.out_org_id as string,
+    organization_id: row.out_organization_id as string,
     org_name: row.out_org_name as string,
     status: row.out_status as OrderStatus,
     fulfillment_method: row.out_fulfillment_method as FulfillmentMethod,
@@ -262,6 +265,9 @@ export async function fetchOrderDetail(
     payment_method: row.out_payment_method as PaymentMethod,
     payment_status: row.out_payment_status as PaymentStatus,
     proof_path: (row.out_proof_path as string) ?? null,
+    proof_amount:
+      row.out_proof_amount != null ? Number(row.out_proof_amount) : null,
+    proof_reference_code: (row.out_proof_reference_code as string) ?? null,
     rejection_note: (row.out_rejection_note as string) ?? null,
     invoice_id: (row.out_invoice_id as string) ?? null,
     invoice_number: (row.out_invoice_number as string) ?? null,
@@ -335,13 +341,15 @@ export async function fetchApplicablePromotions(
     name: row.out_name as string,
     description: (row.out_description as string) ?? null,
     trigger_type: row.out_trigger_type as TriggerType,
-    target_type: (row.out_target_type as "product" | "organization" | "order") ?? "order",
+    target_type:
+      (row.out_target_type as "product" | "organization" | "order") ?? "order",
     discount_type: row.out_discount_type as DiscountType,
     discount_value: Number(row.out_discount_value),
     minimum_order_amount:
       row.out_minimum_order_amount != null
         ? Number(row.out_minimum_order_amount)
         : null,
+    calculated_discount: Number(row.out_calculated_discount ?? 0),
     is_eligible: row.out_is_eligible as boolean,
     ineligible_reason: (row.out_ineligible_reason as string) ?? null,
   }));

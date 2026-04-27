@@ -10,9 +10,7 @@ import {
 } from "@/lib/data/cache-helpers";
 import { voidInvoiceSchema } from "@/features/org/orders/schemas/orgOrderSchemas";
 
-type ActionResult<T = void> =
-  | { success: true; data?: T }
-  | { success: false; error: string };
+import { ActionResult } from '@/lib/types/actions';
 
 export async function voidInvoiceAction(
   input: z.infer<typeof voidInvoiceSchema>,
