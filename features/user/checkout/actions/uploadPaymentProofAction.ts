@@ -16,12 +16,18 @@ type UploadPaymentProofResult =
   | { success: true; path: string; url: string }
   | { success: false; error: string };
 
-export async function uploadPaymentProofAction(input: {
-  orderId: string;
-  file: File;
-}): Promise<UploadPaymentProofResult> {
+export async function uploadPaymentProofAction(
+  formData: FormData,
+): Promise<UploadPaymentProofResult> {
   try {
     const supabase = await createClient();
+
+    const orderId = formData.get("orderId");
+    const file = formData.get("file");
+
+    if (typeof orderId !== "string" || !(file instanceof File)) {
+      return { success: false, error: "Invalid input" };
+    }
 
     const {
       data: { user },
@@ -30,7 +36,7 @@ export async function uploadPaymentProofAction(input: {
     if (authError || !user) return { success: false, error: "Unauthorized" };
 
     const validated = UploadPaymentProofSchema.parse({
-      orderId: input.orderId,
+      orderId,
     });
 
     // Verify order belongs to this user
@@ -48,7 +54,7 @@ export async function uploadPaymentProofAction(input: {
     const result = await uploadPaymentProof({
       userId: user.id,
       orderId: validated.orderId,
-      file: input.file,
+      file,
     });
 
     if (!result.success) return result;

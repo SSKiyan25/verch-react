@@ -77,10 +77,11 @@ export function GCashPaymentShell({ order }: { order: OrderDetail }) {
     setIsUploading(true);
     setError(null);
 
-    const result = await uploadPaymentProofAction({
-      orderId: order.order_id,
-      file: selectedFile,
-    });
+    const formData = new FormData();
+    formData.append("orderId", order.order_id);
+    formData.append("file", selectedFile);
+
+    const result = await uploadPaymentProofAction(formData);
 
     setIsUploading(false);
 
