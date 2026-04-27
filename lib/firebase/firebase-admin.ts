@@ -10,22 +10,6 @@ if (!admin.apps.length) {
     .toString("utf8")
     .trim();
 
-  // 2. THE SANITY CHECK LOGS
-  console.log("--- DEBUGGING PRIVATE KEY FORMAT ---");
-  console.log(
-    "Starts with expected header?",
-    privateKey.startsWith("-----BEGIN PRIVATE KEY-----\n"),
-  );
-  console.log(
-    "Ends with expected footer?",
-    privateKey.trim().endsWith("-----END PRIVATE KEY-----"),
-  );
-  console.log("Contains actual newlines?", privateKey.includes("\n"));
-  console.log("Contains literal backslash-n?", privateKey.includes("\\n"));
-  console.log("Contains carriage returns?", privateKey.includes("\r"));
-  console.log("Total length:", privateKey.length);
-  console.log("------------------------------------");
-
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
