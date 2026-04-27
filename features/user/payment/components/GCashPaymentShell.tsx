@@ -90,9 +90,7 @@ export function GCashPaymentShell({ order }: { order: OrderDetail }) {
     }
 
     setUploadedPath(result.path);
-    // Generate signed URL for preview
-    const signedUrl = `https://firebasestorage.googleapis.com${result.path}`;
-    setUploadedUrl(signedUrl);
+    setUploadedUrl(result.url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

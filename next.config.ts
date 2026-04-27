@@ -26,6 +26,11 @@ const nextConfig: NextConfig = {
         hostname: "storage.googleapis.com",
         pathname: "/**", // You can restrict this to "/verch-cfaf7.appspot.com/**" for stricter security
       },
+      {
+        protocol: "https",
+        hostname: "firebasestorage.googleapis.com",
+        pathname: "/**",
+      },
       // 3. Local Supabase (Docker Development)
       {
         protocol: "http",

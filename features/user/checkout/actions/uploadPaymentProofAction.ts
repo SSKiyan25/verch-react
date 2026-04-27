@@ -2,14 +2,18 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
-import { uploadPaymentProof } from "@/lib/firebase/storage-helpers";
+import {
+  uploadPaymentProof,
+  getSignedDownloadUrl,
+  SIGNED_URL_EXPIRY,
+} from "@/lib/firebase/storage-helpers";
 
 const UploadPaymentProofSchema = z.object({
   orderId: z.string().uuid("Invalid order ID"),
 });
 
 type UploadPaymentProofResult =
-  | { success: true; path: string }
+  | { success: true; path: string; url: string }
   | { success: false; error: string };
 
 export async function uploadPaymentProofAction(input: {
@@ -47,7 +51,14 @@ export async function uploadPaymentProofAction(input: {
       file: input.file,
     });
 
-    return result;
+    if (!result.success) return result;
+
+    const url = await getSignedDownloadUrl(
+      result.path,
+      SIGNED_URL_EXPIRY.PAYMENT_PROOF,
+    );
+
+    return { success: true, path: result.path, url };
   } catch (err) {
     if (err instanceof z.ZodError) {
       return { success: false, error: err.issues[0].message };
