@@ -20,22 +20,35 @@ export async function uploadPaymentProofAction(
   formData: FormData,
 ): Promise<UploadPaymentProofResult> {
   // Will be deleted after testing - only used for debugging file uploads
+  // try {
+  //   // Test Firebase is reachable before anything else
+  //   const { storage } = await import("@/lib/firebase/firebase-admin");
+  //   console.log("[uploadPaymentProofAction] Firebase Admin imported OK");
+  //   console.log("[uploadPaymentProofAction] Bucket:", storage.bucket().name);
+  // } catch (initErr) {
+  //   console.error(
+  //     "[uploadPaymentProofAction] Firebase Admin INIT FAILED:",
+  //     initErr,
+  //   );
+  //   return { success: false, error: "Firebase configuration error" };
+  // }
+
   try {
-    // Test Firebase is reachable before anything else
-    const { storage } = await import("@/lib/firebase/firebase-admin");
-    console.log("[uploadPaymentProofAction] Firebase Admin imported OK");
-    console.log("[uploadPaymentProofAction] Bucket:", storage.bucket().name);
-  } catch (initErr) {
-    console.error(
-      "[uploadPaymentProofAction] Firebase Admin INIT FAILED:",
-      initErr,
+    const adminModule = await import("@/lib/firebase/firebase-admin");
+    const bucketName = adminModule.storage.bucket().name;
+    // This will show in UI if it fails
+    console.log(
+      `[uploadPaymentProofAction] Firebase Admin imported, bucket: ${bucketName}`,
     );
-    return { success: false, error: "Firebase configuration error" };
+  } catch (initErr) {
+    const message =
+      initErr instanceof Error ? initErr.message : String(initErr);
+    return { success: false, error: `Firebase init failed: ${message}` };
   }
 
   try {
     const supabase = await createClient();
-
+    console.log("[uploadPaymentProofAction] Supabase client created");
     const orderId = formData.get("orderId");
     const file = formData.get("file");
 
@@ -71,6 +84,11 @@ export async function uploadPaymentProofAction(
       file,
     });
 
+    console.log(
+      "[uploadPaymentProofAction] uploadPaymentProof result:",
+      result,
+    );
+
     if (!result.success) return result;
 
     const url = await getSignedDownloadUrl(
@@ -83,11 +101,12 @@ export async function uploadPaymentProofAction(
     if (err instanceof z.ZodError) {
       return { success: false, error: err.issues[0].message };
     }
-    console.error("[uploadPaymentProofAction]", err);
+    // Return the REAL error message instead of generic one
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("[uploadPaymentProofAction]", message);
     return {
       success: false,
-      error:
-        err instanceof Error ? err.message : "An unexpected error occurred",
+      error: message, // ← this will now show in the UI
     };
   }
 }
