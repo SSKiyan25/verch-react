@@ -16,6 +16,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { PublicProductVariationDetail } from "@/lib/supabase/queries/products";
 import type { SheetMode } from "../hooks/useProductVariant";
 import { getStockLabel } from "../utils/stockLabel";
+import { getCustomAttributes } from "../utils/safeAttributes";
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-PH", {
@@ -144,11 +145,7 @@ export function ProductVariantSheet({
               const selectable = isVariantSelectable(variation, mode);
               const isSelected = selectedVariation?.id === variation.id;
               const stockLabel = getStockLabel(variation);
-              const variantLabel =
-                variation.variation_name ??
-                Object.entries(variation.attributes)
-                  .map(([k, v]) => (k === "Variant" ? v : `${k}: ${v}`))
-                  .join(" · ");
+              const customAttrs = getCustomAttributes(variation.attributes);
 
               return (
                 <button
@@ -169,8 +166,33 @@ export function ProductVariantSheet({
                   )}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-medium text-foreground truncate">
-                      {variantLabel}
+                    <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                      {customAttrs.length > 0 ? (
+                        <span className="flex flex-wrap gap-1">
+                          {customAttrs.map(([key, val]) => (
+                            <span
+                              key={key}
+                              className={cn(
+                                "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+                                isSelected
+                                  ? "bg-primary/12 text-primary"
+                                  : "bg-muted-foreground/10 text-foreground",
+                              )}
+                            >
+                              {key}: {val}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="text-sm font-medium text-foreground truncate">
+                          {variation.variation_name ?? "Variant"}
+                        </span>
+                      )}
+                      {customAttrs.length > 0 && variation.variation_name && (
+                        <span className="truncate text-[11px] text-muted-foreground leading-tight">
+                          {variation.variation_name}
+                        </span>
+                      )}
                     </span>
                     <span className={cn("text-xs shrink-0", stockLabel.cls)}>
                       {stockLabel.text}
@@ -198,13 +220,35 @@ export function ProductVariantSheet({
             <div className="px-5 py-4 space-y-4">
               {/* Summary card */}
               <div className="rounded-lg border bg-muted/30 p-3.5 space-y-1.5">
-                <p className="text-sm font-semibold text-foreground">
-                  {selectedVariation.variation_name ?? "Variant"}
-                  {Object.entries(selectedVariation.attributes)
-                    .filter(([k]) => k !== "Variant")
-                    .map(([k, v]) => ` · ${k}: ${v}`)
-                    .join("")}
-                </p>
+                {/* Attributes as prominent badges */}
+                {(() => {
+                  const attrs = getCustomAttributes(
+                    selectedVariation.attributes,
+                  );
+                  return attrs.length > 0 ? (
+                    <span className="flex flex-wrap gap-1">
+                      {attrs.map(([key, val]) => (
+                        <span
+                          key={key}
+                          className="inline-flex items-center rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary"
+                        >
+                          {key}: {val}
+                        </span>
+                      ))}
+                    </span>
+                  ) : (
+                    <p className="text-sm font-semibold text-foreground">
+                      {selectedVariation.variation_name ?? "Variant"}
+                    </p>
+                  );
+                })()}
+                {selectedVariation.variation_name &&
+                  getCustomAttributes(selectedVariation.attributes).length >
+                    0 && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {selectedVariation.variation_name}
+                    </p>
+                  )}
                 <div className="flex items-baseline gap-2">
                   {selectedVariation.compare_at_price != null && (
                     <span className="text-xs text-muted-foreground line-through">

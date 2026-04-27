@@ -110,7 +110,7 @@ export function OrgOrderTableRow({
           checked={isSelected}
           onCheckedChange={() => onToggle(order.id)}
           aria-label={`Select order ${order.order_number}`}
-          className="cursor-pointer"
+          className="cursor-pointer border-2 border-primary shadow-sm"
         />
       </td>
       {/* Customer */}

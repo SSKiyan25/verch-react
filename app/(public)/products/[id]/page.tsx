@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ProductDetail } from "@/features/public/product";
 import { OrgProductsSection } from "@/features/public/product/components/OrgProductsSection";
 import { ProductReviews } from "@/features/public/product/components/ProductReviews";
+import { ProductDetailSkeleton } from "@/features/public/product/components/ProductDetailSkeleton";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -87,7 +88,7 @@ export default async function ProductDetailPage({ params }: Props) {
   const { id } = await params;
 
   return (
-    <Suspense fallback={<div className="animate-pulse">Loading...</div>}>
+    <Suspense fallback={<ProductDetailSkeleton />}>
       <ProductDetailContent productId={id} />
     </Suspense>
   );

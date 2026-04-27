@@ -25,6 +25,7 @@ export function CheckoutShell({
     paymentMethods,
     fulfillmentPrefs,
     appliedVouchers,
+    selectedPromotions,
     isPlacing,
     placeErrors,
     hasTopLevelError,
@@ -35,6 +36,7 @@ export function CheckoutShell({
     setFulfillmentPref,
     setVoucherApplied,
     removeVoucher,
+    setSelectedPromotion,
     setNote,
     placeOrder,
   } = useCheckout({ orgGroups, cartItemIds, userAddresses });
@@ -98,10 +100,14 @@ export function CheckoutShell({
                 onFulfillmentChange={(method, addressId) =>
                   setFulfillmentPref(group.orgId, method, addressId)
                 }
+                selectedPromotionId={selectedPromotions[group.orgId] ?? null}
                 onVoucherApplied={(result, code) =>
                   setVoucherApplied(group.orgId, result, code)
                 }
                 onVoucherRemoved={() => removeVoucher(group.orgId)}
+                onPromotionSelect={(promotionId) =>
+                  setSelectedPromotion(group.orgId, promotionId)
+                }
                 onNoteChange={(note) => setNote(group.orgId, note)}
               />
             );

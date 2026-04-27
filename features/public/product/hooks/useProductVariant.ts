@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from "react";
 import type { PublicProductVariationDetail } from "@/lib/supabase/queries/products";
+import { parseAttributes } from "../utils/safeAttributes";
 
 type SelectedAttributes = Record<string, string>;
 
@@ -19,19 +20,19 @@ type UseProductVariantReturn = {
 };
 
 /**
- * Per-variation normalization: if a variation has an empty `attributes` object
- * but has a `variation_name`, synthesize { Variant: variation_name } so the
- * selector can render it. Handles mixed datasets where some variations carry
- * real attributes and others only have a variation_name.
+ * Per-variation normalization: safely parses attributes (which may be a JSON
+ * string from the database), and if the result is empty but a variation_name
+ * exists, synthesizes { Variant: variation_name } so the selector can render it.
  */
 function normalizeVariations(
   variations: PublicProductVariationDetail[],
 ): PublicProductVariationDetail[] {
   return variations.map((v) => {
-    if (Object.keys(v.attributes).length === 0 && v.variation_name) {
+    const parsed = parseAttributes(v.attributes);
+    if (Object.keys(parsed).length === 0 && v.variation_name) {
       return { ...v, attributes: { Variant: v.variation_name } };
     }
-    return v;
+    return { ...v, attributes: parsed };
   });
 }
 

@@ -13,6 +13,7 @@ import {
   Eye,
   Package,
   AlertTriangle,
+  Settings,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -182,7 +183,7 @@ export function ProductCard({ product, orgId }: ProductCardProps) {
               className="flex-1 h-7 p-1 text-xs"
               onClick={() => setDetailsModalOpen(true)}
             >
-              <Eye className="w-3 h-3 mr-1" /> View
+              <Settings className="w-3 h-3 mr-1" /> Actions
             </Button>
           </div>
         </CardContent>

@@ -479,8 +479,7 @@ export function ProductDetailsModal({
                     size="sm"
                     className="w-full sm:w-auto justify-start"
                     onClick={() => {
-                      // TODO: Navigate to orders page with product filter
-                      console.log("Navigate to orders for this product");
+                      router.push(`/org/orders/products/${productId}`);
                     }}
                   >
                     <ShoppingCart className="w-4 h-4 mr-2" />

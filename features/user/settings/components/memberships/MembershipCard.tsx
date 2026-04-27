@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,12 +16,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw, Clock } from "lucide-react";
 import type { UserMembership } from "@/lib/supabase/queries/user-settings";
+import { refreshMembershipStatus } from "@/features/user/settings/actions/studentActions";
 
 interface MembershipCardProps {
   membership: UserMembership;
   onWithdraw: () => void;
+  onRefresh?: () => void;
 }
 
 const statusConfig: Record<
@@ -49,15 +51,64 @@ const statusConfig: Record<
   },
 };
 
+const REFRESH_COOLDOWN_SECONDS = 15;
+
 export function MembershipCard({
   membership,
   onWithdraw,
+  onRefresh,
 }: MembershipCardProps) {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
+  const cooldownTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const config = statusConfig[membership.membership_status];
 
   const orgInitial =
     membership.organization_name?.charAt(0)?.toUpperCase() ?? "O";
+
+  // Clean up cooldown timer on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    if (isRefreshing || cooldownRemaining > 0) return;
+
+    setIsRefreshing(true);
+    try {
+      const result = await refreshMembershipStatus(membership.id);
+      if (result.success) {
+        onRefresh?.();
+      }
+    } finally {
+      setIsRefreshing(false);
+      // Start cooldown
+      setCooldownRemaining(REFRESH_COOLDOWN_SECONDS);
+      cooldownTimerRef.current = setInterval(() => {
+        setCooldownRemaining((prev) => {
+          if (prev <= 1) {
+            if (cooldownTimerRef.current)
+              clearInterval(cooldownTimerRef.current);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+  }, [isRefreshing, cooldownRemaining, membership.id, onRefresh]);
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("en-PH", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
 
   return (
     <div className="rounded-lg border p-4 space-y-3">
@@ -101,6 +152,15 @@ export function MembershipCard({
             </p>
           )}
 
+          {/* Show "Applied on" date for pending memberships */}
+          {membership.membership_status === "pending" &&
+            membership.created_at && (
+              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Applied on {formatDate(membership.created_at)}
+              </p>
+            )}
+
           {membership.reviewed_at &&
             membership.membership_status !== "pending" && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -113,7 +173,33 @@ export function MembershipCard({
               </p>
             )}
         </div>
+
+        {/* Refresh button for pending memberships */}
+        {membership.membership_status === "pending" && (
+          <button
+            type="button"
+            onClick={handleRefresh}
+            disabled={isRefreshing || cooldownRemaining > 0}
+            className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:bg-muted transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title={
+              cooldownRemaining > 0
+                ? `Wait ${cooldownRemaining}s before refreshing`
+                : "Check status"
+            }
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+          </button>
+        )}
       </div>
+
+      {/* Cooldown indicator */}
+      {membership.membership_status === "pending" && cooldownRemaining > 0 && (
+        <p className="text-xs text-muted-foreground text-right -mt-2">
+          Refresh again in {cooldownRemaining}s
+        </p>
+      )}
 
       {/* Rejection reason */}
       {membership.membership_status === "rejected" &&

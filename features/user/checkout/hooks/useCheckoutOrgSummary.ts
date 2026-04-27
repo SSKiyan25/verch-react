@@ -21,6 +21,7 @@ interface UseCheckoutOrgSummaryProps {
   bundleInstances: CheckoutBundleInstance[];
   applicablePromotions: ApplicablePromotion[];
   appliedVoucher: VoucherValidationResult | null;
+  selectedPromotionId?: string | null;
 }
 
 interface UseCheckoutOrgSummaryReturn {
@@ -82,6 +83,7 @@ export function computeOrgSummary({
   bundleInstances,
   applicablePromotions,
   appliedVoucher,
+  selectedPromotionId,
 }: UseCheckoutOrgSummaryProps): UseCheckoutOrgSummaryReturn {
   const itemsTotal = items
     .filter((i) => i.bundleInstanceId === null)
@@ -92,10 +94,24 @@ export function computeOrgSummary({
   );
   const subtotal = itemsTotal + bundlesTotal;
 
-  // Find the best auto-apply promotion (RPC already calculated exact discounts)
-  const bestEligibleAutoPromo = getBestAutoPromotion(applicablePromotions);
+  // Determine which auto promotion to use:
+  // - If selectedPromotionId is explicitly provided (even null), use that
+  // - If selectedPromotionId is undefined (not provided), fall back to auto-best
+  let bestEligibleAutoPromo: ApplicablePromotion | null;
+  if (selectedPromotionId === undefined) {
+    // Backward compatible: auto-select best
+    bestEligibleAutoPromo = getBestAutoPromotion(applicablePromotions);
+  } else if (selectedPromotionId === null) {
+    // User explicitly chose "no promotion"
+    bestEligibleAutoPromo = null;
+  } else {
+    // User selected a specific promotion
+    bestEligibleAutoPromo =
+      applicablePromotions.find(
+        (p) => p.promotion_id === selectedPromotionId && p.is_eligible,
+      ) ?? null;
+  }
   const autoDiscount = bestEligibleAutoPromo?.calculated_discount ?? 0;
-
 
   // Voucher discount (computed from voucher validation result)
   const voucherDiscount = computeVoucherDiscount(subtotal, appliedVoucher);
@@ -133,6 +149,7 @@ export function useCheckoutOrgSummary({
   bundleInstances,
   applicablePromotions,
   appliedVoucher,
+  selectedPromotionId,
 }: UseCheckoutOrgSummaryProps): UseCheckoutOrgSummaryReturn {
   return useMemo(
     () =>
@@ -141,7 +158,14 @@ export function useCheckoutOrgSummary({
         bundleInstances,
         applicablePromotions,
         appliedVoucher,
+        selectedPromotionId,
       }),
-    [items, bundleInstances, applicablePromotions, appliedVoucher],
+    [
+      items,
+      bundleInstances,
+      applicablePromotions,
+      appliedVoucher,
+      selectedPromotionId,
+    ],
   );
 }

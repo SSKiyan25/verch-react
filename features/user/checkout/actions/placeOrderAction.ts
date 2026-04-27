@@ -45,6 +45,7 @@ export async function placeOrderAction(
       p_cart_item_ids: validated.cartItemIds,
       p_payment_methods: validated.paymentMethods,
       p_voucher_codes: validated.voucherCodes ?? null,
+      p_selected_promotions: validated.selectedPromotions ?? null,
       p_notes: validated.notes ?? null,
     });
 

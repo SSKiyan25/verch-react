@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import {
@@ -121,6 +122,15 @@ export function CartOrderSummary({
         <span className="font-semibold text-lg">
           ₱{total.toLocaleString("en-PH", { minimumFractionDigits: 2 })}
         </span>
+      </div>
+
+      {/* Discount note */}
+      <div className="flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/50 px-3 py-2.5">
+        <Info className="h-4 w-4 text-blue-500 shrink-0 mt-0.5" />
+        <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
+          Promotion discounts shown above are estimates. The final discount will
+          be calculated and applied during checkout.
+        </p>
       </div>
 
       {isDisabled ? (

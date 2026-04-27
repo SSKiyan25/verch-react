@@ -452,13 +452,15 @@ export function PromotionForm({
               options={TRIGGER_TYPE_OPTIONS}
               value={formData.trigger_type}
               onValueChange={handleTriggerTypeChange}
-              disabled={isPending}
+              disabled={isPending || mode === "edit"}
               className="w-full sm:w-auto"
             />
             <p className="text-xs text-muted-foreground">
-              {formData.trigger_type === "auto"
-                ? "Promotion applies automatically at checkout"
-                : "Customer must enter a code to apply"}
+              {mode === "edit"
+                ? "Trigger type cannot be changed after creation"
+                : formData.trigger_type === "auto"
+                  ? "Promotion applies automatically at checkout"
+                  : "Customer must enter a code to apply"}
             </p>
           </div>
 
@@ -497,9 +499,14 @@ export function PromotionForm({
               options={DISCOUNT_TYPE_OPTIONS}
               value={formData.discount_type}
               onValueChange={handleDiscountTypeChange}
-              disabled={isPending}
+              disabled={isPending || mode === "edit"}
               className="w-full sm:w-auto"
             />
+            {mode === "edit" && (
+              <p className="text-xs text-muted-foreground">
+                Discount type cannot be changed after creation
+              </p>
+            )}
           </div>
 
           {(formData.discount_type === "percentage" ||
@@ -534,9 +541,14 @@ export function PromotionForm({
               options={TARGET_TYPE_OPTIONS}
               value={formData.target_type}
               onValueChange={handleTargetTypeChange}
-              disabled={isPending}
+              disabled={isPending || mode === "edit"}
               className="w-full sm:w-auto"
             />
+            {mode === "edit" && (
+              <p className="text-xs text-muted-foreground">
+                Target type cannot be changed after creation
+              </p>
+            )}
           </div>
 
           {/* Product Selector - shown when target_type is "product" */}

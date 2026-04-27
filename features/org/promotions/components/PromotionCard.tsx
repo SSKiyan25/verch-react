@@ -41,42 +41,42 @@ type PromotionCardProps = {
 
 const STATUS_CONFIG: Record<
   PromotionStatus,
-  { 
-    label: string; 
+  {
+    label: string;
     className: string;
     icon: typeof Eye;
     description: string;
   }
 > = {
-  draft: { 
-    label: "Draft", 
+  draft: {
+    label: "Draft",
     className: "bg-slate-200 text-slate-700",
     icon: EyeOff,
-    description: "Not visible to customers"
+    description: "Not visible to customers",
   },
-  active: { 
-    label: "Active", 
+  active: {
+    label: "Active",
     className: "bg-emerald-500 text-white",
     icon: Eye,
-    description: "Visible to customers"
+    description: "Visible to customers",
   },
-  paused: { 
-    label: "Paused", 
+  paused: {
+    label: "Paused",
     className: "bg-amber-500 text-white",
     icon: EyeOff,
-    description: "Not visible to customers"
+    description: "Not visible to customers",
   },
-  expired: { 
-    label: "Expired", 
+  expired: {
+    label: "Expired",
     className: "bg-slate-400 text-white",
     icon: EyeOff,
-    description: "Promotion period ended"
+    description: "Promotion period ended",
   },
-  exhausted: { 
-    label: "Exhausted", 
+  exhausted: {
+    label: "Exhausted",
     className: "bg-red-500 text-white",
     icon: EyeOff,
-    description: "Usage limit reached"
+    description: "Usage limit reached",
   },
 };
 
@@ -135,19 +135,25 @@ export function PromotionCard({ promotion, orgId }: PromotionCardProps) {
   };
 
   const StatusIcon = statusConfig.icon;
-  const isDraftOrInactive = ['draft', 'paused'].includes(promotion.status);
+  const isDraftOrInactive = ["draft", "paused"].includes(promotion.status);
 
   return (
-    <Card className={`group relative overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col h-full ${
-      isDraftOrInactive ? 'border-amber-300 bg-amber-50/30' : 'border-slate-200'
-    }`}>
+    <Card
+      className={`group relative overflow-hidden hover:shadow-md transition-all duration-200 flex flex-col h-full ${
+        isDraftOrInactive
+          ? "border-amber-300 bg-amber-50/30"
+          : "border-slate-200"
+      }`}
+    >
       {/* Draft/Inactive Alert Banner */}
       {isDraftOrInactive && (
         <Alert className="border-0 border-b border-amber-200 bg-amber-50 rounded-none py-2.5">
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertDescription className="text-xs text-amber-800 flex items-center justify-between gap-2">
             <span className="font-medium">
-              {promotion.status === 'draft' ? 'Not visible to customers' : 'Currently paused'}
+              {promotion.status === "draft"
+                ? "Not visible to customers"
+                : "Currently paused"}
             </span>
             {canActivate && (
               <Button
@@ -165,7 +171,7 @@ export function PromotionCard({ promotion, orgId }: PromotionCardProps) {
         </Alert>
       )}
 
-      <CardHeader className="pb-3">
+      <CardHeader className={promotion.description ? "pb-3" : "pb-0"}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-base leading-tight truncate">
@@ -218,7 +224,9 @@ export function PromotionCard({ promotion, orgId }: PromotionCardProps) {
       <CardContent className="flex-1 flex flex-col gap-3">
         {/* Status & Trigger Type */}
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge className={`${statusConfig.className} text-xs px-2 py-0.5 flex items-center gap-1`}>
+          <Badge
+            className={`${statusConfig.className} text-xs px-2 py-0.5 flex items-center gap-1`}
+          >
             <StatusIcon className="w-3 h-3" />
             {statusConfig.label}
           </Badge>
@@ -234,10 +242,12 @@ export function PromotionCard({ promotion, orgId }: PromotionCardProps) {
             </Badge>
           )}
         </div>
-        
+
         {/* Status description */}
         <p className="text-xs text-muted-foreground flex items-center gap-1">
-          <span className={isDraftOrInactive ? 'text-amber-700 font-medium' : ''}>
+          <span
+            className={isDraftOrInactive ? "text-amber-700 font-medium" : ""}
+          >
             {statusConfig.description}
           </span>
         </p>

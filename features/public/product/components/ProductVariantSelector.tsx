@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { PublicProductVariationDetail } from "@/lib/supabase/queries/products";
+import { getCustomAttributes } from "../utils/safeAttributes";
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat("en-PH", {
@@ -65,9 +66,7 @@ export function ProductVariantSelector({
           const unavailable = !variation.is_available;
           const stockInfo = getStockInfo(variation);
 
-          const customAttributes = Object.entries(variation.attributes).filter(
-            ([k]) => k !== "Variant",
-          );
+          const customAttributes = getCustomAttributes(variation.attributes);
 
           return (
             <button
@@ -96,27 +95,39 @@ export function ProductVariantSelector({
                 )}
               />
 
-              {/* Name + attribute chips — takes remaining space */}
-              <span className="flex-1 min-w-0 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <span
-                  className={cn(
-                    "text-sm font-medium leading-tight",
-                    isSelected ? "text-primary" : "text-foreground",
-                  )}
-                >
-                  {variation.variation_name ?? "Variant"}
-                </span>
-                {customAttributes.map(([key, val]) => (
-                  <span
-                    key={key}
-                    className="inline-flex items-center rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground whitespace-nowrap"
-                  >
-                    <span className="font-medium text-foreground/60">
-                      {key}:
-                    </span>
-                    &nbsp;{val}
+              {/* Attributes (primary) + name (secondary) — takes remaining space */}
+              <span className="flex-1 min-w-0 flex flex-col gap-0.5">
+                {customAttributes.length > 0 ? (
+                  <span className="flex flex-wrap gap-1">
+                    {customAttributes.map(([key, val]) => (
+                      <span
+                        key={key}
+                        className={cn(
+                          "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+                          isSelected
+                            ? "bg-primary/12 text-primary"
+                            : "bg-muted-foreground/10 text-foreground",
+                        )}
+                      >
+                        {key}: {val}
+                      </span>
+                    ))}
                   </span>
-                ))}
+                ) : (
+                  <span
+                    className={cn(
+                      "text-sm font-medium leading-tight",
+                      isSelected ? "text-primary" : "text-foreground",
+                    )}
+                  >
+                    {variation.variation_name ?? "Variant"}
+                  </span>
+                )}
+                {customAttributes.length > 0 && variation.variation_name && (
+                  <span className="truncate text-[11px] text-muted-foreground leading-tight">
+                    {variation.variation_name}
+                  </span>
+                )}
               </span>
 
               {/* Price + stock — pinned right */}

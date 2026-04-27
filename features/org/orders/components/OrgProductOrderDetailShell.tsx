@@ -8,6 +8,7 @@ import {
   ChevronRight,
   ArrowLeft,
   ExternalLink,
+  ShoppingCart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -125,118 +126,142 @@ export function OrgProductOrderDetailShell({
         showVariationFilter={true}
       />
 
-      {/* ── Order Items Table ──────────────────────────────────────────────── */}
-      <div className="rounded-xl border bg-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b bg-muted/40">
-                <th className="text-left text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Order #
-                </th>
-                <th className="text-left text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Customer
-                </th>
-                <th className="text-left text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Variation
-                </th>
-                <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  SKU
-                </th>
-                <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Qty
-                </th>
-                <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Price
-                </th>
-                <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Subtotal
-                </th>
-                <th className="text-center text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Status
-                </th>
-                <th className="text-center text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Payment
-                </th>
-                <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  Date
-                </th>
-                <th className="text-center text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
-                  View
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {items.map((item) => (
-                <tr
-                  key={`${item.order_id}-${item.sku}`}
-                  className="group transition-colors hover:bg-muted/30"
-                >
-                  <td className="px-5 py-3.5">
-                    <span className="font-mono text-xs font-medium">
-                      {item.order_number}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-sm">{item.customer_name}</td>
-                  <td className="px-5 py-3.5 text-sm text-muted-foreground">
-                    {item.is_bundle_header ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
-                        <span className="rounded bg-primary/10 px-1.5 py-0.5">
-                          Bundle: {item.bundle_name}
-                        </span>
-                      </span>
-                    ) : (
-                      item.variation_name
-                    )}
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-sm tabular-nums text-muted-foreground font-mono text-xs">
-                    {item.sku}
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-sm tabular-nums">
-                    {item.quantity}
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-sm tabular-nums text-muted-foreground">
-                    {formatCurrency(item.unit_price)}
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-sm tabular-nums font-medium">
-                    {formatCurrency(item.subtotal)}
-                  </td>
-                  <td className="px-5 py-3.5 text-center">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[item.order_status] ?? ""}`}
-                    >
-                      {STATUS_LABELS[item.order_status] ?? item.order_status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-center">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${PAYMENT_STATUS_COLORS[item.payment_status] ?? ""}`}
-                    >
-                      {PAYMENT_STATUS_LABELS[item.payment_status] ??
-                        item.payment_status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-3.5 text-right text-sm tabular-nums text-muted-foreground">
-                    {formatDate(item.created_at)}
-                  </td>
-                  <td className="px-5 py-3.5 text-center">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() =>
-                        router.push(`/org/orders/${item.order_id}`)
-                      }
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* ── Order Items Table / Empty State ────────────────────────────────── */}
+      {items.length === 0 ? (
+        <div className="rounded-xl border bg-card">
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <ShoppingCart className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No orders yet</h3>
+            <p className="text-sm text-muted-foreground text-center max-w-sm mb-6">
+              This product hasn&apos;t received any orders yet. Orders will appear
+              here once customers start purchasing.
+            </p>
+            <Button variant="outline" asChild>
+              <Link href={backUrl}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back to Products
+              </Link>
+            </Button>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="rounded-xl border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Order #
+                  </th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Customer
+                  </th>
+                  <th className="text-left text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Variation
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    SKU
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Qty
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Price
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Subtotal
+                  </th>
+                  <th className="text-center text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Status
+                  </th>
+                  <th className="text-center text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Payment
+                  </th>
+                  <th className="text-right text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    Date
+                  </th>
+                  <th className="text-center text-xs font-semibold text-muted-foreground tracking-wider uppercase px-5 py-3.5">
+                    View
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {items.map((item) => (
+                  <tr
+                    key={`${item.order_id}-${item.sku}`}
+                    className="group transition-colors hover:bg-muted/30"
+                  >
+                    <td className="px-5 py-3.5">
+                      <span className="font-mono text-xs font-medium">
+                        {item.order_number}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-sm">
+                      {item.customer_name}
+                    </td>
+                    <td className="px-5 py-3.5 text-sm text-muted-foreground">
+                      {item.is_bundle_header ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                          <span className="rounded bg-primary/10 px-1.5 py-0.5">
+                            Bundle: {item.bundle_name}
+                          </span>
+                        </span>
+                      ) : (
+                        item.variation_name
+                      )}
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-sm tabular-nums text-muted-foreground font-mono text-xs">
+                      {item.sku}
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-sm tabular-nums">
+                      {item.quantity}
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-sm tabular-nums text-muted-foreground">
+                      {formatCurrency(item.unit_price)}
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-sm tabular-nums font-medium">
+                      {formatCurrency(item.subtotal)}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${STATUS_COLORS[item.order_status] ?? ""}`}
+                      >
+                        {STATUS_LABELS[item.order_status] ??
+                          item.order_status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${PAYMENT_STATUS_COLORS[item.payment_status] ?? ""}`}
+                      >
+                        {PAYMENT_STATUS_LABELS[item.payment_status] ??
+                          item.payment_status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-right text-sm tabular-nums text-muted-foreground">
+                      {formatDate(item.created_at)}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() =>
+                          router.push(`/org/orders/${item.order_id}`)
+                        }
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* ── Pagination ─────────────────────────────────────────────────────── */}
       {totalPages > 1 && (

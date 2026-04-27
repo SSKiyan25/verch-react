@@ -8,7 +8,6 @@ import { ProductFormHeader } from "./ProductFormHeader";
 import { ProductBasicInfo } from "./ProductBasicInfo";
 import { ProductMedia } from "./ProductMedia";
 import { ProductVariations } from "./ProductVariations";
-import { ProductSettings } from "./ProductSettings";
 import { Button } from "@/components/ui/button";
 import { Save, X } from "lucide-react";
 
@@ -75,9 +74,6 @@ export function ProductForm({
             orgId={orgId}
             commissionRate={commissionRate}
           />
-
-          {/* Step 4: Settings & Visibility */}
-          <ProductSettings data={formData} onChange={updateFormData} />
         </div>
 
         {/* Action Buttons */}

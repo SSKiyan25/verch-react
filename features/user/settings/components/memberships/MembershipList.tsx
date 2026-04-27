@@ -48,6 +48,10 @@ export function MembershipList({
     }
   }
 
+  function handleRefresh() {
+    router.refresh();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -104,6 +108,7 @@ export function MembershipList({
               key={membership.id}
               membership={membership}
               onWithdraw={() => handleWithdraw(membership.id)}
+              onRefresh={handleRefresh}
             />
           ))}
         </div>

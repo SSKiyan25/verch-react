@@ -86,8 +86,8 @@ export const createPromotionSchema = z
       .min(1, "Total uses cap must be at least 1")
       .nullable()
       .optional(),
-    starts_at: z.string().datetime().nullable().optional(),
-    ends_at: z.string().datetime().nullable().optional(),
+    starts_at: z.iso.datetime({ offset: true }).nullable().optional(),
+    ends_at: z.iso.datetime({ offset: true }).nullable().optional(),
     target_product_ids: z.array(z.string().uuid()).nullable().optional(),
     gift_variation_id: z.string().uuid().nullable().optional(),
     gift_quantity: z
@@ -260,8 +260,8 @@ export const updatePromotionSchema = z
       .min(1, "Total uses cap must be at least 1")
       .nullable()
       .optional(),
-    starts_at: z.string().datetime().nullable().optional(),
-    ends_at: z.string().datetime().nullable().optional(),
+    starts_at: z.iso.datetime({ offset: true }).nullable().optional(),
+    ends_at: z.iso.datetime({ offset: true }).nullable().optional(),
     target_product_ids: z.array(z.string().uuid()).nullable().optional(),
     gift_variation_id: z.string().uuid().nullable().optional(),
     gift_quantity: z

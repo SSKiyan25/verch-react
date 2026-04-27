@@ -50,14 +50,21 @@ export async function getPaymentProofUrlAction(input: {
       return { success: false, error: "User not found" };
     }
 
-    const orderInfo = Array.isArray(paymentData.orders) ? paymentData.orders[0] : (paymentData.orders as any);
+    const orderInfo = Array.isArray(paymentData.orders)
+      ? paymentData.orders[0]
+      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (paymentData.orders as any);
     if (!orderInfo) {
       return { success: false, error: "Order details not found" };
     }
 
     const isCustomer = orderInfo.user_id === user.id;
     const isOrgStaff =
-      ["organization_admin", "organization_manager", "organization_staff"].includes(userData.role) &&
+      [
+        "organization_admin",
+        "organization_manager",
+        "organization_staff",
+      ].includes(userData.role) &&
       userData.organization_id === orderInfo.organization_id;
     const isAdmin = userData.role === "admin";
 

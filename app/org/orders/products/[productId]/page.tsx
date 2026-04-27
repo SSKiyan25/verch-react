@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getCachedOrgOrdersByProduct } from "@/lib/data/org/product-orders";
 import { OrgProductOrderDetailShell } from "@/features/org/orders/components/OrgProductOrderDetailShell";
 import type { OrgProductOrderFilters } from "@/lib/supabase/queries/org-product-orders";
@@ -62,8 +62,6 @@ export default async function OrgProductOrderDetailPage({
     userRecord.organization_id,
     filters,
   );
-
-  if (result.items.length === 0 && !sp.page) notFound();
 
   return (
     <OrgProductOrderDetailShell

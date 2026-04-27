@@ -130,3 +130,47 @@ export async function withdrawMembershipApplication(
     return { success: false, error: "Failed to withdraw application" };
   }
 }
+
+export async function refreshMembershipStatus(
+  membershipId: string,
+): Promise<
+  ActionResult<{
+    membership_status: string;
+    rejection_reason: string | null;
+    reviewed_at: string | null;
+  }>
+> {
+  try {
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+    if (authError || !user) return { success: false, error: "Unauthorized" };
+
+    const { data, error } = await supabase
+      .from("student_organization_memberships")
+      .select("membership_status, rejection_reason, reviewed_at")
+      .eq("id", membershipId)
+      .eq("user_id", user.id)
+      .single();
+
+    if (error) return { success: false, error: error.message };
+    if (!data) return { success: false, error: "Membership not found" };
+
+    invalidateMembershipsCache(user.id);
+
+    return {
+      success: true,
+      data: {
+        membership_status: data.membership_status,
+        rejection_reason: data.rejection_reason,
+        reviewed_at: data.reviewed_at,
+      },
+    };
+  } catch (err) {
+    console.error("[refreshMembershipStatus]", err);
+    return { success: false, error: "Failed to refresh membership status" };
+  }
+}

@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Supabase auto-generated types file - large file misidentified as binary
+    "types_database.ts",
   ]),
 ]);
 

@@ -13,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import type { PublicProductVariationDetail } from "@/lib/supabase/queries/products";
 import { getStockLabel } from "../utils/stockLabel";
+import { getCustomAttributes, getAllAttributes } from "../utils/safeAttributes";
 
 const INITIAL_VISIBLE = 4;
 
@@ -59,10 +60,8 @@ export function ProductVariantCards({
           const unavailable = !variation.is_available;
           const stock = getStockLabel(variation);
 
-          const customAttributes = Object.entries(variation.attributes).filter(
-            ([k]) => k !== "Variant",
-          );
-          const allAttributes = Object.entries(variation.attributes);
+          const customAttributes = getCustomAttributes(variation.attributes);
+          const allAttributes = getAllAttributes(variation.attributes);
 
           return (
             <div key={variation.id} className="relative w-28">
@@ -81,29 +80,37 @@ export function ProductVariantCards({
                       : "bg-card hover:border-primary/60 hover:bg-primary/5",
                 )}
               >
-                {/* Top: name + chips */}
+                {/* Top: attributes (primary) + name (secondary) */}
                 <span className="flex flex-col gap-1">
-                  <span
-                    className={cn(
-                      "truncate text-sm font-semibold leading-tight",
-                      isSelected ? "text-primary" : "text-foreground",
-                    )}
-                  >
-                    {variation.variation_name ?? "Variant"}
-                  </span>
-                  {customAttributes.length > 0 && (
+                  {customAttributes.length > 0 ? (
                     <span className="flex flex-wrap gap-1">
                       {customAttributes.map(([key, val]) => (
                         <span
                           key={key}
-                          className="inline-flex items-center rounded-full bg-muted px-1.5 py-px text-[10px] text-muted-foreground whitespace-nowrap"
+                          className={cn(
+                            "inline-flex items-center rounded-md px-1.5 py-0.5 text-xs font-semibold whitespace-nowrap",
+                            isSelected
+                              ? "bg-primary/12 text-primary"
+                              : "bg-muted-foreground/10 text-foreground",
+                          )}
                         >
-                          <span className="font-medium text-foreground/60">
-                            {key}:
-                          </span>
-                          &nbsp;{val}
+                          {key}: {val}
                         </span>
                       ))}
+                    </span>
+                  ) : (
+                    <span
+                      className={cn(
+                        "truncate text-sm font-semibold leading-tight",
+                        isSelected ? "text-primary" : "text-foreground",
+                      )}
+                    >
+                      {variation.variation_name ?? "Variant"}
+                    </span>
+                  )}
+                  {customAttributes.length > 0 && variation.variation_name && (
+                    <span className="truncate text-[11px] text-muted-foreground leading-tight">
+                      {variation.variation_name}
                     </span>
                   )}
                 </span>
@@ -215,12 +222,7 @@ export function ProductVariantCards({
                         <span className="text-xs text-muted-foreground">
                           Status
                         </span>
-                        <span
-                          className={cn(
-                            "text-xs font-medium",
-                            stock.cls,
-                          )}
-                        >
+                        <span className={cn("text-xs font-medium", stock.cls)}>
                           {stock.text}
                         </span>
                       </div>

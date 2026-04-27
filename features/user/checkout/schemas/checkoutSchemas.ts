@@ -6,6 +6,9 @@ export const PlaceOrderSchema = z.object({
   voucherCodes: z
     .record(z.string().uuid(), z.string().min(1).max(50))
     .optional(),
+  selectedPromotions: z
+    .record(z.string().uuid(), z.string().uuid().nullable())
+    .optional(),
   notes: z.record(z.string().uuid(), z.string().max(500)).optional(),
 });
 

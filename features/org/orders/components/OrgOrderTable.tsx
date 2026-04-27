@@ -62,7 +62,7 @@ export function OrgOrderTable({
                   }
                   onCheckedChange={handleSelectAllChange}
                   aria-label="Select all orders"
-                  className="cursor-pointer"
+                  className="cursor-pointer border-2 shadow-sm border-primary"
                 />
               </th>
               <th className="h-11 px-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">

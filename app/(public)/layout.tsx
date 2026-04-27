@@ -57,7 +57,7 @@ async function PublicLayoutContent({
 
 function PublicLayoutFallback({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen w-full">
       <div className="h-16 border-b flex items-center px-4">
         <Skeleton className="h-8 w-32" />
       </div>

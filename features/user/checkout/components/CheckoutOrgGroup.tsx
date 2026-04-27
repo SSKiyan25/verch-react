@@ -8,7 +8,7 @@ import { CheckoutItemRow } from "@/features/user/checkout/components/CheckoutIte
 import { CheckoutFulfillmentSelector } from "@/features/user/checkout/components/CheckoutFulfillmentSelector";
 import { CheckoutPaymentSelector } from "@/features/user/checkout/components/CheckoutPaymentSelector";
 import { CheckoutVoucherInput } from "@/features/user/checkout/components/CheckoutVoucherInput";
-import { CheckoutPromotionBadge } from "@/features/user/checkout/components/CheckoutPromotionBadge";
+import { CheckoutPromotionSelector } from "@/features/user/checkout/components/CheckoutPromotionSelector";
 import { useCheckoutOrgSummary } from "@/features/user/checkout/hooks/useCheckoutOrgSummary";
 import type {
   CheckoutCartItem,
@@ -37,6 +37,7 @@ interface CheckoutOrgGroupProps {
   appliedVoucherCode?: string;
   cartItemIds: string[];
   error: string | null;
+  selectedPromotionId: string | null;
   onPaymentChange: (method: PaymentMethod) => void;
   onFulfillmentChange: (
     method: FulfillmentMethod,
@@ -44,6 +45,7 @@ interface CheckoutOrgGroupProps {
   ) => void;
   onVoucherApplied: (result: VoucherValidationResult, code: string) => void;
   onVoucherRemoved: () => void;
+  onPromotionSelect: (promotionId: string | null) => void;
   onNoteChange: (note: string) => void;
 }
 
@@ -84,32 +86,25 @@ export function CheckoutOrgGroup({
   appliedVoucherCode,
   cartItemIds,
   error,
+  selectedPromotionId,
   onPaymentChange,
   onFulfillmentChange,
   onVoucherApplied,
   onVoucherRemoved,
+  onPromotionSelect,
   onNoteChange,
 }: CheckoutOrgGroupProps) {
-  const {
-    groupedItems,
-    subtotal,
-    totalDiscount,
-    orgTotal,
-    bestEligibleAutoPromo,
-  } = useCheckoutOrgSummary({
-    items,
-    bundleInstances,
-    applicablePromotions,
-    appliedVoucher,
-  });
+  const { groupedItems, subtotal, totalDiscount, orgTotal } =
+    useCheckoutOrgSummary({
+      items,
+      bundleInstances,
+      applicablePromotions,
+      appliedVoucher,
+      selectedPromotionId,
+    });
 
   // Collect all cart item IDs in this org
   const allOrgItemIds = cartItemIds;
-
-  // Ineligible auto promos for grayed-out display
-  const ineligibleAutoPromos = applicablePromotions.filter(
-    (p) => p.trigger_type === "auto" && !p.is_eligible,
-  );
 
   return (
     <div className="bg-card border rounded-xl overflow-hidden">
@@ -215,28 +210,12 @@ export function CheckoutOrgGroup({
         />
 
         {/* Promotions */}
-        {(bestEligibleAutoPromo || ineligibleAutoPromos.length > 0) && (
-          <div className="flex flex-wrap gap-2">
-            {bestEligibleAutoPromo && (
-              <CheckoutPromotionBadge
-                name={bestEligibleAutoPromo.name}
-                discountType={bestEligibleAutoPromo.discount_type}
-                discountValue={bestEligibleAutoPromo.discount_value}
-                isEligible
-              />
-            )}
-            {ineligibleAutoPromos.map((p) => (
-              <CheckoutPromotionBadge
-                key={p.promotion_id}
-                name={p.name}
-                discountType={p.discount_type}
-                discountValue={p.discount_value}
-                isEligible={false}
-                ineligibleReason={p.ineligible_reason ?? undefined}
-              />
-            ))}
-          </div>
-        )}
+        <CheckoutPromotionSelector
+          orgId={orgId}
+          promotions={applicablePromotions}
+          selectedPromotionId={selectedPromotionId}
+          onSelect={onPromotionSelect}
+        />
 
         {/* Note input */}
         <div>

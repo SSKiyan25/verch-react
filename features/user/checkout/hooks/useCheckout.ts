@@ -44,6 +44,7 @@ export interface UseCheckoutReturn {
     string,
     { result: VoucherValidationResult; code: string } | null
   >;
+  selectedPromotions: Record<string, string | null>;
   notes: Record<string, string>;
   isPlacing: boolean;
   placeErrors: Record<string, string>;
@@ -67,6 +68,7 @@ export interface UseCheckoutReturn {
     code: string,
   ) => void;
   removeVoucher: (orgId: string) => void;
+  setSelectedPromotion: (orgId: string, promotionId: string | null) => void;
   setNote: (orgId: string, note: string) => void;
   placeOrder: () => Promise<void>;
 }
@@ -104,6 +106,10 @@ export function useCheckout({
 
   const [appliedVouchers, setAppliedVouchers] = useState<
     Record<string, { result: VoucherValidationResult; code: string } | null>
+  >(() => Object.fromEntries(orgGroups.map((g) => [g.orgId, null])));
+
+  const [selectedPromotions, setSelectedPromotions] = useState<
+    Record<string, string | null>
   >(() => Object.fromEntries(orgGroups.map((g) => [g.orgId, null])));
 
   const [notes, setNotes] = useState<Record<string, string>>(() =>
@@ -190,6 +196,13 @@ export function useCheckout({
     setNotes((prev) => ({ ...prev, [orgId]: note }));
   }, []);
 
+  const setSelectedPromotion = useCallback(
+    (orgId: string, promotionId: string | null) => {
+      setSelectedPromotions((prev) => ({ ...prev, [orgId]: promotionId }));
+    },
+    [],
+  );
+
   // ── Place order ────────────────────────────────────────────────────────────
   const placeOrder = useCallback(async () => {
     setIsPlacing(true);
@@ -211,11 +224,21 @@ export function useCheckout({
         if (note.trim()) notesPayload[orgId] = note.trim();
       }
 
+      // Build selected promotions: orgId → promotionId (or null)
+      const selectedPromotionsPayload: Record<string, string | null> = {};
+      for (const [orgId, promoId] of Object.entries(selectedPromotions)) {
+        selectedPromotionsPayload[orgId] = promoId;
+      }
+
       const result = await placeOrderAction({
         cartItemIds,
         paymentMethods,
         voucherCodes:
           Object.keys(voucherCodes).length > 0 ? voucherCodes : undefined,
+        selectedPromotions:
+          Object.keys(selectedPromotionsPayload).length > 0
+            ? selectedPromotionsPayload
+            : undefined,
         notes: Object.keys(notesPayload).length > 0 ? notesPayload : undefined,
       });
 
@@ -254,12 +277,20 @@ export function useCheckout({
     } finally {
       setIsPlacing(false);
     }
-  }, [cartItemIds, paymentMethods, appliedVouchers, notes, router]);
+  }, [
+    cartItemIds,
+    paymentMethods,
+    appliedVouchers,
+    selectedPromotions,
+    notes,
+    router,
+  ]);
 
   return {
     paymentMethods,
     fulfillmentPrefs,
     appliedVouchers,
+    selectedPromotions,
     notes,
     isPlacing,
     placeErrors,
@@ -271,6 +302,7 @@ export function useCheckout({
     setFulfillmentPref,
     setVoucherApplied,
     removeVoucher,
+    setSelectedPromotion,
     setNote,
     placeOrder,
   };
