@@ -1,11 +1,14 @@
 import * as admin from "firebase-admin";
 
 if (!admin.apps.length) {
-  // 1. Get the decoded key
+  // 1. Decode safely using utf8
+  // 2. FORCEFULLY .trim() any invisible trailing newlines/spaces that crash OpenSSL 3.0
   const privateKey = Buffer.from(
     process.env.FIREBASE_PRIVATE_KEY_BASE64 || "",
     "base64",
-  ).toString("ascii");
+  )
+    .toString("utf8")
+    .trim();
 
   // 2. THE SANITY CHECK LOGS
   console.log("--- DEBUGGING PRIVATE KEY FORMAT ---");
@@ -23,7 +26,6 @@ if (!admin.apps.length) {
   console.log("Total length:", privateKey.length);
   console.log("------------------------------------");
 
-  // 3. Attempt initialization
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
