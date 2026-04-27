@@ -74,6 +74,7 @@ export function GCashPaymentShell({ order }: { order: OrderDetail }) {
   };
 
   const handleUpload = async () => {
+    console.log("[handleUpload] selectedFile:", selectedFile);
     if (!selectedFile) return;
 
     setIsUploading(true);

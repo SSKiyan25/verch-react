@@ -88,6 +88,9 @@ export async function uploadPaymentProof({
   orderId,
   file,
 }: PaymentProofUploadParams): Promise<UploadResult> {
+  console.log(
+    `[uploadPaymentProof] Starting upload for userId=${userId}, orderId=${orderId}, fileName=${file.name}, fileType=${file.type}, fileSize=${file.size} bytes`,
+  );
   // Validate file type
   if (
     !ALLOWED_PROOF_TYPES.includes(
