@@ -32,7 +32,10 @@ export async function uploadPaymentProofAction(
   //   );
   //   return { success: false, error: "Firebase configuration error" };
   // }
-
+  console.log(
+    "[uploadPaymentProofAction] Starting action with formData:",
+    formData,
+  );
   try {
     const adminModule = await import("@/lib/firebase/firebase-admin");
     const bucketName = adminModule.storage.bucket().name;

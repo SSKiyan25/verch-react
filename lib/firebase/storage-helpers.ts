@@ -88,6 +88,8 @@ export async function uploadPaymentProof({
   orderId,
   file,
 }: PaymentProofUploadParams): Promise<UploadResult> {
+  console.log("[uploadPaymentProof] file size:", file.size);
+  console.log("[uploadPaymentProof] file type:", file.type);
   console.log(
     `[uploadPaymentProof] Starting upload for userId=${userId}, orderId=${orderId}, fileName=${file.name}, fileType=${file.type}, fileSize=${file.size} bytes`,
   );
@@ -133,9 +135,8 @@ export async function uploadPaymentProof({
 
     return { success: true, path: filePath };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    console.error("[uploadPaymentProof] Firebase upload failed:", message);
-    return { success: false, error: "Failed to upload payment proof" };
+    const message = error instanceof Error ? error.message : String(error);
+    return { success: false, error: `Upload failed: ${message}` }; // real error in UI
   }
 }
 
