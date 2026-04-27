@@ -1,21 +1,25 @@
 import * as admin from "firebase-admin";
 
 if (!admin.apps.length) {
-  console.log("[firebase-admin] Initializing Firebase Admin SDK");
-  console.log(
-    "[firebase-admin] Check Private Key if Exists:",
-    !!process.env.FIREBASE_PRIVATE_KEY,
-  );
+  // SAFETY CHECK: This will throw a clear error in Vercel if the variable is missing
+  if (!process.env.FIREBASE_PRIVATE_KEY_BASE64) {
+    console.error(
+      "CRITICAL ERROR: FIREBASE_PRIVATE_KEY_BASE64 is missing in this environment!",
+    );
+  }
+
+  const privateKey = Buffer.from(
+    process.env.FIREBASE_PRIVATE_KEY_BASE64 || "",
+    "base64",
+  )
+    .toString("utf8")
+    .trim();
+
   admin.initializeApp({
     credential: admin.credential.cert({
       projectId: process.env.FIREBASE_PROJECT_ID,
       clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      // 1. replace(/\\n/g, "\n") handles escaped strings (if any)
-      // 2. replace(/\r/g, "") destroys the hidden carriage returns causing the OpenSSL crash
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(
-        /\\n/g,
-        "\n",
-      ).replace(/\r/g, ""),
+      privateKey: privateKey,
     }),
     storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
