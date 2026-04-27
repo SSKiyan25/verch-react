@@ -21,6 +21,8 @@ import { useGCashSettings } from "@/features/user/payment/hooks/useGCashSettings
 import { GCashDetailsCard } from "./GCashDetailsCard";
 import { PaymentProofPreview } from "./PaymentProofPreview";
 import type { OrderDetail } from "@/lib/supabase/queries/orders";
+// Note: Will be deleted after testing - only used for debugging file uploads
+import { debugUploadAction } from "@/features/user/checkout/actions/debugUploadAction";
 
 export function GCashPaymentShell({ order }: { order: OrderDetail }) {
   const router = useRouter();
@@ -80,6 +82,9 @@ export function GCashPaymentShell({ order }: { order: OrderDetail }) {
     const formData = new FormData();
     formData.append("orderId", order.order_id);
     formData.append("file", selectedFile);
+
+    const debug = await debugUploadAction(formData);
+    console.log("[handleUpload] debug result:", debug);
 
     const result = await uploadPaymentProofAction(formData);
 
