@@ -19,6 +19,20 @@ type UploadPaymentProofResult =
 export async function uploadPaymentProofAction(
   formData: FormData,
 ): Promise<UploadPaymentProofResult> {
+  // Will be deleted after testing - only used for debugging file uploads
+  try {
+    // Test Firebase is reachable before anything else
+    const { storage } = await import("@/lib/firebase/firebase-admin");
+    console.log("[uploadPaymentProofAction] Firebase Admin imported OK");
+    console.log("[uploadPaymentProofAction] Bucket:", storage.bucket().name);
+  } catch (initErr) {
+    console.error(
+      "[uploadPaymentProofAction] Firebase Admin INIT FAILED:",
+      initErr,
+    );
+    return { success: false, error: "Firebase configuration error" };
+  }
+
   try {
     const supabase = await createClient();
 
