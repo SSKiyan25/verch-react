@@ -23,7 +23,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   LogOut,
   ChevronDown,
-  LayoutDashboard,
   Package,
   ShoppingCart,
   Settings,
@@ -131,9 +130,6 @@ export function PublicShell({ children, user, cartCount }: PublicShellProps) {
             </Avatar>
             <div className="hidden md:flex flex-col items-start">
               <span className="text-sm font-medium">{user.name}</span>
-              <span className="text-xs text-muted-foreground capitalize">
-                {user.role.replace(/_/g, " ")}
-              </span>
             </div>
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </Button>
@@ -148,12 +144,12 @@ export function PublicShell({ children, user, cartCount }: PublicShellProps) {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
+          {/* <DropdownMenuItem asChild>
             <Link href="/user/dashboard" className="cursor-pointer">
               <LayoutDashboard className="mr-2 h-4 w-4" />
               <span>Dashboard</span>
             </Link>
-          </DropdownMenuItem>
+          </DropdownMenuItem> */}
           <DropdownMenuItem asChild>
             <Link href="/user/orders" className="cursor-pointer">
               <Package className="mr-2 h-4 w-4" />

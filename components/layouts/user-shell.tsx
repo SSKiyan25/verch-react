@@ -21,24 +21,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { generateBreadcrumbs } from "@/lib/utils/org-helpers";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  Package,
-  Heart,
-  Settings,
-  Store,
-} from "lucide-react";
+import { ShoppingCart, Package, Settings, Store, Home } from "lucide-react";
 import { useCartStore } from "@/lib/stores/cart-store";
 import { CartBadge } from "@/components/navbar/cart-badge";
 
 const userNavItems = [
-  {
-    title: "Dashboard",
-    url: "/user/dashboard",
-    icon: LayoutDashboard,
-    iconName: "LayoutDashboard",
-  },
   {
     title: "My Orders",
     url: "/user/orders",
@@ -50,12 +37,6 @@ const userNavItems = [
     url: "/user/cart",
     icon: ShoppingCart,
     iconName: "ShoppingCart",
-  },
-  {
-    title: "Wishlist",
-    url: "/user/wishlist",
-    icon: Heart,
-    iconName: "Heart",
   },
   {
     title: "Browse Stores",
@@ -72,7 +53,7 @@ const userNavItems = [
 ];
 
 const mobileNavLinks = [
-  { label: "Dashboard", icon: "LayoutDashboard", href: "/user/dashboard" },
+  { label: "Home", icon: "Home", href: "/" },
   { label: "Orders", icon: "Package", href: "/user/orders" },
   { label: "Cart", icon: "ShoppingCart", href: "/user/cart" },
   { label: "Settings", icon: "Settings", href: "/user/settings" },
@@ -144,7 +125,7 @@ export function UserShell({
       map[item.iconName] = item.icon as React.FC<{ className?: string }>;
       return map;
     },
-    {} as Record<string, React.FC<{ className?: string }>>,
+    { Home: Home } as Record<string, React.FC<{ className?: string }>>,
   );
 
   return (

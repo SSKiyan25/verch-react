@@ -1,7 +1,13 @@
 "use client";
 
+import { Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { OrgOrderTableRow } from "@/features/org/orders/components/OrgOrderTableRow";
 import type { OrgOrderListItem } from "@/lib/supabase/queries/org-orders";
 import type { OptimisticOrderPatch } from "@/features/org/orders/hooks/useOptimisticOrderStatus";
@@ -51,19 +57,39 @@ export function OrgOrderTable({
         <table className="w-full">
           <thead>
             <tr className="border-b border-border/70 bg-muted/30 backdrop-blur-sm">
-              <th className="h-11 w-10 px-3 text-left align-middle">
-                <Checkbox
-                  checked={
-                    isAllSelected
-                      ? true
-                      : isSomeSelected
-                        ? "indeterminate"
-                        : false
-                  }
-                  onCheckedChange={handleSelectAllChange}
-                  aria-label="Select all orders"
-                  className="cursor-pointer border-2 shadow-sm border-primary"
-                />
+              <th className="h-11 w-14 px-3 text-left align-middle">
+                <div className="flex items-center gap-1">
+                  <Checkbox
+                    checked={
+                      isAllSelected
+                        ? true
+                        : isSomeSelected
+                          ? "indeterminate"
+                          : false
+                    }
+                    onCheckedChange={handleSelectAllChange}
+                    aria-label="Select all orders"
+                    className="cursor-pointer border-2 shadow-sm border-primary"
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer"
+                        aria-label="About batch selection"
+                      >
+                        <Info className="h-3 w-3" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      side="top"
+                      className="max-w-56 text-xs leading-relaxed"
+                    >
+                      Select multiple orders with the same status and confirmed
+                      payment to batch-update their fulfillment status.
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
               </th>
               <th className="h-11 px-3 text-left text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 Customer

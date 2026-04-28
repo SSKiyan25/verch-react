@@ -2,10 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Loader2, CheckCircle2, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { batchUpdateOrderStatusAction } from "@/features/org/orders/actions/batchUpdateOrderStatusAction";
 import type { BatchAction } from "@/features/org/orders/hooks/useOrderSelection";
@@ -68,6 +73,8 @@ export function OrgBatchActionBar({
     });
   }
 
+  const showReason = batchAction?.reason;
+
   return (
     <div
       className={cn(
@@ -93,13 +100,20 @@ export function OrgBatchActionBar({
               </Badge>
             </div>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Apply one shared status update to the current selection.
+              {showReason ? (
+                <span className="flex items-center gap-1.5">
+                  <Info className="h-3 w-3 shrink-0 text-amber-500" />
+                  {batchAction.reason}
+                </span>
+              ) : (
+                "Apply one shared status update to the current selection."
+              )}
             </p>
           </div>
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          {batchAction ? (
+          {batchAction && !batchAction.reason ? (
             <Button
               size="sm"
               onClick={handleBatchAction}
@@ -119,10 +133,19 @@ export function OrgBatchActionBar({
               )}
             </Button>
           ) : (
-            <div className="flex h-9 items-center gap-2 rounded-xl border border-dashed border-border px-3 text-xs text-muted-foreground">
-              <AlertCircle className="h-3.5 w-3.5" />
-              No common action available
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex h-9 cursor-default items-center gap-2 rounded-xl border border-dashed border-border px-3 text-xs text-muted-foreground">
+                  <AlertCircle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                  Action unavailable
+                </div>
+              </TooltipTrigger>
+              {showReason && (
+                <TooltipContent side="top" className="max-w-64 text-xs">
+                  {batchAction.reason}
+                </TooltipContent>
+              )}
+            </Tooltip>
           )}
 
           <Button

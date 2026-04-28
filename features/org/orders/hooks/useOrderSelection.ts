@@ -16,23 +16,61 @@ function getAdvanceableNext(status: OrderStatus): OrderStatus | null {
 export type BatchAction = {
   nextStatus: OrderStatus;
   label: string;
+  /** Human-readable reason when no action is available, explaining why. */
+  reason?: string;
 };
 
 /**
- * Returns the single batch action valid for ALL selected orders, or null if
- * there is no common transition (e.g. mixed statuses, or all terminal).
+ * Returns the single batch action valid for ALL selected orders, or null with
+ * a contextual reason if no common transition exists.
+ *
+ * Checks both order status and payment status — orders must have confirmed
+ * payment before they can advance in the fulfillment chain.
  */
 export function getBatchAvailableAction(
   selectedOrders: OrgOrderListItem[],
 ): BatchAction | null {
   if (selectedOrders.length === 0) return null;
 
+  // Check if all selected orders have confirmed payment first
+  const allPaymentConfirmed = selectedOrders.every(
+    (o) => o.payment_status === "confirmed",
+  );
+  if (!allPaymentConfirmed) {
+    const pendingPaymentCount = selectedOrders.filter(
+      (o) => o.payment_status !== "confirmed",
+    ).length;
+    return {
+      nextStatus: "preparing" as OrderStatus,
+      label: "Mark Preparing",
+      reason:
+        pendingPaymentCount === 1
+          ? "1 order needs payment confirmed before it can advance"
+          : `${pendingPaymentCount} orders need payment confirmed before they can advance`,
+    };
+  }
+
   const nextStates = selectedOrders.map((o) => getAdvanceableNext(o.status));
 
   // All must have the same, non-null next state
   const first = nextStates[0];
-  if (!first) return null;
-  if (nextStates.some((n) => n !== first)) return null;
+  if (!first) {
+    // All orders are in terminal states (completed / cancelled)
+    return {
+      nextStatus: "preparing" as OrderStatus,
+      label: "Mark Preparing",
+      reason: "Selected orders are in a terminal state and cannot advance",
+    };
+  }
+
+  if (nextStates.some((n) => n !== first)) {
+    return {
+      nextStatus: first,
+      label: first === "preparing" ? "Mark Preparing" : "Mark Ready",
+      reason:
+        "Selected orders have mixed statuses — select orders with the same status",
+    };
+  }
 
   return {
     nextStatus: first,

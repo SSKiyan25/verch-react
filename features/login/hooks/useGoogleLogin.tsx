@@ -116,7 +116,7 @@ export function useGoogleLogin() {
         router.push("/org/dashboard");
         break;
       case "customer":
-        router.push("/user/dashboard");
+        router.push("/");
         break;
       default:
         setError("Invalid account type.");

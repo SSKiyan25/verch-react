@@ -1,9 +1,8 @@
 "use client";
 
-import { MoreVertical, LogOut, Shield, User } from "lucide-react";
+import { MoreVertical, LogOut } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,28 +45,6 @@ export function NavUser({ user }: NavUserProps) {
     }
   };
 
-  const getRoleIcon = (role?: string) => {
-    switch (role) {
-      case "admin":
-        return <Shield className="h-3 w-3" />;
-      case "organization":
-        return <User className="h-3 w-3" />;
-      default:
-        return <User className="h-3 w-3" />;
-    }
-  };
-
-  const getRoleBadgeVariant = (role?: string) => {
-    switch (role) {
-      case "admin":
-        return "destructive";
-      case "organization":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -84,20 +61,9 @@ export function NavUser({ user }: NavUserProps) {
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <div className="flex items-center gap-1">
-                  <span className="truncate font-medium text-muted-foreground">
-                    {user.name}
-                  </span>
-                  {user.role && (
-                    <Badge
-                      variant={getRoleBadgeVariant(user.role)}
-                      className="text-[10px] h-4 px-1"
-                    >
-                      {getRoleIcon(user.role)}
-                      <span className="ml-1 capitalize">{user.role}</span>
-                    </Badge>
-                  )}
-                </div>
+                <span className="truncate font-medium text-muted-foreground">
+                  {user.name}
+                </span>
                 <span className="truncate text-xs text-muted-foreground/70">
                   {user.email}
                 </span>
@@ -120,20 +86,9 @@ export function NavUser({ user }: NavUserProps) {
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <div className="flex items-center gap-1">
-                    <span className="truncate font-medium text-muted-foreground">
-                      {user.name}
-                    </span>
-                    {user.role && (
-                      <Badge
-                        variant={getRoleBadgeVariant(user.role)}
-                        className="text-[10px] h-4 px-1"
-                      >
-                        {getRoleIcon(user.role)}
-                        <span className="ml-1 capitalize">{user.role}</span>
-                      </Badge>
-                    )}
-                  </div>
+                  <span className="truncate font-medium text-muted-foreground">
+                    {user.name}
+                  </span>
                   <span className="text-muted-foreground/70 truncate text-xs">
                     {user.email}
                   </span>

@@ -25,9 +25,9 @@ function getRoleRedirect(role: string): string {
     case "organization_staff":
       return "/org/dashboard";
     case "customer":
-      return "/user/dashboard";
+      return "/";
     default:
-      return "/user/dashboard";
+      return "/";
   }
 }
 
