@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect } from "react";
+import { Suspense, useActionState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import type { ActionResult } from "@/lib/types/actions";
 
 const initialState: ActionResult = { success: false, error: "" };
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordPageInner() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 
@@ -132,5 +132,13 @@ export default function ForgotPasswordPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense>
+      <ForgotPasswordPageInner />
+    </Suspense>
   );
 }

@@ -1,8 +1,10 @@
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ResetPasswordForm } from "./reset-password-form";
+import ResetPasswordLoading from "./loading";
 
-export default async function ResetPasswordPage() {
+async function ResetPasswordContent() {
   const supabase = await createClient();
   const {
     data: { session },
@@ -12,9 +14,13 @@ export default async function ResetPasswordPage() {
     redirect("/forgot-password?error=session-expired");
   }
 
+  return <ResetPasswordForm />;
+}
+
+export default async function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted p-4">
-      <ResetPasswordForm />
-    </div>
+    <Suspense fallback={<ResetPasswordLoading />}>
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
