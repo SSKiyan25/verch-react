@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import Link from "next/link";
 import {
   MoreHorizontal,
@@ -121,7 +121,9 @@ export function OrgOrderRowActions({ order, userRole, addOptimistic }: Props) {
           {showConfirmCash && (
             <DropdownMenuItem
               onClick={() => {
-                addOptimistic(buildPaymentConfirmedPatch(order.id));
+                startTransition(() => {
+                  addOptimistic(buildPaymentConfirmedPatch(order.id));
+                });
                 confirmPayment();
               }}
               disabled={isConfirming}
@@ -134,7 +136,9 @@ export function OrgOrderRowActions({ order, userRole, addOptimistic }: Props) {
           {showConfirmProof && (
             <DropdownMenuItem
               onClick={() => {
-                addOptimistic(buildPaymentConfirmedPatch(order.id));
+                startTransition(() => {
+                  addOptimistic(buildPaymentConfirmedPatch(order.id));
+                });
                 confirmPayment();
               }}
               disabled={isConfirming}
@@ -158,9 +162,11 @@ export function OrgOrderRowActions({ order, userRole, addOptimistic }: Props) {
           {showAdvance && (
             <DropdownMenuItem
               onClick={() => {
-                const next = getNextStatus(order.status);
-                if (next)
-                  addOptimistic({ orderId: order.id, patch: { status: next } });
+                startTransition(() => {
+                  const next = getNextStatus(order.status);
+                  if (next)
+                    addOptimistic({ orderId: order.id, patch: { status: next } });
+                });
                 advanceStatus();
               }}
               disabled={isUpdating}
@@ -173,7 +179,9 @@ export function OrgOrderRowActions({ order, userRole, addOptimistic }: Props) {
           {showComplete && (
             <DropdownMenuItem
               onClick={() => {
-                addOptimistic(buildOrderCompletedPatch(order.id));
+                startTransition(() => {
+                  addOptimistic(buildOrderCompletedPatch(order.id));
+                });
                 completeOrder();
               }}
               disabled={isCompleting}

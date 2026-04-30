@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,7 +33,9 @@ export function RejectProofDialog({
   const { rejectProof, isRejecting } = useRejectPaymentProof(orderId);
 
   const handleReject = async () => {
-    onOptimisticReject?.();
+    startTransition(() => {
+      onOptimisticReject?.();
+    });
     await rejectProof(rejectionNote);
     setRejectionNote("");
   };

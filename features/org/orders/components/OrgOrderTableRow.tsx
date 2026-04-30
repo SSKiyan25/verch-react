@@ -1,5 +1,6 @@
 "use client";
 
+import { startTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Package, Truck, ArrowRight } from "lucide-react";
@@ -93,7 +94,9 @@ export function OrgOrderTableRow({
 
   async function handleStatusClick() {
     if (!canAdvance || !nextStatus || isUpdating) return;
-    addOptimistic({ orderId: order.id, patch: { status: nextStatus } });
+    startTransition(() => {
+      addOptimistic({ orderId: order.id, patch: { status: nextStatus } });
+    });
     await advanceStatus();
   }
 

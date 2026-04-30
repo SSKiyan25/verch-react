@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, startTransition } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,7 +34,9 @@ export function CancelOrderDialog({
 
   const handleCancel = async () => {
     try {
-      onOptimisticCancel?.();
+      startTransition(() => {
+        onOptimisticCancel?.();
+      });
       await execute(orderId, cancelReason);
       setCancelReason("");
       onClose();
