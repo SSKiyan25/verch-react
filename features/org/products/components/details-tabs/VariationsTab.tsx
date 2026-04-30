@@ -312,11 +312,6 @@ export function VariationsTab({
                     <div className="font-bold text-lg text-green-600">
                       ₱{variation.price.toFixed(2)}
                     </div>
-                    {variation.compare_at_price && (
-                      <div className="text-xs text-muted-foreground line-through">
-                        ₱{variation.compare_at_price.toFixed(2)}
-                      </div>
-                    )}
                   </div>
                   <div className="bg-muted/50 rounded-lg p-3 text-center">
                     <div className="text-muted-foreground text-xs font-medium uppercase tracking-wide">

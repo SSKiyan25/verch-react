@@ -60,9 +60,14 @@ export function StockHistorySection({
     });
   };
 
-  const getActionIcon = (action: string) => {
-    // Actions that increase stock: add, adjustment (when positive), released
-    const isIncrease = ["add", "adjust", "released"].includes(action);
+  const getActionIcon = (action: string, quantityChange?: number) => {
+    // "add" and "released" always increase stock
+    // "adjust" depends on whether the change was positive or negative
+    const isIncrease =
+      ["add", "released", "return"].includes(action) ||
+      (action === "adjust" &&
+        quantityChange !== undefined &&
+        quantityChange > 0);
     return isIncrease ? (
       <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4 text-green-600" />
     ) : (
@@ -191,7 +196,7 @@ export function StockHistorySection({
                     {/* Header Row */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-1.5 md:gap-2 min-w-0 flex-1">
-                        {getActionIcon(log.action)}
+                        {getActionIcon(log.action, log.quantity_change)}
                         <span className="text-xs md:text-sm font-medium capitalize truncate">
                           {log.action}
                         </span>

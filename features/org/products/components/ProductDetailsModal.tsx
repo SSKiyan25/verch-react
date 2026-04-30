@@ -22,14 +22,12 @@ import {
   Images,
   BarChart3,
   ShoppingCart,
-  Percent,
   Truck,
 } from "lucide-react";
 import {
   VariationsTab,
   SettingsTab,
   PhotosTab,
-  DiscountTab,
   SupplierTab,
 } from "./details-tabs";
 import { EditProductModal } from "./edit/EditProductModal";
@@ -491,7 +489,7 @@ export function ProductDetailsModal({
 
             {/* Tabs - Mobile Optimized */}
             <Tabs defaultValue="variations" className="w-full">
-              <TabsList className="grid w-full grid-cols-5 h-auto p-1">
+              <TabsList className="grid w-full grid-cols-4 h-auto p-1">
                 <TabsTrigger
                   value="variations"
                   className="text-xs sm:text-sm px-2 py-2"
@@ -505,13 +503,6 @@ export function ProductDetailsModal({
                 >
                   <Images className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
                   <span className="hidden sm:inline">Photos</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="discount"
-                  className="text-xs sm:text-sm px-2 py-2"
-                >
-                  <Percent className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" />
-                  <span className="hidden sm:inline">Discount</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="supplier"
@@ -542,10 +533,6 @@ export function ProductDetailsModal({
                   product={productForTabs}
                   onProductUpdate={handleRefresh}
                 />
-              </TabsContent>
-
-              <TabsContent value="discount" className="mt-4">
-                <DiscountTab product={productForTabs} />
               </TabsContent>
 
               <TabsContent value="supplier" className="mt-4">

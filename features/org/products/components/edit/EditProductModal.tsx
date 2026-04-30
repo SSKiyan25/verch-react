@@ -266,9 +266,6 @@ export function EditProductModal({
                 "Variations" tab
               </p>
               <p>
-                • <strong>Discounts:</strong> Configure in the "Discount" tab
-              </p>
-              <p>
                 • <strong>Supplier:</strong> Assign in the "Supplier" tab
               </p>
             </div>

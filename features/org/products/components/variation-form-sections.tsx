@@ -225,12 +225,6 @@ export function PricingSection({
                     <span className="font-semibold text-green-600">
                       ₱{variation.price.toFixed(2)}
                     </span>
-                    {variation.compare_at_price &&
-                      variation.compare_at_price > variation.price && (
-                        <span className="text-xs text-muted-foreground line-through">
-                          ₱{variation.compare_at_price.toFixed(2)}
-                        </span>
-                      )}
                   </div>
                 </div>
               ))}
@@ -243,62 +237,30 @@ export function PricingSection({
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <div className="space-y-3">
-            <Label htmlFor="price">
-              Price <span className="text-red-500">*</span>
-            </Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                ₱
-              </span>
-              <Input
-                id="price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.price === 0 ? "" : formData.price}
-                onChange={(e) => {
-                  const val = parseFloat(e.target.value);
-                  onChange("price", isNaN(val) ? 0 : val);
-                }}
-                className={`h-11 pl-8 ${errors.price ? "border-red-500" : ""}`}
-                placeholder="0.00"
-              />
-            </div>
-            <ErrorMessage error={errors.price} />
+        <div className="space-y-3">
+          <Label htmlFor="price">
+            Price <span className="text-red-500">*</span>
+          </Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
+              ₱
+            </span>
+            <Input
+              id="price"
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.price === 0 ? "" : formData.price}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                onChange("price", isNaN(val) ? 0 : val);
+              }}
+              className={`h-11 pl-8 ${errors.price ? "border-red-500" : ""}`}
+              placeholder="0.00"
+            />
           </div>
-          <div className="space-y-3">
-            <Label htmlFor="compare_at_price">Compare At Price</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground">
-                ₱
-              </span>
-              <Input
-                id="compare_at_price"
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.compare_at_price || ""}
-                onChange={(e) =>
-                  onChange(
-                    "compare_at_price",
-                    e.target.value ? parseFloat(e.target.value) : undefined
-                  )
-                }
-                className={`h-11 pl-8 ${
-                  errors.compare_at_price ? "border-red-500" : ""
-                }`}
-                placeholder="0.00"
-              />
-            </div>
-            <ErrorMessage error={errors.compare_at_price} />
-          </div>
+          <ErrorMessage error={errors.price} />
         </div>
-
-        <p className="text-xs text-muted-foreground">
-          Compare at price shows the original price if this item is on sale
-        </p>
       </CardContent>
     </Card>
   );
