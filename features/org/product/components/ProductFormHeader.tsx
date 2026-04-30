@@ -22,7 +22,12 @@ export function ProductFormHeader({
     <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={onCancel}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCancel}
+            disabled={isSaving}
+          >
             <ArrowLeft className="w-4 h-4" />
             <span className="sr-only">Go back</span>
           </Button>
@@ -43,6 +48,7 @@ export function ProductFormHeader({
             variant="outline"
             size="sm"
             onClick={onCancel}
+            disabled={isSaving}
             className="hidden sm:flex"
           >
             <X className="w-4 h-4 mr-2" />

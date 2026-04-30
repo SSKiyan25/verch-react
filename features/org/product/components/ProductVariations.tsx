@@ -229,6 +229,17 @@ export function ProductVariations({
                 </div>
               </div>
             ))}
+            {/* Bottom Add Variation button for convenience when there are many variations */}
+            <div className="pt-2">
+              <Button
+                onClick={handleAdd}
+                variant="outline"
+                className="w-full"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add Variation
+              </Button>
+            </div>
           </div>
         )}
 
