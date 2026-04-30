@@ -2,6 +2,7 @@
 
 import { SiteHeader } from "@/components/navbar/site-header";
 import { MobileBottomNav } from "@/components/navbar/mobile-bottom-nav";
+import { SiteFooter } from "@/features/public/shared";
 import {
   Home as HomeIcon,
   ShoppingBag,
@@ -238,6 +239,7 @@ export function PublicShell({ children, user, cartCount }: PublicShellProps) {
           customNavigation={customNavigation}
         />
         <main className="flex-1 p-2 sm:p-4 pb-16 md:pb-4">{children}</main>
+        <SiteFooter />
         <MobileBottomNav links={navLinks} iconMap={mobileIconMap} />
       </div>
     </div>

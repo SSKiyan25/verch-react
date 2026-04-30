@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +35,7 @@ export function LoginForm({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [isFbWebView, setIsFbWebView] = useState(false);
 
   const supabase = createClient();
 
@@ -83,6 +84,14 @@ export function LoginForm({
     }
   };
 
+  // Detect Facebook/Instagram in-app browser (blocks Google OAuth)
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent;
+    if (/FBAV|FBAN|Instagram/i.test(userAgent)) {
+      setIsFbWebView(true);
+    }
+  }, []);
+
   return (
     <div className="w-full max-w-xl mx-auto p-4 lg:p-0">
       {/* Terms Modal - Shows when user needs to accept terms */}
@@ -127,11 +136,25 @@ export function LoginForm({
 
           {/* Google Sign In - Primary Method */}
           <div className="space-y-3">
+            {/* FB/IG WebView Warning Banner */}
+            {isFbWebView && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Google Login is disabled inside this app&apos;s browser. To
+                  log in, please tap the menu (three dots) in the top right
+                  corner and select &apos;Open in browser&apos; (Chrome/Safari).
+                </AlertDescription>
+              </Alert>
+            )}
+
             <Button
               variant="default"
-              className="w-full h-12 text-base font-medium"
+              className={`w-full h-12 text-base font-medium ${
+                isFbWebView ? "cursor-not-allowed opacity-50" : ""
+              }`}
               onClick={handleGoogleLogin}
-              disabled={isLoading || googleLoading}
+              disabled={isLoading || googleLoading || isFbWebView}
             >
               {googleLoading ? (
                 <>

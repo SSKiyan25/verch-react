@@ -1,13 +1,35 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ShoppingBag, Store, Users } from "lucide-react";
+import { ShoppingBag, Store } from "lucide-react";
+import {
+  getCachedHomepageProducts,
+  getCachedHomepageStores,
+} from "@/lib/data/public/homepage";
+import { getCachedProductsPromotions } from "@/lib/data/public/promotions";
+import {
+  HomepageHeroCollage,
+  HomepageFeaturedProducts,
+  HomepageFeaturedStores,
+} from "@/features/public/homepage";
 
-export default function Home() {
+export default async function Home() {
+  // Fetch data for hero collage and featured sections
+  const [{ products }, { stores }] = await Promise.all([
+    getCachedHomepageProducts(),
+    getCachedHomepageStores(),
+  ]);
+
+  // Fetch promotions for all products
+  const productIds = products.map((p) => p.id);
+  const promotionsMap =
+    productIds.length > 0
+      ? await getCachedProductsPromotions(productIds)
+      : new Map();
+
   return (
     <div className="min-h-screen bg-background p-4">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-primary/10 via-background to-accent/10">
-        <div className="container mx-auto px-4 py-16 sm:py-24">
+        <div className="container mx-auto px-4 py-10 sm:py-16">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <div className="text-center lg:text-left">
@@ -37,89 +59,30 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Right Image/Logo */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="relative">
-                <div className="w-64 h-64 sm:w-80 sm:h-80 bg-primary/20 rounded-full flex items-center justify-center">
-                  <Image
-                    src="/logo-verch-2.png"
-                    alt="Verch Logo"
-                    width={200}
-                    height={200}
-                    className="w-32 h-32 sm:w-40 sm:h-40 object-contain"
-                    priority
-                  />
-                </div>
-              </div>
-            </div>
+            {/* Right Image/Product Collage */}
+            <HomepageHeroCollage products={products} />
           </div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-16 bg-card">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl sm:text-4xl font-bold text-card-foreground mb-4">
-              Why Choose Verch?
-            </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Supporting VSU student organizations through quality merchandise
-              and seamless shopping experience.
-            </p>
-          </div>
+      {/* Featured Products Section */}
+      <HomepageFeaturedProducts
+        products={products}
+        promotionsMap={promotionsMap}
+      />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature 1 */}
-            <div className="text-center p-6 bg-background rounded-lg shadow-sm">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">
-                Student Organizations
-              </h3>
-              <p className="text-muted-foreground">
-                Supporting VSU student orgs by providing a platform to showcase
-                and sell their merchandise.
-              </p>
-            </div>
-
-            {/* Feature 2 */}
-            <div className="text-center p-6 bg-background rounded-lg shadow-sm">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShoppingBag className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Quality Products</h3>
-              <p className="text-muted-foreground">
-                Discover unique and high-quality merchandise from various
-                student organizations.
-              </p>
-            </div>
-
-            {/* Feature 3 */}
-            <div className="text-center p-6 bg-background rounded-lg shadow-sm">
-              <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Store className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Easy Shopping</h3>
-              <p className="text-muted-foreground">
-                Simple and secure shopping experience with multiple organization
-                stores in one place.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Featured Stores Section */}
+      <HomepageFeaturedStores stores={stores} />
 
       {/* CTA Section */}
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-            Ready to Start Shopping?
+            Support your org. Shop their merch.
           </h2>
           <p className="text-lg mb-8 opacity-90 max-w-2xl mx-auto">
-            Join the Verch community and support your favorite VSU student
-            organizations today!
+            Browse exclusive merchandise from your favorite VSU student
+            organizations.
           </p>
           <Link
             href="/login"
