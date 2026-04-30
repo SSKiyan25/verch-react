@@ -69,7 +69,7 @@ export function EmailStep({ formData, setFormData, onNext }: EmailStepProps) {
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // const data = await response.json();
 
       setIsCodeSent(true);
 
@@ -79,7 +79,7 @@ export function EmailStep({ formData, setFormData, onNext }: EmailStepProps) {
       }, 1500);
     } catch (err: any) {
       setError(
-        err.message || "Failed to send verification code. Please try again."
+        err.message || "Failed to send verification code. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -131,8 +131,8 @@ export function EmailStep({ formData, setFormData, onNext }: EmailStepProps) {
         {isCodeSent && (
           <Alert>
             <AlertDescription>
-              ✅ Verification code sent to {formData.email}! Check your email
-              and proceed to the next step.
+              Verification code sent to {formData.email}! Check your email and
+              proceed to the next step.
             </AlertDescription>
           </Alert>
         )}

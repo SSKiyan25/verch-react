@@ -192,7 +192,7 @@ export function DetailsStep({
                   className="bg-muted"
                 />
                 <p className="text-xs text-muted-foreground">
-                  ✅ Email verified - cannot be changed
+                  Email verified - cannot be changed
                 </p>
               </div>
 
@@ -270,10 +270,10 @@ export function DetailsStep({
                                 ? passwordValidation.strength === "weak"
                                   ? "bg-destructive"
                                   : passwordValidation.strength === "fair"
-                                  ? "bg-amber-500"
-                                  : passwordValidation.strength === "good"
-                                  ? "bg-blue-500"
-                                  : "bg-primary"
+                                    ? "bg-amber-500"
+                                    : passwordValidation.strength === "good"
+                                      ? "bg-blue-500"
+                                      : "bg-primary"
                                 : "bg-muted"
                             }`}
                           />
