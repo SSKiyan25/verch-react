@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ProductDetailsModal } from "./ProductDetailsModal";
+import { getOrgProductPriceDisplay } from "@/lib/utils/price-formatting";
 
 interface ProductListItemProps {
   product: OrgProductListItem;
@@ -123,7 +124,7 @@ export function ProductListItem({ product, orgId }: ProductListItemProps) {
 
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">
-                      Contact for price
+                      {getOrgProductPriceDisplay(product.min_price, product.max_price)}
                     </span>
                     <span className={`font-medium ${getStockColor()}`}>
                       Stock: {totalStock}

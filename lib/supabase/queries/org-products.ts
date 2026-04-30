@@ -48,6 +48,8 @@ function mapListItem(row: Record<string, unknown>): OrgProductListItem {
     supplier_id: (row.out_supplier_id as string | null) ?? null,
     variation_count: Number(row.out_variation_count ?? 0),
     total_stock: Number(row.out_total_stock ?? 0),
+    min_price: row.out_min_price != null ? Number(row.out_min_price) : null,
+    max_price: row.out_max_price != null ? Number(row.out_max_price) : null,
     created_at: row.out_created_at as string,
     updated_at: row.out_updated_at as string,
   };

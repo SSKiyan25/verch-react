@@ -65,6 +65,8 @@ export type OrgProductListItem = {
   supplier_id: string | null;
   variation_count: number;
   total_stock: number;
+  min_price: number | null;
+  max_price: number | null;
   created_at: string;
   updated_at: string;
 };
