@@ -92,11 +92,20 @@ export function useEmailVerification() {
         }),
       });
 
-      const data = await response.json();
-
+      // Check response status BEFORE parsing JSON
       if (!response.ok) {
-        throw new Error(data.error || "Failed to send verification code");
+        let errorMessage = "Failed to send verification code";
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+
+      const data = await response.json();
 
       setState((prev) => ({
         ...prev,
@@ -141,11 +150,20 @@ export function useEmailVerification() {
         }),
       });
 
-      const data = await response.json();
-
+      // Check response status BEFORE parsing JSON
       if (!response.ok) {
-        throw new Error(data.error || "Verification failed");
+        let errorMessage = "Verification failed";
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+
+      const data = await response.json();
 
       setState((prev) => ({
         ...prev,

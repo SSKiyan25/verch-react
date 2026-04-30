@@ -4,6 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/utils/email"; // The sender
 import { getVerificationEmailHtml } from "@/lib/utils/email-template"; // The template
 
+// ⚠️ CRITICAL: Force Node.js runtime (nodemailer doesn't work in Edge runtime)
+export const runtime = "nodejs";
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -11,6 +14,18 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate environment variables
+    if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+      console.error("❌ Missing email configuration:", {
+        hasUser: !!process.env.GMAIL_USER,
+        hasPassword: !!process.env.GMAIL_APP_PASSWORD,
+      });
+      return NextResponse.json(
+        { error: "Email service not configured. Please contact support." },
+        { status: 503 }
+      );
+    }
+
     const { email, type = "organization_verification" } = await request.json();
 
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -34,7 +49,11 @@ export async function POST(request: NextRequest) {
       });
 
     if (dbError) {
-      return NextResponse.json({ error: "Database error" }, { status: 500 });
+      console.error("❌ Database error:", dbError);
+      return NextResponse.json(
+        { error: "Database error" },
+        { status: 500 }
+      );
     }
 
     // ✅ SEND EMAIL (Clean & Readable)
@@ -45,8 +64,9 @@ export async function POST(request: NextRequest) {
     });
 
     if (!emailResult.success) {
+      console.error("❌ Email send failed:", emailResult.error);
       return NextResponse.json(
-        { error: "Failed to send email" },
+        { error: "Failed to send email. Please try again later." },
         { status: 500 }
       );
     }
@@ -55,10 +75,22 @@ export async function POST(request: NextRequest) {
       success: true,
       message: "Verification code sent successfully",
     });
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error: any) {
+    // Log the actual error for debugging
+    console.error("❌ Send verification error:", {
+      message: error?.message,
+      stack: error?.stack,
+      name: error?.name,
+    });
+    
     return NextResponse.json(
-      { error: "Internal server error" },
+      { 
+        error: "Internal server error",
+        // In development, include error details
+        ...(process.env.NODE_ENV === "development" && { 
+          details: error?.message 
+        })
+      },
       { status: 500 }
     );
   }

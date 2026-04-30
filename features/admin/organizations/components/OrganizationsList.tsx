@@ -27,11 +27,21 @@ export function OrganizationsList() {
         console.log("Fetching organizations...");
 
         const response = await fetch("/api/organizations");
-        const data = await response.json();
-
+        
+        // Check response status BEFORE parsing JSON
         if (!response.ok) {
-          throw new Error(data.error || "Failed to fetch organizations");
+          let errorMessage = "Failed to fetch organizations";
+          try {
+            const data = await response.json();
+            errorMessage = data.error || errorMessage;
+          } catch {
+            // Response is not JSON (likely HTML error page)
+            errorMessage = `Server error (${response.status}): ${response.statusText}`;
+          }
+          throw new Error(errorMessage);
         }
+
+        const data = await response.json();
 
         console.log("Organizations fetched:", data.organizations);
         setOrganizations(data.organizations || []);

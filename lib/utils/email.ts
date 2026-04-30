@@ -1,5 +1,13 @@
 import nodemailer from "nodemailer";
 
+// Validate environment variables on import
+if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+  console.warn("⚠️ WARNING: Email credentials not configured!", {
+    hasUser: !!process.env.GMAIL_USER,
+    hasPassword: !!process.env.GMAIL_APP_PASSWORD,
+  });
+}
+
 // 1. Setup the Transporter (Do this once)
 const transporter = nodemailer.createTransport({
   service: "gmail",

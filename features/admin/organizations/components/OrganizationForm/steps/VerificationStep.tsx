@@ -75,11 +75,20 @@ export function VerificationStep({
         }),
       });
 
-      const data = await response.json();
-
+      // Check response status BEFORE parsing JSON
       if (!response.ok) {
-        throw new Error(data.error || "Verification failed");
+        let errorMessage = "Verification failed";
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+
+      const data = await response.json();
 
       // Mark email as verified in form data
       setFormData((prev: any) => ({ ...prev, isVerified: true }));
@@ -110,11 +119,20 @@ export function VerificationStep({
         }),
       });
 
-      const data = await response.json();
-
+      // Check response status BEFORE parsing JSON
       if (!response.ok) {
-        throw new Error(data.error || "Failed to resend verification code");
+        let errorMessage = "Failed to resend verification code";
+        try {
+          const data = await response.json();
+          errorMessage = data.error || errorMessage;
+        } catch {
+          // Response is not JSON (likely HTML error page)
+          errorMessage = `Server error (${response.status}): ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
       }
+
+      const data = await response.json();
 
       // Reset states
       setVerificationCode("");
