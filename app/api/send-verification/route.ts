@@ -4,12 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/utils/email"; // The sender
 import { getVerificationEmailHtml } from "@/lib/utils/email-template"; // The template
 
-// ⚠️ CRITICAL: Force Node.js runtime (nodemailer doesn't work in Edge runtime)
-export const runtime = "nodejs";
-
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
 );
 
 export async function POST(request: NextRequest) {
@@ -22,7 +19,7 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(
         { error: "Email service not configured. Please contact support." },
-        { status: 503 }
+        { status: 503 },
       );
     }
 
@@ -33,7 +30,7 @@ export async function POST(request: NextRequest) {
     }
 
     const verificationCode = Math.floor(
-      100000 + Math.random() * 900000
+      100000 + Math.random() * 900000,
     ).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
@@ -50,10 +47,7 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error("❌ Database error:", dbError);
-      return NextResponse.json(
-        { error: "Database error" },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
     // ✅ SEND EMAIL (Clean & Readable)
@@ -67,7 +61,7 @@ export async function POST(request: NextRequest) {
       console.error("❌ Email send failed:", emailResult.error);
       return NextResponse.json(
         { error: "Failed to send email. Please try again later." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -82,16 +76,16 @@ export async function POST(request: NextRequest) {
       stack: error?.stack,
       name: error?.name,
     });
-    
+
     return NextResponse.json(
-      { 
+      {
         error: "Internal server error",
         // In development, include error details
-        ...(process.env.NODE_ENV === "development" && { 
-          details: error?.message 
-        })
+        ...(process.env.NODE_ENV === "development" && {
+          details: error?.message,
+        }),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
