@@ -26,8 +26,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Info, AlertCircle, Wand2, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Plus,
+  Info,
+  AlertCircle,
+  Wand2,
+  Trash2,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { sanitizeInput } from "@/lib/hooks/use-input-validation";
+import { useState } from "react";
+import { CreateVariationData } from "@/lib/types/product";
 
 interface VariationModalProps {
   isOpen: boolean;
@@ -54,6 +65,8 @@ interface VariationModalProps {
   onAddAttribute: () => void;
   onRemoveAttribute: (key: string) => void;
   calculateFinalPrice: (price: number) => number;
+  existingVariations?: CreateVariationData[];
+  onVariationClick?: (variation: CreateVariationData) => void;
 }
 
 export function VariationModal({
@@ -74,7 +87,11 @@ export function VariationModal({
   onAddAttribute,
   onRemoveAttribute,
   calculateFinalPrice,
+  existingVariations = [],
+  onVariationClick,
 }: VariationModalProps) {
+  const [isReferenceExpanded, setIsReferenceExpanded] = useState(true);
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-y-auto p-4 sm:p-6 mx-2 sm:mx-auto">
@@ -85,6 +102,90 @@ export function VariationModal({
         </DialogHeader>
 
         <div className="space-y-6">
+          {/* Current Variations Reference - Collapsible */}
+          {existingVariations.length > 0 && (
+            <div className="border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setIsReferenceExpanded(!isReferenceExpanded)}
+                className="w-full flex items-center justify-between p-4 bg-muted/30 hover:bg-muted/50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-muted-foreground" />
+                  <span className="font-medium text-sm">
+                    Current Variations ({existingVariations.length})
+                  </span>
+                </div>
+                {isReferenceExpanded ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {isReferenceExpanded && (
+                <div className="p-4 space-y-3 max-h-[240px] overflow-y-auto">
+                  {existingVariations.map((variation, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => onVariationClick?.(variation)}
+                      disabled={editingIndex === idx}
+                      className={`w-full text-left p-3 rounded border transition-all ${
+                        editingIndex === idx
+                          ? "bg-primary/10 border-primary/30 cursor-not-allowed"
+                          : "bg-background hover:bg-muted/50 hover:border-primary/20 cursor-pointer"
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                        <div className="font-medium text-sm">
+                          {variation.variation_name || `Variation ${idx + 1}`}
+                          {editingIndex === idx && (
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              Editing
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <Badge variant="secondary" className="font-mono">
+                            Your: ₱{variation.price.toFixed(2)}
+                          </Badge>
+                          <Badge
+                            variant="default"
+                            className="font-mono bg-green-600"
+                          >
+                            Final: ₱
+                            {calculateFinalPrice(variation.price).toFixed(2)}
+                          </Badge>
+                        </div>
+                      </div>
+                      {variation.attributes &&
+                        Object.keys(variation.attributes).length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {Object.entries(variation.attributes).map(
+                              ([key, value]) => (
+                                <Badge
+                                  key={key}
+                                  variant="outline"
+                                  className="text-xs"
+                                >
+                                  {key}: {value}
+                                </Badge>
+                              ),
+                            )}
+                          </div>
+                        )}
+                    </button>
+                  ))}
+                  <p className="text-xs text-muted-foreground italic pt-2 border-t">
+                    Click any variation to pre-fill its name and price, and
+                    easily create a similar one
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Pricing Information Alert */}
           <Alert>
             <Info className="w-4 h-4" />
@@ -93,9 +194,6 @@ export function VariationModal({
               <ul className="mt-1 space-y-1 text-sm">
                 <li>
                   • <strong>Your Price:</strong> Amount you receive per sale
-                </li>
-                <li>
-                  • <strong>Compare At:</strong> Original/MSRP price (optional)
                 </li>
                 <li>
                   • <strong>Final Price:</strong> What customers pay (includes{" "}
@@ -191,71 +289,42 @@ export function VariationModal({
           </div>
 
           {/* Pricing - Mobile Responsive */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="price">
-                Your Price* (₱)
-                {errors.price && (
-                  <span className="text-xs text-red-500 ml-2">
-                    ({errors.price})
-                  </span>
-                )}
-              </Label>
-              <Input
-                id="price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={formData.price || ""}
-                onChange={(e) => onFormFieldChange("price", e.target.value)}
-                className={errors.price ? "border-red-500" : ""}
-              />
+          <div className="space-y-2">
+            <Label htmlFor="price">
+              Your Price* (₱)
               {errors.price && (
-                <div className="flex items-center gap-1 text-xs text-red-500">
-                  <AlertCircle className="w-3 h-3" />
-                  {errors.price}
-                </div>
+                <span className="text-xs text-red-500 ml-2">
+                  ({errors.price})
+                </span>
               )}
-              {formData.price > 0 && (
-                <p className="text-xs text-green-600">
+            </Label>
+            <Input
+              id="price"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              value={formData.price || ""}
+              onChange={(e) => onFormFieldChange("price", e.target.value)}
+              className={errors.price ? "border-red-500" : ""}
+            />
+            {errors.price && (
+              <div className="flex items-center gap-1 text-xs text-red-500">
+                <AlertCircle className="w-3 h-3" />
+                {errors.price}
+              </div>
+            )}
+            {formData.price > 0 && (
+              <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
                   Customer pays: ₱
                   {calculateFinalPrice(formData.price).toFixed(2)}
                 </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="compare-price">
-                Compare At Price (₱){" "}
-                <span className="text-muted-foreground opacity-50">
-                  (Optional)
-                </span>
-                {errors.compare_at_price && (
-                  <span className="text-xs text-red-500 ml-2">
-                    ({errors.compare_at_price})
-                  </span>
-                )}
-              </Label>
-              <Input
-                id="compare-price"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0.00"
-                value={formData.compare_at_price || ""}
-                onChange={(e) =>
-                  onFormFieldChange("compare_at_price", e.target.value)
-                }
-                className={errors.compare_at_price ? "border-red-500" : ""}
-              />
-              {errors.compare_at_price && (
-                <div className="flex items-center gap-1 text-xs text-red-500">
-                  <AlertCircle className="w-3 h-3" />
-                  {errors.compare_at_price}
-                </div>
-              )}
-            </div>
+                <p className="text-xs text-green-600 dark:text-green-500 mt-1">
+                  Includes {commissionRate.toFixed(1)}% platform commission
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Stock */}
@@ -344,10 +413,18 @@ export function VariationModal({
                 />
               </div>
               <Button
-                variant="outline"
+                variant={
+                  !newAttrKey.trim() || !newAttrValue.trim()
+                    ? "outline"
+                    : "default"
+                }
                 onClick={onAddAttribute}
                 disabled={!newAttrKey.trim() || !newAttrValue.trim()}
-                className="w-full sm:w-auto"
+                className={
+                  !newAttrKey.trim() || !newAttrValue.trim()
+                    ? "w-full sm:w-auto"
+                    : "w-full sm:w-auto bg-accent text-accent-foreground hover:bg-accent/90"
+                }
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Attribute

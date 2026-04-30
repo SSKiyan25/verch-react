@@ -62,13 +62,6 @@ export function useProductVariations(
     compare_at_price: {
       required: false,
       min: 0,
-      custom: (value: number) => {
-        if (value && value > 999999.99) return "Price too high";
-        if (value && formData.price && value <= formData.price) {
-          return "Compare price should be higher than selling price";
-        }
-        return null;
-      },
     },
     stock_quantity: {
       required: false,
@@ -102,6 +95,19 @@ export function useProductVariations(
     clearAllErrors();
     setNewAttrKey("");
     setNewAttrValue("");
+  };
+
+  // Helper to pre-fill variation name when user clicks existing variation
+  const handleVariationClick = (variation: CreateVariationData) => {
+    // Pre-fill with existing name and price to help user differentiate
+    setFormData((prev) => ({
+      ...prev,
+      variation_name: variation.variation_name || "",
+      price: variation.price,
+    }));
+    toast.info("Variation pre-filled", {
+      description: "Modify the name, price, or attributes to create a different variation",
+    });
   };
 
   const handleGenerateSku = () => {
@@ -144,12 +150,25 @@ export function useProductVariations(
       attributes: variation.attributes || {},
       variation_name: variation.variation_name || "",
       price: variation.price,
-      compare_at_price: variation.compare_at_price || 0,
+      compare_at_price: 0,
       stock_quantity: variation.stock_quantity || 0,
     });
     setEditingIndex(index);
     setIsDialogOpen(true);
     clearAllErrors();
+  };
+
+  // Helper function to compare attributes
+  const areAttributesEqual = (
+    attrs1: Record<string, string>,
+    attrs2: Record<string, string>,
+  ): boolean => {
+    const keys1 = Object.keys(attrs1).sort();
+    const keys2 = Object.keys(attrs2).sort();
+
+    if (keys1.length !== keys2.length) return false;
+
+    return keys1.every((key) => attrs1[key] === attrs2[key]);
   };
 
   const handleSave = () => {
@@ -158,12 +177,36 @@ export function useProductVariations(
       return;
     }
 
+    // Check for duplicate SKU
     if (formData.sku) {
       const isDuplicate = variations.some(
         (v, index) => v.sku === formData.sku && index !== editingIndex,
       );
       if (isDuplicate) {
         toast.error("SKU already exists in another variation");
+        return;
+      }
+    }
+
+    // Check for duplicate variation name with same attributes
+    const duplicateVariation = variations.find(
+      (v, index) =>
+        v.variation_name === formData.variation_name &&
+        index !== editingIndex,
+    );
+
+    if (duplicateVariation) {
+      // Compare attributes
+      const existingAttrs = duplicateVariation.attributes || {};
+      const newAttrs = formData.attributes || {};
+
+      if (areAttributesEqual(existingAttrs, newAttrs)) {
+        toast.error(
+          "A variation with this name and attributes already exists",
+          {
+            description: "Please use a different name or change the attributes",
+          },
+        );
         return;
       }
     }
@@ -238,7 +281,7 @@ export function useProductVariations(
       processedValue = sanitizeInput.text(value);
     } else if (field === "sku") {
       processedValue = sanitizeInput.sku(value);
-    } else if (field === "price" || field === "compare_at_price") {
+    } else if (field === "price") {
       processedValue = sanitizeInput.price(value.toString());
     } else if (field === "stock_quantity") {
       processedValue = sanitizeInput.number(value.toString());
@@ -284,5 +327,6 @@ export function useProductVariations(
     addAttribute,
     removeAttribute,
     calculateFinalPrice,
+    handleVariationClick,
   };
 }

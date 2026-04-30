@@ -51,6 +51,7 @@ export function ProductVariations({
     handleKeyDown,
     removeAttribute,
     calculateFinalPrice,
+    handleVariationClick,
   } = useProductVariations(variations, onChange, productName, commissionRate);
 
   // Create a wrapper function to bridge the type gap
@@ -60,7 +61,6 @@ export function ProductVariations({
       "sku",
       "variation_name",
       "price",
-      "compare_at_price",
       "stock_quantity",
       "attributes",
     ] as const;
@@ -203,7 +203,7 @@ export function ProductVariations({
                   )}
 
                 {/* Pricing Info - Responsive Grid */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm bg-muted/50 p-3 rounded">
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 text-sm bg-muted/50 p-3 rounded">
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">
                       Your Price
@@ -220,17 +220,6 @@ export function ProductVariations({
                       ₱{calculateFinalPrice(variation.price).toFixed(2)}
                     </div>
                   </div>
-                  {variation.compare_at_price &&
-                    variation.compare_at_price > 0 && (
-                      <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">
-                          Compare At
-                        </div>
-                        <div className="font-medium justify-center">
-                          ₱{variation.compare_at_price.toFixed(2)}
-                        </div>
-                      </div>
-                    )}
                   <div className="space-y-1">
                     <div className="text-xs text-muted-foreground">Stock</div>
                     <div className="font-medium">
@@ -262,6 +251,8 @@ export function ProductVariations({
           onAddAttribute={handleAddAttribute}
           onRemoveAttribute={removeAttribute}
           calculateFinalPrice={calculateFinalPrice}
+          existingVariations={variations}
+          onVariationClick={handleVariationClick}
         />
       </CardContent>
     </Card>
