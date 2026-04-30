@@ -21,17 +21,9 @@ export const metadata: Metadata = {
   title: "Verch | The Central Store for Organization Merchandises",
   description: "Discover the best merchandises on Verch.",
   icons: {
-    icon: [
-      {
-        url: "/logo-verch.webp",
-        type: "image/webp",
-      },
-    ],
+    icon: [{ url: "/logo-verch.webp", type: "image/webp" }],
     shortcut: "/logo-verch.webp",
-    apple: {
-      url: "/logo-verch.webp",
-      type: "image/webp",
-    },
+    apple: { url: "/logo-verch.webp", type: "image/webp" },
   },
   openGraph: {
     title: "Verch | The Central Store for Organization Merchandises",
@@ -43,8 +35,11 @@ export const metadata: Metadata = {
         url: "https://verch.jsos.site/display2.png?v=1",
         width: 1200,
         height: 630,
+        alt: "Verch - Organization Merchandises",
+        type: "image/png",
       },
     ],
+    locale: "en_US",
     type: "website",
   },
   twitter: {
