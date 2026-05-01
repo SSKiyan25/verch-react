@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -106,13 +105,11 @@ export function StudentVerificationDetail({
             <div className="space-y-3">
               <h2 className="text-sm font-semibold">Student ID Photo</h2>
               <div className="relative w-full aspect-video max-h-[400px] bg-muted rounded-lg overflow-hidden">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={idPhotoUrl}
                   alt="Student ID"
-                  fill
-                  className="object-contain"
-                  priority
-                  unoptimized
+                  className="w-full h-full object-contain"
                 />
               </div>
               <Button
@@ -232,13 +229,12 @@ export function StudentVerificationDetail({
       {idPhotoUrl && (
         <Dialog open={isImageDialogOpen} onOpenChange={setIsImageDialogOpen}>
           <DialogContent className="max-w-[90vw] max-h-[90vh] p-0">
-            <div className="relative w-full h-full min-h-[60vh]">
-              <Image
+            <div className="relative w-full h-full min-h-[60vh] flex items-center justify-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={idPhotoUrl}
                 alt="Student ID Full Size"
-                fill
-                className="object-contain"
-                unoptimized
+                className="max-w-full max-h-full object-contain"
               />
             </div>
           </DialogContent>
