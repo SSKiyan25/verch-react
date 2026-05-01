@@ -112,6 +112,7 @@ export function StudentVerificationDetail({
                   fill
                   className="object-contain"
                   priority
+                  unoptimized
                 />
               </div>
               <Button
@@ -237,6 +238,7 @@ export function StudentVerificationDetail({
                 alt="Student ID Full Size"
                 fill
                 className="object-contain"
+                unoptimized
               />
             </div>
           </DialogContent>
