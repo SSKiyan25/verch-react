@@ -33,9 +33,9 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
   const [bio, setBio] = useState(profile?.bio ?? "");
   const [gender, setGender] = useState(profile?.gender ?? "");
   const [birthdate, setBirthdate] = useState(profile?.birthdate ?? "");
-  const [defaultFulfillment, setDefaultFulfillment] = useState<
-    "pickup" | "delivery"
-  >(profile?.default_fulfillment ?? "pickup");
+  const [defaultFulfillment] = useState<"pickup" | "delivery">(
+    profile?.default_fulfillment ?? "pickup",
+  );
 
   // const [avatarUrl, setAvatarUrl] = useState<string | undefined>(
   //   profile?.avatar_url ?? undefined,
@@ -181,25 +181,16 @@ export function ProfileForm({ profile, userId }: ProfileFormProps) {
         <div className="space-y-2">
           <Label>Default Fulfillment</Label>
           <div className="flex gap-2">
-            <Button
-              type="button"
-              variant={defaultFulfillment === "pickup" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDefaultFulfillment("pickup")}
-            >
+            <Button type="button" variant="default" size="sm" disabled>
               Pickup
             </Button>
-            <Button
-              type="button"
-              variant={
-                defaultFulfillment === "delivery" ? "default" : "outline"
-              }
-              size="sm"
-              onClick={() => setDefaultFulfillment("delivery")}
-            >
+            <Button type="button" variant="outline" size="sm" disabled>
               Delivery
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Pickup is currently the default fulfillment option.
+          </p>
         </div>
 
         <SettingsSaveButton isLoading={isLoading} />
