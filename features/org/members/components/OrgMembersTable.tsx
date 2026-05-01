@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { MoreHorizontal, User } from "lucide-react";
+import { Eye, MoreHorizontal, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +20,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import type { OrgMemberListItem } from "@/lib/types/org-memberships";
 import { OrgMembersTableEmptyState } from "./OrgMembersTableEmptyState";
+import { useMemberDetails } from "../hooks/useMemberDetails";
+import { MemberDetailsModal } from "./MemberDetailsModal";
 
 // ---------------------------------------------------------------------------
 // Pagination sub-component
@@ -128,6 +130,7 @@ type OrgMembersTableProps = {
   page: number;
   limit: number;
   onPageChange: (page: number) => void;
+  orgId: string;
 };
 
 export function OrgMembersTable({
@@ -136,8 +139,17 @@ export function OrgMembersTable({
   page,
   limit,
   onPageChange,
+  orgId,
 }: OrgMembersTableProps) {
   const totalPages = Math.ceil(totalCount / limit);
+  const {
+    isOpen,
+    memberDetail,
+    isLoading,
+    error,
+    openMemberDetails,
+    closeMemberDetails,
+  } = useMemberDetails();
 
   if (members.length === 0) {
     return <OrgMembersTableEmptyState />;
@@ -156,7 +168,7 @@ export function OrgMembersTable({
             <TableHead className="hidden lg:table-cell w-[120px]">
               Joined
             </TableHead>
-            <TableHead className="w-10 text-right" />
+            <TableHead className="w-20 text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
 
@@ -210,27 +222,38 @@ export function OrgMembersTable({
 
                 {/* Actions */}
                 <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        aria-label="Member actions"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() =>
-                          navigator.clipboard.writeText(member.email)
-                        }
-                      >
-                        Copy email
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <div className="flex items-center justify-end gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => openMemberDetails(orgId, member.memberId)}
+                      aria-label="View member details"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Member actions"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() =>
+                            navigator.clipboard.writeText(member.email)
+                          }
+                        >
+                          Copy email
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
                 </TableCell>
               </TableRow>
             );
@@ -244,6 +267,15 @@ export function OrgMembersTable({
         totalCount={totalCount}
         limit={limit}
         onPageChange={onPageChange}
+      />
+
+      <MemberDetailsModal
+        open={isOpen}
+        onOpenChange={closeMemberDetails}
+        memberDetail={memberDetail}
+        isLoading={isLoading}
+        error={error}
+        orgId={orgId}
       />
     </div>
   );

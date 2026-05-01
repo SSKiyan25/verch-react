@@ -18,6 +18,7 @@ import type {
   MembershipStatus,
   OrgMemberListItem,
   OrgMembersResponse,
+  OrgMemberDetail,
 } from "@/lib/types/org-memberships";
 
 // ---------------------------------------------------------------------------
@@ -281,6 +282,60 @@ export async function fetchOrgMembers(
   const members = rows.map(mapMemberListItem);
 
   return { data: members, totalCount };
+}
+
+// ---------------------------------------------------------------------------
+// fetchOrgMemberDetail
+// Calls: get_org_member_detail RPC
+// Used by: getCachedOrgMemberDetail (lib/data/org/memberships.ts)
+// ---------------------------------------------------------------------------
+
+function mapMemberDetail(row: Record<string, unknown>): OrgMemberDetail {
+  return {
+    memberId: row.out_member_id as string,
+    userId: row.out_user_id as string,
+    fullName: (row.out_full_name as string | null) ?? "",
+    email: (row.out_email as string | null) ?? "",
+    avatarUrl: (row.out_avatar_url as string | null) ?? null,
+    position: (row.out_position as string | null) ?? null,
+    joinDate: (row.out_join_date as string | null) ?? null,
+    studentIdNumber: (row.out_student_id_number as string | null) ?? null,
+    firstName: (row.out_first_name as string | null) ?? null,
+    lastName: (row.out_last_name as string | null) ?? null,
+    college: (row.out_college as string | null) ?? null,
+    department: (row.out_department as string | null) ?? null,
+    course: (row.out_course as string | null) ?? null,
+    yearLevel: row.out_year_level != null ? Number(row.out_year_level) : null,
+    schoolEmail: (row.out_school_email as string | null) ?? null,
+    verificationStatus: (row.out_verification_status as string | null) ?? null,
+    verifiedAt: (row.out_verified_at as string | null) ?? null,
+  };
+}
+
+export async function fetchOrgMemberDetail(
+  orgId: string,
+  memberId: string,
+): Promise<OrgMemberDetail | null> {
+  // ✅ Create fresh server client inside fetcher (required for Next.js 16)
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.rpc("get_org_member_detail", {
+    p_org_id: orgId,
+    p_member_id: memberId,
+  });
+
+  if (error) {
+    console.error("[fetchOrgMemberDetail] RPC error:", error.message);
+    throw new Error(error.message);
+  }
+
+  const rows = (data as Array<Record<string, unknown>>) ?? [];
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return mapMemberDetail(rows[0]);
 }
 
 export async function reactivateMembership(

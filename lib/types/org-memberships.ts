@@ -92,6 +92,32 @@ export type OrgMembersResponse = {
 };
 
 // ---------------------------------------------------------------------------
+// OrgMemberDetail
+// Shape returned by get_org_member_detail (single member with student info).
+// ---------------------------------------------------------------------------
+
+export type OrgMemberDetail = {
+  memberId: string;
+  userId: string;
+  fullName: string;
+  email: string;
+  avatarUrl: string | null;
+  position: string | null;
+  joinDate: string | null;
+  // Student verification details (nullable)
+  studentIdNumber: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  college: string | null;
+  department: string | null;
+  course: string | null;
+  yearLevel: number | null;
+  schoolEmail: string | null;
+  verificationStatus: string | null;
+  verifiedAt: string | null;
+};
+
+// ---------------------------------------------------------------------------
 // Action Response types
 // ---------------------------------------------------------------------------
 

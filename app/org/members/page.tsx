@@ -127,6 +127,7 @@ export default async function OrgMembersPage({ searchParams }: PageProps) {
             currentSearch={search ?? ""}
             currentLimit={limit}
             currentPage={page}
+            orgId={orgId}
           />
         </TabsContent>
       </Tabs>

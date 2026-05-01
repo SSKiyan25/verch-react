@@ -15,6 +15,7 @@ type OrgMembersShellProps = {
   currentSearch: string;
   currentLimit: number;
   currentPage: number;
+  orgId: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -26,6 +27,7 @@ export function OrgMembersShell({
   currentSearch,
   currentLimit,
   currentPage,
+  orgId,
 }: OrgMembersShellProps) {
   const {
     searchInput,
@@ -62,6 +64,7 @@ export function OrgMembersShell({
         page={currentPage}
         limit={currentLimit}
         onPageChange={setPage}
+        orgId={orgId}
       />
     </div>
   );

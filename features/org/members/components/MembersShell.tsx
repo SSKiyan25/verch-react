@@ -19,6 +19,7 @@ import { useMembershipApproval } from "@/features/org/members/hooks/useMembershi
 import { ApproveMembershipDialog } from "@/features/org/members/components/ApproveMembershipDialog";
 import { RejectMembershipDialog } from "@/features/org/members/components/RejectMembershipDialog";
 import { RevokeMembershipDialog } from "@/features/org/members/components/RevokeMembershipDialog";
+import { ApplicationDetailModal } from "@/features/org/members/components/ApplicationDetailModal";
 import type {
   OrgMembershipApplicationItem,
   MembershipStatus,
@@ -53,6 +54,9 @@ export function MembersShell({
 }: MembersShellProps) {
   const [searchInput, setSearchInput] = useState(currentSearch ?? "");
   const [approveDialogMemberId, setApproveDialogMemberId] = useState<
+    string | null
+  >(null);
+  const [viewDetailMemberId, setViewDetailMemberId] = useState<
     string | null
   >(null);
 
@@ -209,6 +213,7 @@ export function MembersShell({
                   <MembershipApplicationCard
                     key={member.id}
                     member={member}
+                    onView={() => setViewDetailMemberId(member.id)}
                     onApprove={() => setApproveDialogMemberId(member.id)}
                     onReject={() =>
                       setRejectDialog({ open: true, membershipId: member.id })
@@ -254,6 +259,14 @@ export function MembersShell({
       )}
 
       {/* Dialogs */}
+      <ApplicationDetailModal
+        open={!!viewDetailMemberId}
+        onOpenChange={(open: boolean) => !open && setViewDetailMemberId(null)}
+        application={
+          members.find((m) => m.id === viewDetailMemberId) ?? null
+        }
+      />
+
       {approveDialogMemberId && (
         <ApproveMembershipDialog
           open={!!approveDialogMemberId}

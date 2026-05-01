@@ -13,12 +13,14 @@ import {
   fetchOrgMembershipApplications,
   fetchMembershipApplicationDetail,
   fetchOrgMembers,
+  fetchOrgMemberDetail,
 } from "@/lib/supabase/queries/org-memberships";
 import type {
   OrgMembershipFilters,
   OrgMembershipApplicationsResult,
   OrgMembershipApplicationItem,
   OrgMembersResponse,
+  OrgMemberDetail,
 } from "@/lib/types/org-memberships";
 
 // ─── Cached Wrappers ──────────────────────────────────────────────────────────
@@ -63,6 +65,26 @@ export async function getCachedOrgMembers(
 
   // Direct call to fetcher - no caching layer
   return fetchOrgMembers(orgId, limit, offset, search);
+}
+
+/**
+ * Get detailed information for a single organization member, including
+ * student verification data if available.
+ *
+ * NOT CACHED: RPC uses auth.uid() which requires cookies() — incompatible with "use cache"
+ */
+export async function getCachedOrgMemberDetail(
+  orgId: string,
+  memberId: string,
+): Promise<OrgMemberDetail | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  // Direct call to fetcher - no caching layer
+  return fetchOrgMemberDetail(orgId, memberId);
 }
 
 /**

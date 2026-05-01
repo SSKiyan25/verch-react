@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
-import { Check, X, UserMinus, Eye } from "lucide-react";
+import { Check, X, UserMinus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import type { OrgMembershipApplicationItem } from "@/lib/types/org-memberships";
@@ -32,6 +32,7 @@ const STATUS_CONFIG = {
 
 type MembershipApplicationCardProps = {
   member: OrgMembershipApplicationItem;
+  onView: () => void;
   onApprove: () => void;
   onReject: () => void;
   onRevoke: () => void;
@@ -39,6 +40,7 @@ type MembershipApplicationCardProps = {
 
 export function MembershipApplicationCard({
   member,
+  onView,
   onApprove,
   onReject,
   onRevoke,
@@ -58,7 +60,10 @@ export function MembershipApplicationCard({
   const canRevoke = member.membership_status === "active";
 
   return (
-    <TableRow className="hover:bg-muted transition-colors">
+    <TableRow
+      className="hover:bg-muted transition-colors cursor-pointer"
+      onClick={onView}
+    >
       <TableCell className="font-semibold">{member.user_name ?? "—"}</TableCell>
       <TableCell className="text-center">
         <Badge
@@ -118,12 +123,6 @@ export function MembershipApplicationCard({
             >
               <UserMinus className="h-4 w-4 mr-1" />
               Revoke
-            </Button>
-          )}
-          {!canApprove && !canReject && !canRevoke && (
-            <Button size="sm" variant="ghost">
-              <Eye className="h-4 w-4 mr-1" />
-              View
             </Button>
           )}
         </div>
