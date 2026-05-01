@@ -32,9 +32,7 @@ export function ProductBreadcrumb({
           <React.Fragment key={cat.id}>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link href={`/products?category=${cat.slug}`}>{cat.name}</Link>
-              </BreadcrumbLink>
+              <span className="text-sm text-muted-foreground">{cat.name}</span>
             </BreadcrumbItem>
           </React.Fragment>
         ))}
