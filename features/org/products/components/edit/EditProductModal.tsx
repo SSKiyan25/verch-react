@@ -167,6 +167,11 @@ export function EditProductModal({
           <div className="space-y-2">
             <Label htmlFor="description">
               Description <span className="text-red-500">*</span>
+              {formData.description && (
+                <span className="text-xs text-muted-foreground ml-2">
+                  ({formData.description.length}/500)
+                </span>
+              )}
             </Label>
             <Textarea
               id="description"
@@ -175,6 +180,7 @@ export function EditProductModal({
               placeholder="Enter product description"
               rows={4}
               className={getFieldError("description") ? "border-red-500" : ""}
+              maxLength={500}
             />
             {getFieldError("description") && (
               <p className="text-sm text-red-500">

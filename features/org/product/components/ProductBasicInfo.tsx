@@ -137,7 +137,7 @@ export function ProductBasicInfo({
             Description
             {data.description && (
               <span className="text-xs text-muted-foreground ml-2">
-                ({data.description.length}/10000)
+                ({data.description.length}/500)
               </span>
             )}
             {errors.description && (
@@ -155,7 +155,7 @@ export function ProductBasicInfo({
             className={`resize-none ${
               errors.description ? "border-red-500" : ""
             }`}
-            maxLength={10000}
+            maxLength={500}
           />
           {errors.description && (
             <div className="flex items-center gap-1 text-xs text-red-500">

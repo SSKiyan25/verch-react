@@ -242,7 +242,7 @@ export function ProductDetailsModal({
     setEditOpen(true);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = (/* _updatedProduct?: ProductWithDetails */) => {
     // Increment refreshKey to trigger useEffect re-fetch
     setRefreshKey((prev) => prev + 1);
     // Also refresh Server Components (forces page to refetch)
@@ -374,7 +374,9 @@ export function ProductDetailsModal({
               <div className="flex-1 space-y-4">
                 {/* Badges */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  <Badge className={getProductStatusColor(product.status)}>
+                  <Badge
+                    className={`${getProductStatusColor(product.status)} capitalize`}
+                  >
                     {product.status}
                   </Badge>
                   {product.category_name && (
@@ -525,6 +527,7 @@ export function ProductDetailsModal({
                   product={productForTabs}
                   orgId={orgId}
                   isLoadingProduct={false}
+                  onProductUpdate={handleRefresh}
                 />
               </TabsContent>
 

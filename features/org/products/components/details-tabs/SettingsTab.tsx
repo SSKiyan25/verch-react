@@ -289,7 +289,7 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
               <div className="space-y-1">
                 <Label>Archive Product</Label>
                 <p className="text-sm text-muted-foreground">
-                  Archive this product (can be restored later)
+                  Archive this product
                 </p>
               </div>
               <Switch
@@ -327,16 +327,18 @@ export function SettingsTab({ product, onProductUpdate }: SettingsTabProps) {
             Settings Guidelines
           </h4>
           <ul className="text-sm text-amber-800 space-y-1">
-            <li>• Draft products are only visible to you and your team</li>
+            <li>Draft products are only visible to you and your team</li>
             <li>
-              • Published products are visible to customers and marked as
-              approved
+              Published products are visible to customers and marked as approved
             </li>
-            <li>• Pending approval requires admin review before publishing</li>
-            <li>• Archived products are hidden but can be restored</li>
-            <li>• Pre-orders allow sales when inventory is zero</li>
+            <li>Pending approval requires admin review before publishing</li>
             <li>
-              • <strong>Note:</strong> Enabling &quot;Product Approved&quot;
+              Archived products are hidden but can be restored. Contact support
+              to do so.
+            </li>
+            <li>Pre-orders allow sales when inventory is zero</li>
+            <li>
+              <strong>Note:</strong> Enabling &quot;Product Approved&quot;
               automatically publishes the product
             </li>
           </ul>

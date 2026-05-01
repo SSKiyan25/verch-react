@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Grid3X3, List, Search, Package, Layers, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import {
 import { ProductFilters, ProductStatus } from "@/lib/types/product";
 import type { PublicCategory } from "@/lib/supabase/queries/categories";
 import Link from "next/link";
+import { useDebouncedSearch } from "../hooks/useDebouncedSearch";
 
 interface ProductsToolbarProps {
   viewMode: "grid" | "list";
@@ -25,13 +27,13 @@ interface ProductsToolbarProps {
   categories: PublicCategory[];
   categoriesLoading: boolean;
   categoriesError: string | null;
+  isPending?: boolean;
 }
 
 const statusOptions: { value: ProductStatus; label: string }[] = [
   { value: "published", label: "Published" },
   { value: "draft", label: "Draft" },
   { value: "pending_approval", label: "Pending Approval" },
-  { value: "archived", label: "Archived" },
 ];
 
 export function ProductsToolbar({
@@ -44,7 +46,27 @@ export function ProductsToolbar({
   categories,
   categoriesLoading,
   categoriesError,
+  isPending = false,
 }: ProductsToolbarProps) {
+  // Local state for immediate UI updates
+  const [searchInput, setSearchInput] = useState(filters.search || "");
+  
+  // Debounce the search input
+  const debouncedSearch = useDebouncedSearch(searchInput, 400);
+
+  // Update filters when debounced value changes
+  useEffect(() => {
+    if (debouncedSearch !== filters.search) {
+      onFiltersChange({ ...filters, search: debouncedSearch });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
+
+  // Sync local state when filters.search changes externally (e.g., from URL or clear filters)
+  useEffect(() => {
+    setSearchInput(filters.search || "");
+  }, [filters.search]);
+
   const hasActiveFilters = !!(
     filters.search ||
     filters.status ||
@@ -73,14 +95,17 @@ export function ProductsToolbar({
       {/* Search and View Toggle */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {isPending ? (
+            <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          )}
           <Input
             placeholder="Search products..."
             className="pl-10"
-            value={filters.search || ""}
-            onChange={(e) =>
-              onFiltersChange({ ...filters, search: e.target.value })
-            }
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            disabled={isPending}
           />
         </div>
 
@@ -115,6 +140,7 @@ export function ProductsToolbar({
               status: value === "all" ? undefined : [value as ProductStatus],
             })
           }
+          disabled={isPending}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Filter by status" />
@@ -137,7 +163,7 @@ export function ProductsToolbar({
               category_id: value === "all" ? undefined : value,
             })
           }
-          disabled={categoriesLoading}
+          disabled={isPending || categoriesLoading}
         >
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue
@@ -178,6 +204,7 @@ export function ProductsToolbar({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Badge variant="secondary">
+            {isPending && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
             {totalProducts} product{totalProducts !== 1 ? "s" : ""}
           </Badge>
           {hasActiveFilters && (
@@ -186,6 +213,7 @@ export function ProductsToolbar({
               size="sm"
               onClick={onClearFilters}
               className="h-8 px-2 text-xs"
+              disabled={isPending}
             >
               Clear filters
             </Button>

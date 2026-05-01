@@ -671,7 +671,7 @@ export function PromotionForm({
 
       {/* Form Actions */}
       <div className="flex gap-4 justify-end">
-        <Button type="button" variant="outline" asChild disabled={isPending}>
+        <Button type="button" variant="outline" disabled={isPending}>
           <Link href="/org/promotions">Cancel</Link>
         </Button>
         <Button type="submit" disabled={isPending}>

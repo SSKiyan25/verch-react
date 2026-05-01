@@ -43,6 +43,7 @@ export function ProductsShell({
     setSearch,
     setPage,
     resetFilters,
+    isPending,
   } = useOrgProductFilters();
 
   // Empty state logic - show empty state only when no filters are active
@@ -94,6 +95,7 @@ export function ProductsShell({
         categories={categories}
         categoriesLoading={false}
         categoriesError={null}
+        isPending={isPending}
       />
 
       {products.length === 0 ? (
