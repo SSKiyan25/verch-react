@@ -86,7 +86,11 @@ export function useCheckout({
     Record<string, PaymentMethod>
   >(() =>
     Object.fromEntries(
-      orgGroups.map((g) => [g.orgId, "cash" as PaymentMethod]),
+      orgGroups.map((g) => [
+        g.orgId,
+        // Default to cash if GCash is not configured, otherwise cash as well (default)
+        "cash" as PaymentMethod,
+      ]),
     ),
   );
 
@@ -166,9 +170,16 @@ export function useCheckout({
   // ── Actions ────────────────────────────────────────────────────────────────
   const setPaymentMethod = useCallback(
     (orgId: string, method: PaymentMethod) => {
+      // Prevent selecting GCash if org doesn't have it configured
+      if (method === "gcash") {
+        const org = orgGroups.find((g) => g.orgId === orgId);
+        if (org && !org.hasGCashConfigured) {
+          return; // Silently reject invalid selection
+        }
+      }
       setPaymentMethods((prev) => ({ ...prev, [orgId]: method }));
     },
-    [],
+    [orgGroups],
   );
 
   const setFulfillmentPref = useCallback(

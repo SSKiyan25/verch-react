@@ -38,6 +38,7 @@ interface CheckoutOrgGroupProps {
   cartItemIds: string[];
   error: string | null;
   selectedPromotionId: string | null;
+  hasGCashConfigured: boolean;
   onPaymentChange: (method: PaymentMethod) => void;
   onFulfillmentChange: (
     method: FulfillmentMethod,
@@ -87,6 +88,7 @@ export function CheckoutOrgGroup({
   cartItemIds,
   error,
   selectedPromotionId,
+  hasGCashConfigured,
   onPaymentChange,
   onFulfillmentChange,
   onVoucherApplied,
@@ -197,6 +199,7 @@ export function CheckoutOrgGroup({
         <CheckoutPaymentSelector
           selected={paymentMethod}
           onChange={onPaymentChange}
+          hasGCashConfigured={hasGCashConfigured}
         />
 
         {/* Voucher */}

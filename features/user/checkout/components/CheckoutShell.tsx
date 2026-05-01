@@ -94,6 +94,7 @@ export function CheckoutShell({
                 appliedVoucherCode={voucher?.code}
                 cartItemIds={cartItemIds}
                 error={placeErrors[group.orgId] ?? null}
+                hasGCashConfigured={group.hasGCashConfigured}
                 onPaymentChange={(method) =>
                   setPaymentMethod(group.orgId, method)
                 }

@@ -36,6 +36,7 @@ export type CheckoutOrgGroup = {
   applicablePromotions: import("@/lib/supabase/queries/orders").ApplicablePromotion[];
   initialFulfillmentMethod: FulfillmentMethod;
   initialDeliveryAddressId: string | null;
+  hasGCashConfigured: boolean;
 };
 
 export type CheckoutInitialPaymentMethods = Record<string, PaymentMethod>;
