@@ -32,11 +32,11 @@ export async function getOrgGCashSettingsAction(
     if (error || !org) return { success: true, gcash: null };
 
     const rawSettings = org.settings;
-    console.log(
-      "[getOrgGCashSettingsAction] Raw settings for orgId:",
-      orgId,
-      rawSettings,
-    );
+    // console.log(
+    //   "[getOrgGCashSettingsAction] Raw settings for orgId:",
+    //   orgId,
+    //   rawSettings,
+    // );
     const settings: Record<string, unknown> | null =
       typeof rawSettings === "string"
         ? JSON.parse(rawSettings)
