@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   Loader2,
   Upload,
@@ -24,8 +25,24 @@ import type { OrderDetail } from "@/lib/supabase/queries/orders";
 // Note: Will be deleted after testing - only used for debugging file uploads
 import { debugUploadAction } from "@/features/user/checkout/actions/debugUploadAction";
 
-export function GCashPaymentShell({ order }: { order: OrderDetail }) {
+export function GCashPaymentShell({
+  order,
+  justPlaced,
+}: {
+  order: OrderDetail;
+  justPlaced?: boolean;
+}) {
   const router = useRouter();
+
+  useEffect(() => {
+    if (justPlaced) {
+      toast.success("Order placed!", {
+        description: "Upload your GCash payment proof below to confirm your order.",
+        duration: 6000,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const { gcashSettings, isLoading: isLoadingSettings } = useGCashSettings(
     order.organization_id,
   );

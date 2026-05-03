@@ -275,7 +275,7 @@ export function useCheckout({
 
         if (gcashOrder && gcashOrder.orderId) {
           // Redirect to GCash payment page for first GCash order
-          router.push(`/user/payment/${gcashOrder.orderId}`);
+          router.push(`/user/payment/${gcashOrder.orderId}?placed=true`);
         } else {
           // All cash orders, go to orders list
           router.push("/user/orders?placed=true");

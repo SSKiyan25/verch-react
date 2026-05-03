@@ -5,10 +5,14 @@ import { GCashPaymentShell } from "@/features/user/payment/components/GCashPayme
 
 export default async function GCashPaymentPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ orderId: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { orderId } = await params;
+  const resolvedSearch = await searchParams;
+  const justPlaced = resolvedSearch.placed === "true";
 
   const supabase = await createClient();
   const {
@@ -38,5 +42,5 @@ export default async function GCashPaymentPage({
     redirect(`/user/orders/${orderId}`);
   }
 
-  return <GCashPaymentShell order={order} />;
+  return <GCashPaymentShell order={order} justPlaced={justPlaced} />;
 }
