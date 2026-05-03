@@ -47,7 +47,6 @@ export function MiniCartDrawer({
 
   const handleViewCart = () => {
     onOpenChange(false);
-    router.refresh();
     router.push("/user/cart");
   };
 

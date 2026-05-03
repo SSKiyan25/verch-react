@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { fetchCartItems } from "@/lib/supabase/queries/user/cart";
 import { getCachedUserAddresses } from "@/lib/data/user-customer";
-import { getCachedOrgSettings } from "@/lib/data/org/settings";
+import { getCachedOrgGcashConfig } from "@/lib/data/public/org-gcash";
 import { fetchApplicablePromotions } from "@/lib/supabase/queries/orders";
 import { CheckoutShell } from "@/features/user/checkout/components/CheckoutShell";
 import type {
@@ -173,19 +173,14 @@ export default async function CheckoutPage({
   // 9. Fetch user addresses (cached)
   const userAddresses = await getCachedUserAddresses(user.id);
 
-  // 10. Fetch GCash settings for all orgs (cached)
-  const orgSettingsResults = await Promise.all(
-    orgIds.map((orgId) => getCachedOrgSettings(user.id, orgId)),
+  // 10. Fetch GCash config for all orgs (public cached — no org membership required)
+  const orgGcashResults = await Promise.all(
+    orgIds.map((orgId) => getCachedOrgGcashConfig(orgId)),
   );
 
   const gcashAvailabilityMap = new Map<string, boolean>();
   orgIds.forEach((orgId, index) => {
-    const settings = orgSettingsResults[index];
-    const hasGCash =
-      !!settings?.settings?.gcash &&
-      !!settings.settings.gcash.number &&
-      !!settings.settings.gcash.accountName;
-    gcashAvailabilityMap.set(orgId, hasGCash);
+    gcashAvailabilityMap.set(orgId, orgGcashResults[index]?.hasGcash ?? false);
   });
 
   // 11. Fetch applicable promotions per org + build bundle instances per org
