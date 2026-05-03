@@ -256,3 +256,9 @@ export function invalidateStudentVerificationCache(
   // User's profile may show verification status (if applicable)
   revalidatePath(`/user/profile/${userId}`, "page");
 }
+
+// ─── Analytics cache helpers ──────────────────────────────────────────────────
+
+export function invalidateOrgAnalyticsCache(orgId: string): void {
+  revalidateTag(`org-analytics-${orgId}`, "default");
+}
