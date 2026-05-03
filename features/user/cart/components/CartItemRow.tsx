@@ -169,8 +169,8 @@ export function CartItemRow({
         <div className="flex items-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
           <Info className="h-3.5 w-3.5 shrink-0" />
           <span>
-            This item is on pre-order. It will be fulfilled once stock becomes
-            available.
+            Pre-order item placed. The organization will fulfill your order
+            after approval.
           </span>
         </div>
       )}
