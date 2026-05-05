@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Upload, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -198,16 +198,16 @@ export function PaymentUploadForm({
         </div>
       )}
 
-      {/* Upload Success */}
+      {/* Upload Success - Verification In Progress */}
       {hasUploadedFile && (
-        <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
-          <CheckCircle2 className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-900 dark:text-green-100">
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+          <AlertDescription className="text-blue-900 dark:text-blue-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Screenshot uploaded successfully!</p>
-                <p className="text-sm text-green-700 dark:text-green-300">
-                  Verifying your payment...
+                <p className="font-medium">Processing your payment screenshot...</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  Our system is automatically verifying your GCash payment. This usually takes 10-30 seconds.
                 </p>
               </div>
               <Button
@@ -215,7 +215,7 @@ export function PaymentUploadForm({
                 size="sm"
                 onClick={handleRemoveFile}
                 disabled={disabled}
-                className="text-green-700 hover:bg-green-100 hover:text-green-900 dark:text-green-300 dark:hover:bg-green-900 dark:hover:text-green-100"
+                className="text-blue-700 hover:bg-blue-100 hover:text-blue-900 dark:text-blue-300 dark:hover:bg-blue-900 dark:hover:text-blue-100"
               >
                 Replace
               </Button>

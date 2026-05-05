@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePaymentVerification } from "../hooks/usePaymentVerification";
 import type { OcrStatus } from "../types";
@@ -35,6 +36,8 @@ export function PaymentVerificationStatus({
     ocrConfidence,
     loading,
     error: fetchError,
+    isTimeout,
+    refreshStatus,
   } = usePaymentVerification(orderId);
 
   // Trigger callbacks when verification completes
@@ -73,11 +76,34 @@ export function PaymentVerificationStatus({
         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
         <AlertDescription className="text-blue-900 dark:text-blue-100">
           <div className="space-y-2">
-            <p className="font-medium">Verifying your payment screenshot...</p>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              This usually takes 10-30 seconds. Please don&apos;t close this
-              page.
+            <p className="font-medium">
+              {isTimeout
+                ? "Verification is taking longer than expected..."
+                : "Verifying your payment screenshot..."}
             </p>
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              {isTimeout
+                ? "This is unusual. The verification may still complete, or you can try refreshing the status."
+                : "This usually takes 10-30 seconds. Please don't close this page."}
+            </p>
+            {isTimeout && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={refreshStatus}
+                disabled={loading}
+                className="mt-2"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                    Refreshing...
+                  </>
+                ) : (
+                  "Refresh Status"
+                )}
+              </Button>
+            )}
           </div>
         </AlertDescription>
       </Alert>
