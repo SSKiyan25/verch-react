@@ -1,0 +1,17 @@
+# Compiled JavaScript files
+lib/**/*.js
+lib/**/*.js.map
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Node modules
+node_modules/
+
+# Firebase config
+.runtimeconfig.json
+
+# Environment files
+.env
+.env.local
+.env.*.local
