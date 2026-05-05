@@ -33,10 +33,10 @@ export function usePaymentVerification(orderId: string) {
         const { data, error: fetchError } = await supabase
           .from("order_payments")
           .select(
-            "payment_status, gcash_ref_no, ocr_status, ocr_confidence, ocr_verified_at"
+            "status, gcash_ref_no, ocr_status, ocr_confidence, ocr_verified_at"
           )
           .eq("order_id", orderId)
-          .single();
+          .maybeSingle();
 
         if (fetchError) {
           console.error("[usePaymentVerification] Fetch error:", fetchError);
@@ -46,12 +46,13 @@ export function usePaymentVerification(orderId: string) {
         }
 
         if (data) {
-          setPaymentStatus(data.payment_status);
+          setPaymentStatus(data.status);
           setOcrStatus(data.ocr_status as OcrStatus | null);
           setGcashRefNo(data.gcash_ref_no);
           setOcrConfidence(data.ocr_confidence);
           setOcrVerifiedAt(data.ocr_verified_at);
         }
+        // If no data, just remain in 'pending' state (default)
 
         setLoading(false);
       } catch (err) {
@@ -80,12 +81,13 @@ export function usePaymentVerification(orderId: string) {
           if (payload.eventType === "UPDATE" || payload.eventType === "INSERT") {
             const newData = payload.new as PaymentRowUpdate;
 
-            setPaymentStatus(newData.payment_status);
+            setPaymentStatus(newData.status);
             setOcrStatus(newData.ocr_status as OcrStatus | null);
             setGcashRefNo(newData.gcash_ref_no);
             setOcrConfidence(newData.ocr_confidence);
             setOcrVerifiedAt(newData.ocr_verified_at);
             setLoading(false);
+            setError(null); // Clear any previous errors
           }
         }
       )
