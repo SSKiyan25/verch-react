@@ -23,6 +23,46 @@ export function usePaymentVerification(orderId: string) {
   const [ocrVerifiedAt, setOcrVerifiedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isTimeout, setIsTimeout] = useState(false);
+
+  // Manual refresh function
+  const refreshStatus = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      setIsTimeout(false);
+
+      const supabase = createClient();
+      const { data, error: fetchError } = await supabase
+        .from("order_payments")
+        .select(
+          "status, gcash_ref_no, ocr_status, ocr_confidence, ocr_verified_at"
+        )
+        .eq("order_id", orderId)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error("[usePaymentVerification] Manual refresh error:", fetchError);
+        setError("Failed to refresh payment status");
+        setLoading(false);
+        return;
+      }
+
+      if (data) {
+        setPaymentStatus(data.status);
+        setOcrStatus(data.ocr_status as OcrStatus | null);
+        setGcashRefNo(data.gcash_ref_no);
+        setOcrConfidence(data.ocr_confidence);
+        setOcrVerifiedAt(data.ocr_verified_at);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error("[usePaymentVerification] Manual refresh exception:", err);
+      setError("An unexpected error occurred");
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const supabase = createClient();
@@ -106,6 +146,24 @@ export function usePaymentVerification(orderId: string) {
     };
   }, [orderId]);
 
+  // Timeout handler - if verification takes too long
+  useEffect(() => {
+    if (
+      paymentStatus === "verifying" ||
+      paymentStatus === "proof_submitted"
+    ) {
+      const timeoutId = setTimeout(() => {
+        console.warn(
+          "[usePaymentVerification] Verification timeout - no update after 60 seconds"
+        );
+        setIsTimeout(true);
+      }, 60000); // 60 seconds
+
+      return () => clearTimeout(timeoutId);
+    }
+    // isTimeout will be reset when paymentStatus changes to confirmed/rejected
+  }, [paymentStatus]);
+
   return {
     paymentStatus,
     ocrStatus,
@@ -114,5 +172,7 @@ export function usePaymentVerification(orderId: string) {
     ocrVerifiedAt,
     loading,
     error,
+    isTimeout,
+    refreshStatus,
   };
 }

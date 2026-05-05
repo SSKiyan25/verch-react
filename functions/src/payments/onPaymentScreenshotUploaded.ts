@@ -131,21 +131,22 @@ export async function onPaymentScreenshotUploaded(
   event: StorageEvent,
 ): Promise<void> {
   const filePath = event.data.name;
-  console.log(`[onPaymentScreenshotUploaded] Processing: ${filePath}`);
+  const startTime = Date.now();
+  console.log(`[onPaymentScreenshotUploaded] ✅ STARTED - Processing: ${filePath}`);
 
   try {
     // Step 1: Extract payment metadata from Storage path
     const metadata = extractPaymentMetadata(filePath);
     if (!metadata) {
       console.error(
-        `[onPaymentScreenshotUploaded] Invalid Storage path format: ${filePath}`,
+        `[onPaymentScreenshotUploaded] ❌ INVALID PATH FORMAT: ${filePath}`,
       );
       return; // Exit early — not a payment proof upload
     }
 
     const { userId, orderId } = metadata;
     console.log(
-      `[onPaymentScreenshotUploaded] User: ${userId}, Order: ${orderId}`,
+      `[onPaymentScreenshotUploaded] 📋 METADATA - User: ${userId}, Order: ${orderId}`,
     );
 
     // Step 2: Initialize Supabase client with service role key
@@ -166,13 +167,19 @@ export async function onPaymentScreenshotUploaded(
     });
 
     // Step 3: Update payment status to 'verifying' (OCR in progress)
-    await supabase
+    console.log(`[onPaymentScreenshotUploaded] 🔄 UPDATING STATUS - Setting to 'verifying'`);
+    const { error: statusUpdateError } = await supabase
       .from("order_payments")
       .update({ status: "verifying" })
       .eq("order_id", orderId);
 
+    if (statusUpdateError) {
+      console.error(`[onPaymentScreenshotUploaded] ❌ STATUS UPDATE FAILED:`, statusUpdateError);
+      throw statusUpdateError;
+    }
+
     console.log(
-      `[onPaymentScreenshotUploaded] Payment status updated to 'verifying'`,
+      `[onPaymentScreenshotUploaded] ✅ STATUS UPDATED - Payment status set to 'verifying'`,
     );
 
     // Step 4: Get download URL from Firebase Storage
@@ -185,20 +192,22 @@ export async function onPaymentScreenshotUploaded(
       expires: Date.now() + 60 * 60 * 1000, // 1 hour
     });
 
-    console.log(`[onPaymentScreenshotUploaded] Download URL obtained`);
+    console.log(`[onPaymentScreenshotUploaded] 🔗 SIGNED URL - Generated successfully`);
 
     // Step 5: Call Google Cloud Vision API for OCR
+    console.log(`[onPaymentScreenshotUploaded] 🔍 CALLING VISION API - Starting OCR processing`);
     const visionResult = await callVisionApi(downloadUrl);
     const { rawText, confidence } = visionResult;
 
     console.log(
-      `[onPaymentScreenshotUploaded] OCR complete. Confidence: ${confidence}, Text length: ${rawText.length}`,
+      `[onPaymentScreenshotUploaded] ✅ OCR COMPLETE - Confidence: ${confidence}, Text length: ${rawText.length}`,
     );
 
     // Step 6: Extract GCash Reference Number
+    console.log(`[onPaymentScreenshotUploaded] 🔢 EXTRACTING REF NO - Analyzing text for 13-digit pattern`);
     const refNo = extractRefNo(rawText);
     console.log(
-      `[onPaymentScreenshotUploaded] Extracted Reference Number: ${refNo || "NONE"}`,
+      `[onPaymentScreenshotUploaded] ${refNo ? "✅" : "❌"} REF NO EXTRACTION - Result: ${refNo || "NONE FOUND"}`,
     );
 
     // Step 7: Validate and determine OCR status
@@ -245,13 +254,15 @@ export async function onPaymentScreenshotUploaded(
 
     await updatePaymentWithOcrResult(supabase, orderId, update);
 
+    const duration = Date.now() - startTime;
     console.log(
-      `[onPaymentScreenshotUploaded] Payment status updated to '${paymentStatus}' (OCR: ${ocrStatus})`,
+      `[onPaymentScreenshotUploaded] ✅ COMPLETED - Payment status: '${paymentStatus}', OCR status: '${ocrStatus}', Duration: ${duration}ms`,
     );
   } catch (error) {
     // Catch all errors — update payment status to 'rejected' with error message
+    const duration = Date.now() - startTime;
     console.error(
-      "[onPaymentScreenshotUploaded] Error during OCR processing:",
+      `[onPaymentScreenshotUploaded] ❌ ERROR - OCR processing failed after ${duration}ms:`,
       error,
     );
 
