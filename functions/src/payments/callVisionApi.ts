@@ -11,7 +11,7 @@
  * in Firebase Cloud Functions environment — no API key needed.
  */
 
-import vision from "@google-cloud/vision";
+import { ImageAnnotatorClient } from "@google-cloud/vision";
 import type { VisionApiResult } from "./types";
 
 /**
@@ -27,7 +27,7 @@ export async function callVisionApi(
   try {
     // Initialize Vision API client
     // Uses Application Default Credentials automatically in Cloud Functions
-    const client = new vision.ImageAnnotatorClient();
+    const client = new ImageAnnotatorClient();
 
     // Call text detection API
     const [result] = await client.textDetection(imageUrl);
