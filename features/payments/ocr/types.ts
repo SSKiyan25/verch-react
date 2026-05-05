@@ -33,6 +33,7 @@ export interface PaymentVerificationState {
 
 /**
  * Payment row structure from Supabase Realtime
+ * Note: Column name in database is 'status', not 'payment_status'
  */
 export interface PaymentRowUpdate {
   id: string;
@@ -41,5 +42,5 @@ export interface PaymentRowUpdate {
   ocr_raw_text: string | null;
   ocr_confidence: number | null;
   ocr_verified_at: string | null;
-  payment_status: "pending" | "proof_submitted" | "confirmed" | "rejected";
+  status: "pending" | "proof_submitted" | "confirmed" | "rejected" | "verifying";
 }

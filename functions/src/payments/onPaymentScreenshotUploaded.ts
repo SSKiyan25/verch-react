@@ -106,6 +106,8 @@ async function updatePaymentWithOcrResult(
     status: update.payment_status, // column name is 'status', not 'payment_status'
   };
 
+  console.log(`[updatePaymentWithOcrResult] Updating order ${orderId} with:`, updateData);
+
   const { error } = await supabase
     .from("order_payments")
     .update(updateData)
@@ -115,6 +117,8 @@ async function updatePaymentWithOcrResult(
     console.error("[updatePaymentWithOcrResult] Supabase update error:", error);
     throw error;
   }
+
+  console.log(`[updatePaymentWithOcrResult] Successfully updated order ${orderId}`);
 }
 
 /**
