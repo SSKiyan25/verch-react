@@ -5,7 +5,11 @@
  */
 
 import * as functions from "firebase-functions/v2";
+import { defineSecret } from "firebase-functions/params";
 import { onPaymentScreenshotUploaded } from "./onPaymentScreenshotUploaded";
+
+// Define secrets that this function needs access to
+const supabaseServiceRoleKey = defineSecret("SUPABASE_SERVICE_ROLE_KEY");
 
 /**
  * Firebase Storage Trigger: Payment Screenshot Upload
@@ -18,18 +22,16 @@ import { onPaymentScreenshotUploaded } from "./onPaymentScreenshotUploaded";
  * Path Pattern: payment-proofs/{userId}/{orderId}.{extension}
  *
  * Environment Variables Required:
- * - SUPABASE_URL
- * - SUPABASE_SERVICE_ROLE_KEY
+ * - SUPABASE_URL (set in firebase.json)
+ * - SUPABASE_SERVICE_ROLE_KEY (Firebase Secret)
  */
 export const handlePaymentScreenshotUpload =
   functions.storage.onObjectFinalized(
     {
-      // CRITICAL FIX: Remove the specific bucket name string
-      // and use the default bucket by providing NO bucket option at all.
-      // The trigger will automatically listen ONLY to your project's default bucket.
       region: "asia-southeast1",
       memory: "512MiB",
       timeoutSeconds: 300,
+      secrets: [supabaseServiceRoleKey], // Inject the secret at runtime
     },
     onPaymentScreenshotUploaded,
   );
