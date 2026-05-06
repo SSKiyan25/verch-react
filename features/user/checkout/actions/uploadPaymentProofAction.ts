@@ -19,39 +19,8 @@ type UploadPaymentProofResult =
 export async function uploadPaymentProofAction(
   formData: FormData,
 ): Promise<UploadPaymentProofResult> {
-  // Will be deleted after testing - only used for debugging file uploads
-  // try {
-  //   // Test Firebase is reachable before anything else
-  //   const { storage } = await import("@/lib/firebase/firebase-admin");
-  //   console.log("[uploadPaymentProofAction] Firebase Admin imported OK");
-  //   console.log("[uploadPaymentProofAction] Bucket:", storage.bucket().name);
-  // } catch (initErr) {
-  //   console.error(
-  //     "[uploadPaymentProofAction] Firebase Admin INIT FAILED:",
-  //     initErr,
-  //   );
-  //   return { success: false, error: "Firebase configuration error" };
-  // }
-  console.log(
-    "[uploadPaymentProofAction] Starting action with formData:",
-    formData,
-  );
-  try {
-    const adminModule = await import("@/lib/firebase/firebase-admin");
-    const bucketName = adminModule.storage.bucket().name;
-    // This will show in UI if it fails
-    console.log(
-      `[uploadPaymentProofAction] Firebase Admin imported, bucket: ${bucketName}`,
-    );
-  } catch (initErr) {
-    const message =
-      initErr instanceof Error ? initErr.message : String(initErr);
-    return { success: false, error: `Firebase init failed: ${message}` };
-  }
-
   try {
     const supabase = await createClient();
-    console.log("[uploadPaymentProofAction] Supabase client created");
     const orderId = formData.get("orderId");
     const file = formData.get("file");
 
@@ -87,12 +56,37 @@ export async function uploadPaymentProofAction(
       file,
     });
 
+    if (!result.success) return result;
+
+    // ✅ CRITICAL FIX: Save proof_path to database immediately after successful upload
+    // This ensures the path is available for preview and Cloud Function processing
     console.log(
-      "[uploadPaymentProofAction] uploadPaymentProof result:",
-      result,
+      `[uploadPaymentProofAction] Updating order_payments with proof_path: ${result.path}`,
     );
 
-    if (!result.success) return result;
+    const { error: updateError } = await supabase
+      .from("order_payments")
+      .update({
+        proof_path: result.path,
+        status: "proof_submitted",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("order_id", validated.orderId);
+
+    if (updateError) {
+      console.error(
+        "[uploadPaymentProofAction] Failed to update proof_path:",
+        updateError,
+      );
+      return {
+        success: false,
+        error: "Failed to save payment proof reference",
+      };
+    }
+
+    console.log(
+      "[uploadPaymentProofAction] Successfully updated proof_path in database",
+    );
 
     const url = await getSignedDownloadUrl(
       result.path,
