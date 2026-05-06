@@ -54,13 +54,19 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
 
 const OCR_STATUS_CONFIG: Record<
   string,
-  { label: string; variant: "default" | "destructive"; icon: typeof CheckCircle2; className?: string }
+  {
+    label: string;
+    variant: "default" | "destructive";
+    icon: typeof CheckCircle2;
+    className?: string;
+  }
 > = {
   success: {
     label: "Verified Successfully",
     variant: "default",
     icon: CheckCircle2,
-    className: "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400",
+    className:
+      "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400",
   },
   no_ref_found: {
     label: "Reference Number Not Found",
@@ -387,7 +393,9 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
                       variant={
                         OCR_STATUS_CONFIG[paymentData.ocr_status].variant
                       }
-                      className={OCR_STATUS_CONFIG[paymentData.ocr_status].className}
+                      className={
+                        OCR_STATUS_CONFIG[paymentData.ocr_status].className
+                      }
                     >
                       {(() => {
                         const Icon =
@@ -446,18 +454,6 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
-                    </p>
-                  </div>
-                )}
-
-                {/* Confidence Score */}
-                {paymentData.ocr_confidence !== null && (
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-1">
-                      Confidence Score
-                    </p>
-                    <p className="font-medium">
-                      {(paymentData.ocr_confidence * 100).toFixed(0)}%
                     </p>
                   </div>
                 )}
