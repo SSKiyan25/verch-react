@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Upload, Banknote } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useGCashSettings } from "@/features/user/payment/hooks/useGCashSettings";
@@ -54,6 +54,35 @@ export function GCashPaymentShell({
           Order #{order.order_number} • {order.org_name}
         </p>
       </div>
+
+      {/* Amount to Pay - Prominent Display */}
+      <Card className="border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white shadow-lg">
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
+                <Banknote className="h-6 w-6 text-emerald-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-800">
+                  Amount to Pay
+                </p>
+                <p className="text-xs text-emerald-600">
+                  Please send this exact amount via GCash
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-4xl font-bold tracking-tight text-emerald-900">
+                ₱{order.total_amount.toFixed(2)}
+              </p>
+              <p className="mt-1 text-xs text-emerald-700">
+                Ensure your receipt shows this amount
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Left: GCash Details */}

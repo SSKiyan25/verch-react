@@ -1,11 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, X, Loader2 } from "lucide-react";
+import { Upload, X, Loader2, Eye } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePaymentSubmit } from "../hooks/usePaymentSubmit";
+import { PaymentScreenshotPreview } from "./PaymentScreenshotPreview";
+import { getPaymentProofPreviewUrl } from "../actions/getPaymentProofPreviewUrl";
 
 interface PaymentUploadFormProps {
   orderId: string;
@@ -44,6 +47,11 @@ export function PaymentUploadForm({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Preview modal state
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [signedPreviewUrl, setSignedPreviewUrl] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   const handleFileSelect = (file: File | null) => {
     if (!file) return;
@@ -101,6 +109,28 @@ export function PaymentUploadForm({
     resetUpload();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePreviewClick = async () => {
+    setIsLoadingPreview(true);
+    try {
+      const result = await getPaymentProofPreviewUrl(orderId);
+      
+      if (result.success) {
+        setSignedPreviewUrl(result.url);
+        setIsPreviewOpen(true);
+      } else {
+        toast.error("Preview unavailable", {
+          description: result.error,
+        });
+      }
+    } catch {
+      toast.error("Preview failed", {
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setIsLoadingPreview(false);
     }
   };
 
@@ -200,28 +230,51 @@ export function PaymentUploadForm({
 
       {/* Upload Success - Verification In Progress */}
       {hasUploadedFile && (
-        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-          <AlertDescription className="text-blue-900 dark:text-blue-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Processing your payment screenshot...</p>
-                <p className="text-sm text-blue-700 dark:text-blue-300">
-                  Our system is automatically verifying your GCash payment. This usually takes 10-30 seconds.
-                </p>
+        <div className="space-y-3">
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+            <AlertDescription className="text-blue-900 dark:text-blue-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Processing your payment screenshot...</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    Our system is automatically verifying your GCash payment. This usually takes 10-30 seconds.
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleRemoveFile}
+                  disabled={disabled}
+                  className="text-blue-700 hover:bg-blue-100 hover:text-blue-900 dark:text-blue-300 dark:hover:bg-blue-900 dark:hover:text-blue-100"
+                >
+                  Replace
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRemoveFile}
-                disabled={disabled}
-                className="text-blue-700 hover:bg-blue-100 hover:text-blue-900 dark:text-blue-300 dark:hover:bg-blue-900 dark:hover:text-blue-100"
-              >
-                Replace
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
+            </AlertDescription>
+          </Alert>
+          
+          {/* Preview Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handlePreviewClick}
+            disabled={isLoadingPreview || disabled}
+            className="w-full"
+          >
+            {isLoadingPreview ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Loading preview...
+              </>
+            ) : (
+              <>
+                <Eye className="mr-2 h-3 w-3" />
+                Preview Uploaded Image
+              </>
+            )}
+          </Button>
+        </div>
       )}
 
       {/* Upload Error */}
@@ -244,6 +297,13 @@ export function PaymentUploadForm({
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Preview Modal */}
+      <PaymentScreenshotPreview
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        proofUrl={signedPreviewUrl}
+      />
     </div>
   );
 }
