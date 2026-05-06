@@ -75,7 +75,7 @@ export function PaymentVerificationStatus({
   }
 
   // Status: Verifying (OCR in progress)
-  if (paymentStatus === "verifying" || paymentStatus === "proof_submitted") {
+  if (paymentStatus === "verifying") {
     return (
       <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
         <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
@@ -115,8 +115,8 @@ export function PaymentVerificationStatus({
     );
   }
 
-  // Status: Verified (Success)
-  if (paymentStatus === "confirmed" && gcashRefNo) {
+  // Status: Verified (Success) - OCR completed successfully or manually confirmed
+  if ((paymentStatus === "proof_submitted" || paymentStatus === "confirmed") && gcashRefNo) {
     return (
       <div className="space-y-3">
         <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PaymentUploadForm } from "./PaymentUploadForm";
 import { PaymentVerificationStatus } from "./PaymentVerificationStatus";
 import type { OcrStatus } from "../types";
@@ -93,27 +92,6 @@ export function PaymentVerificationFlow({
                   details
                 </li>
               </ul>
-              {verificationAttempts >= 3 && (
-                <div className="mt-3 rounded border border-orange-300 bg-orange-100 p-3 dark:border-orange-800 dark:bg-orange-900">
-                  <p className="text-sm font-medium text-orange-900 dark:text-orange-100">
-                    Having trouble? Contact support for manual verification.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="mt-2"
-                    onClick={() => {
-                      // Navigate to support or open chat
-                      window.open(
-                        "mailto:support@verch.ph?subject=Payment Verification Help",
-                        "_blank",
-                      );
-                    }}
-                  >
-                    Contact Support
-                  </Button>
-                </div>
-              )}
             </div>
           )}
         </div>
