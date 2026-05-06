@@ -107,7 +107,10 @@ async function updatePaymentWithOcrResult(
     status: update.payment_status, // column name is 'status', not 'payment_status'
   };
 
-  console.log(`[updatePaymentWithOcrResult] Updating order ${orderId} with:`, updateData);
+  console.log(
+    `[updatePaymentWithOcrResult] Updating order ${orderId} with:`,
+    updateData,
+  );
 
   const { error } = await supabase
     .from("order_payments")
@@ -119,7 +122,9 @@ async function updatePaymentWithOcrResult(
     throw error;
   }
 
-  console.log(`[updatePaymentWithOcrResult] Successfully updated order ${orderId}`);
+  console.log(
+    `[updatePaymentWithOcrResult] Successfully updated order ${orderId}`,
+  );
 }
 
 /**
@@ -133,7 +138,9 @@ export async function onPaymentScreenshotUploaded(
 ): Promise<void> {
   const filePath = event.data.name;
   const startTime = Date.now();
-  console.log(`[onPaymentScreenshotUploaded] ✅ STARTED - Processing: ${filePath}`);
+  console.log(
+    `[onPaymentScreenshotUploaded] ✅ STARTED - Processing: ${filePath}`,
+  );
 
   try {
     // Step 1: Extract payment metadata from Storage path
@@ -168,14 +175,19 @@ export async function onPaymentScreenshotUploaded(
     });
 
     // Step 3: Update payment status to 'verifying' (OCR in progress)
-    console.log(`[onPaymentScreenshotUploaded] 🔄 UPDATING STATUS - Setting to 'verifying'`);
+    console.log(
+      `[onPaymentScreenshotUploaded] 🔄 UPDATING STATUS - Setting to 'verifying'`,
+    );
     const { error: statusUpdateError } = await supabase
       .from("order_payments")
       .update({ status: "verifying" })
       .eq("order_id", orderId);
 
     if (statusUpdateError) {
-      console.error(`[onPaymentScreenshotUploaded] ❌ STATUS UPDATE FAILED:`, statusUpdateError);
+      console.error(
+        `[onPaymentScreenshotUploaded] ❌ STATUS UPDATE FAILED:`,
+        statusUpdateError,
+      );
       throw statusUpdateError;
     }
 
@@ -193,10 +205,14 @@ export async function onPaymentScreenshotUploaded(
       expires: Date.now() + 60 * 60 * 1000, // 1 hour
     });
 
-    console.log(`[onPaymentScreenshotUploaded] 🔗 SIGNED URL - Generated successfully`);
+    console.log(
+      `[onPaymentScreenshotUploaded] 🔗 SIGNED URL - Generated successfully`,
+    );
 
     // Step 5: Call Google Cloud Vision API for OCR
-    console.log(`[onPaymentScreenshotUploaded] 🔍 CALLING VISION API - Starting OCR processing`);
+    console.log(
+      `[onPaymentScreenshotUploaded] 🔍 CALLING VISION API - Starting OCR processing`,
+    );
     const visionResult = await callVisionApi(downloadUrl);
     const { rawText, confidence } = visionResult;
 
@@ -205,7 +221,9 @@ export async function onPaymentScreenshotUploaded(
     );
 
     // Step 6: Extract GCash data (Reference Number + Amount)
-    console.log(`[onPaymentScreenshotUploaded] 🔢 EXTRACTING GCASH DATA - Analyzing text for ref number and amount`);
+    console.log(
+      `[onPaymentScreenshotUploaded] 🔢 EXTRACTING GCASH DATA - Analyzing text for ref number and amount`,
+    );
     const { refNo, amount } = extractGCashData(rawText);
     console.log(
       `[onPaymentScreenshotUploaded] ${refNo ? "✅" : "❌"} REF NO EXTRACTION - Result: ${refNo || "NONE FOUND"}`,
