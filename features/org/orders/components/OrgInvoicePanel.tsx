@@ -202,7 +202,7 @@ export function OrgInvoicePanel({ order, userRole }: Props) {
 
       {/* Invoice Preview Modal */}
       <Dialog open={isModalOpen} onOpenChange={closePreview}>
-        <DialogContent className="max-w-5xl h-[55vh] md:h-[55vh] w-screen md:w-full md:rounded-lg rounded-none p-0 gap-0">
+        <DialogContent className="max-w-5xl h-[85vh] md:h-[85vh] w-screen md:w-full md:rounded-lg rounded-none p-0 gap-0">
           <DialogHeader className="px-6 py-8 border-b">
             <div className="flex items-center justify-between">
               <DialogTitle className="font-mono text-base">
@@ -240,7 +240,7 @@ export function OrgInvoicePanel({ order, userRole }: Props) {
             ) : previewUrl ? (
               <div className="h-full flex flex-col gap-2">
                 <iframe
-                  src={previewUrl}
+                  src={`${previewUrl}#view=FitH`}
                   className="w-full h-full border-0 rounded-md"
                   title={`Invoice ${order.invoice_number}`}
                 />
