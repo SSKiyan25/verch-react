@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { uploadPaymentProofAction } from "@/features/user/checkout/actions/uploadPaymentProofAction";
 
 /**
@@ -52,11 +52,11 @@ export function usePaymentSubmit() {
     }
   };
 
-  const resetUpload = () => {
+  const resetUpload = useCallback(() => {
     setUploadedPath(null);
     setUploadedUrl(null);
     setError(null);
-  };
+  }, []);
 
   return {
     uploadPaymentProof,
