@@ -17,7 +17,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { StorageEvent } from "firebase-functions/v2/storage";
 import { getStorage } from "firebase-admin/storage";
 import { callVisionApi } from "./callVisionApi";
-import { extractRefNo, isValidRefNoFormat } from "./extractRefNo";
+import { extractGCashData, isValidRefNoFormat } from "./extractGCashData";
 import type { OcrStatus, PaymentVerificationUpdate } from "./types";
 
 /**
@@ -99,6 +99,7 @@ async function updatePaymentWithOcrResult(
   // Build update object with proper types
   const updateData: Record<string, unknown> = {
     gcash_ref_no: update.gcash_ref_no,
+    gcash_amount: update.gcash_amount,
     ocr_status: update.ocr_status,
     ocr_raw_text: update.ocr_raw_text,
     ocr_confidence: update.ocr_confidence,
@@ -203,11 +204,14 @@ export async function onPaymentScreenshotUploaded(
       `[onPaymentScreenshotUploaded] ✅ OCR COMPLETE - Confidence: ${confidence}, Text length: ${rawText.length}`,
     );
 
-    // Step 6: Extract GCash Reference Number
-    console.log(`[onPaymentScreenshotUploaded] 🔢 EXTRACTING REF NO - Analyzing text for 13-digit pattern`);
-    const refNo = extractRefNo(rawText);
+    // Step 6: Extract GCash data (Reference Number + Amount)
+    console.log(`[onPaymentScreenshotUploaded] 🔢 EXTRACTING GCASH DATA - Analyzing text for ref number and amount`);
+    const { refNo, amount } = extractGCashData(rawText);
     console.log(
       `[onPaymentScreenshotUploaded] ${refNo ? "✅" : "❌"} REF NO EXTRACTION - Result: ${refNo || "NONE FOUND"}`,
+    );
+    console.log(
+      `[onPaymentScreenshotUploaded] ${amount !== null ? "✅" : "⚠️"} AMOUNT EXTRACTION - Result: ${amount !== null ? `₱${amount.toFixed(2)}` : "NOT FOUND (optional)"}`,
     );
 
     // Step 7: Validate and determine OCR status
@@ -245,6 +249,7 @@ export async function onPaymentScreenshotUploaded(
     // Step 9: Update payment row with OCR result
     const update: PaymentVerificationUpdate = {
       gcash_ref_no: refNo,
+      gcash_amount: amount,
       ocr_status: ocrStatus,
       ocr_raw_text: rawText,
       ocr_confidence: confidence,
@@ -284,6 +289,7 @@ export async function onPaymentScreenshotUploaded(
 
           const errorUpdate: PaymentVerificationUpdate = {
             gcash_ref_no: null,
+            gcash_amount: null,
             ocr_status: "api_error",
             ocr_raw_text:
               error instanceof Error ? error.message : "Unknown error",

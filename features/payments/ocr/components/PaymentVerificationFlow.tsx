@@ -9,6 +9,7 @@ import type { OcrStatus } from "../types";
 
 interface PaymentVerificationFlowProps {
   orderId: string;
+  orderAmount?: number; // Order total amount for mismatch detection
   onPaymentConfirmed?: (refNo: string) => void;
 }
 
@@ -31,6 +32,7 @@ interface PaymentVerificationFlowProps {
  */
 export function PaymentVerificationFlow({
   orderId,
+  orderAmount,
   onPaymentConfirmed,
 }: PaymentVerificationFlowProps) {
   const [showReuploadForm, setShowReuploadForm] = useState(false);
@@ -71,6 +73,7 @@ export function PaymentVerificationFlow({
         <div className="space-y-4">
           <PaymentVerificationStatus
             orderId={orderId}
+            orderAmount={orderAmount}
             onVerified={handleVerified}
             onRejected={handleRejected}
           />

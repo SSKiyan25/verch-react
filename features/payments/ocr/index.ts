@@ -11,6 +11,7 @@ export type { OcrStatus, PaymentVerificationState, PaymentRowUpdate } from "./ty
 export { PaymentUploadForm } from "./components/PaymentUploadForm";
 export { PaymentVerificationStatus } from "./components/PaymentVerificationStatus";
 export { PaymentVerificationFlow } from "./components/PaymentVerificationFlow";
+export { PaymentOcrSummary } from "./components/PaymentOcrSummary";
 
 // Hooks
 export { usePaymentVerification } from "./hooks/usePaymentVerification";

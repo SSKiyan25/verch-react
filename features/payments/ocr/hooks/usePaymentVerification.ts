@@ -19,6 +19,8 @@ export function usePaymentVerification(orderId: string) {
   >("pending");
   const [ocrStatus, setOcrStatus] = useState<OcrStatus | null>(null);
   const [gcashRefNo, setGcashRefNo] = useState<string | null>(null);
+  const [gcashAmount, setGcashAmount] = useState<number | null>(null);
+  const [ocrRawText, setOcrRawText] = useState<string | null>(null);
   const [ocrConfidence, setOcrConfidence] = useState<number | null>(null);
   const [ocrVerifiedAt, setOcrVerifiedAt] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +38,7 @@ export function usePaymentVerification(orderId: string) {
       const { data, error: fetchError } = await supabase
         .from("order_payments")
         .select(
-          "status, gcash_ref_no, ocr_status, ocr_confidence, ocr_verified_at"
+          "status, gcash_ref_no, gcash_amount, ocr_status, ocr_raw_text, ocr_confidence, ocr_verified_at"
         )
         .eq("order_id", orderId)
         .maybeSingle();
@@ -52,6 +54,8 @@ export function usePaymentVerification(orderId: string) {
         setPaymentStatus(data.status);
         setOcrStatus(data.ocr_status as OcrStatus | null);
         setGcashRefNo(data.gcash_ref_no);
+        setGcashAmount(data.gcash_amount);
+        setOcrRawText(data.ocr_raw_text);
         setOcrConfidence(data.ocr_confidence);
         setOcrVerifiedAt(data.ocr_verified_at);
       }
@@ -73,7 +77,7 @@ export function usePaymentVerification(orderId: string) {
         const { data, error: fetchError } = await supabase
           .from("order_payments")
           .select(
-            "status, gcash_ref_no, ocr_status, ocr_confidence, ocr_verified_at"
+            "status, gcash_ref_no, gcash_amount, ocr_status, ocr_raw_text, ocr_confidence, ocr_verified_at"
           )
           .eq("order_id", orderId)
           .maybeSingle();
@@ -89,6 +93,8 @@ export function usePaymentVerification(orderId: string) {
           setPaymentStatus(data.status);
           setOcrStatus(data.ocr_status as OcrStatus | null);
           setGcashRefNo(data.gcash_ref_no);
+          setGcashAmount(data.gcash_amount);
+          setOcrRawText(data.ocr_raw_text);
           setOcrConfidence(data.ocr_confidence);
           setOcrVerifiedAt(data.ocr_verified_at);
         }
@@ -124,6 +130,8 @@ export function usePaymentVerification(orderId: string) {
             setPaymentStatus(newData.status);
             setOcrStatus(newData.ocr_status as OcrStatus | null);
             setGcashRefNo(newData.gcash_ref_no);
+            setGcashAmount(newData.gcash_amount);
+            setOcrRawText(newData.ocr_raw_text);
             setOcrConfidence(newData.ocr_confidence);
             setOcrVerifiedAt(newData.ocr_verified_at);
             setLoading(false);
@@ -168,6 +176,8 @@ export function usePaymentVerification(orderId: string) {
     paymentStatus,
     ocrStatus,
     gcashRefNo,
+    gcashAmount,
+    ocrRawText,
     ocrConfidence,
     ocrVerifiedAt,
     loading,

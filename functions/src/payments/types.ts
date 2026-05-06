@@ -26,6 +26,7 @@ export type OcrStatus =
 export interface OcrResult {
   status: OcrStatus;
   refNo: string | null;
+  amount: number | null; // Extracted GCash payment amount (without ₱ symbol)
   rawText: string;
   confidence: number | null;
 }
@@ -36,6 +37,7 @@ export interface OcrResult {
  */
 export interface PaymentVerificationUpdate {
   gcash_ref_no: string | null;
+  gcash_amount: number | null; // Extracted payment amount (numeric only, no currency symbol)
   ocr_status: OcrStatus;
   ocr_raw_text: string;
   ocr_confidence: number | null;
