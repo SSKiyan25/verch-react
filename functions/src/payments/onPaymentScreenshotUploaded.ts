@@ -9,16 +9,20 @@
  * 4. Check for duplicates in Supabase
  * 5. Update payment row with OCR result
  *
- * Security: Uses Supabase service role key to bypass RLS policies
+ * Security: Uses Supabase service role key (stored in Secret Manager) to bypass RLS policies
  * Error handling: Catches all errors, updates payment status to 'rejected' on failure
  */
 
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import { StorageEvent } from "firebase-functions/v2/storage";
 import { getStorage } from "firebase-admin/storage";
+import { defineSecret } from "firebase-functions/params"; // ✅ ADDED
 import { callVisionApi } from "./callVisionApi";
 import { extractGCashData, isValidRefNoFormat } from "./extractGCashData";
 import type { OcrStatus, PaymentVerificationUpdate } from "./types";
+
+// ✅ ADDED: Define secret (must match the name used in Secret Manager and in index.ts)
+const supabaseServiceRoleKey = defineSecret("SUPABASE_SERVICE_ROLE_KEY");
 
 /**
  * Extract payment metadata from Firebase Storage path
@@ -159,7 +163,8 @@ export async function onPaymentScreenshotUploaded(
 
     // Step 2: Initialize Supabase client with service role key
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    // ✅ CHANGED: Read secret via .value() instead of process.env
+    const supabaseServiceKey = supabaseServiceRoleKey.value();
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error(
@@ -295,7 +300,8 @@ export async function onPaymentScreenshotUploaded(
       if (metadata) {
         const { orderId } = metadata;
         const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        // ✅ CHANGED: Read secret via .value() instead of process.env
+        const supabaseServiceKey = supabaseServiceRoleKey.value();
 
         if (supabaseUrl && supabaseServiceKey) {
           const supabase = createClient(supabaseUrl, supabaseServiceKey, {
