@@ -1,6 +1,6 @@
 /**
  * Shared types for GCash OCR Payment Verification
- * 
+ *
  * These types are mirrored in the Next.js client codebase at:
  * features/payments/ocr/types.ts
  */
@@ -42,7 +42,7 @@ export interface PaymentVerificationUpdate {
   ocr_raw_text: string;
   ocr_confidence: number | null;
   ocr_verified_at: string; // ISO 8601 timestamp
-  payment_status: "confirmed" | "rejected"; // Maps to payment_status enum
+  payment_status: "proof_submitted" | "rejected"; // Maps to payment_status enum (OCR sets to proof_submitted, not confirmed)
 }
 
 /**

@@ -239,7 +239,7 @@ export async function onPaymentScreenshotUploaded(
 
     // Step 7: Validate and determine OCR status
     let ocrStatus: OcrStatus;
-    let paymentStatus: "confirmed" | "rejected";
+    let paymentStatus: "proof_submitted" | "rejected";
 
     if (!refNo) {
       // No Reference Number found
@@ -261,8 +261,10 @@ export async function onPaymentScreenshotUploaded(
         );
       } else {
         // ✅ Success — valid Reference Number, no duplicate
+        // Set to 'proof_submitted' (not 'confirmed') to avoid constraint violation
+        // Org staff will manually confirm the payment (setting confirmed_by + confirmed_at)
         ocrStatus = "success";
-        paymentStatus = "confirmed";
+        paymentStatus = "proof_submitted";
         console.log(
           `[onPaymentScreenshotUploaded] ✅ Payment verified successfully: ${refNo}`,
         );
