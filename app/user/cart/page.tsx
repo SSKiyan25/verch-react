@@ -26,8 +26,8 @@ export default async function CartPage() {
       ? await getCachedProductsPromotions(productIds, user!.id)
       : new Map();
 
-  console.log("Cart summary:", cartSummary);
-  console.log("Cart promotions:", promotionsMap);
+  // console.log("Cart summary:", cartSummary);
+  // console.log("Cart promotions:", promotionsMap);
 
   return (
     <Suspense fallback={<CartPageSkeleton />}>

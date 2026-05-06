@@ -1,14 +1,33 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import { Store, Truck, Copy, Check } from "lucide-react";
+import {
+  Store,
+  Truck,
+  Copy,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Package,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Wallet,
+  ExternalLink,
+  Upload,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import type { UserOrderListItem } from "@/lib/supabase/queries/orders";
 import { useOrderCardActions } from "@/features/user/orders/hooks/useOrderCardActions";
 
@@ -42,6 +61,34 @@ const PAYMENT_STATUS_LABELS: Record<string, string> = {
   confirmed: "Payment Confirmed",
   rejected: "Payment Rejected",
 };
+
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  cash: "Cash",
+  gcash: "GCash",
+};
+
+const FULFILLMENT_LABELS: Record<string, string> = {
+  pickup: "Pickup",
+  delivery: "Delivery",
+};
+
+// ─── Payment status icon ──────────────────────────────────────────────────────
+
+function PaymentStatusIcon({ status }: { status: string }) {
+  const iconClass = "h-4 w-4";
+  switch (status) {
+    case "pending":
+      return <Clock className={cn(iconClass, "text-amber-600")} />;
+    case "proof_submitted":
+      return <Clock className={cn(iconClass, "text-blue-600")} />;
+    case "confirmed":
+      return <CheckCircle className={cn(iconClass, "text-green-600")} />;
+    case "rejected":
+      return <AlertCircle className={cn(iconClass, "text-red-600")} />;
+    default:
+      return <Clock className={cn(iconClass, "text-muted-foreground")} />;
+  }
+}
 
 // ─── Org Avatar ───────────────────────────────────────────────────────────────
 
@@ -80,7 +127,13 @@ function OrgAvatar({
 
 // ─── Copy Order Number ────────────────────────────────────────────────────────
 
-function CopyableOrderNumber({ orderNumber }: { orderNumber: string }) {
+function CopyableOrderNumber({
+  orderNumber,
+  prominent = false,
+}: {
+  orderNumber: string;
+  prominent?: boolean;
+}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = (e: React.MouseEvent) => {
@@ -91,6 +144,33 @@ function CopyableOrderNumber({ orderNumber }: { orderNumber: string }) {
       setTimeout(() => setCopied(false), 1500);
     });
   };
+
+  if (prominent) {
+    return (
+      <div
+        onClick={handleCopy}
+        className="flex items-center gap-1.5 hover:text-foreground transition-colors group cursor-pointer"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleCopy(e as unknown as React.MouseEvent);
+          }
+        }}
+        aria-label="Copy order number"
+      >
+        <span className="text-base font-semibold text-foreground font-mono leading-tight">
+          #{orderNumber}
+        </span>
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-green-500 shrink-0" />
+        ) : (
+          <Copy className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+        )}
+      </div>
+    );
+  }
 
   return (
     <button
@@ -115,6 +195,7 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order }: OrderCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const {
     showUploadProof,
     showReuploadProof,
@@ -127,100 +208,213 @@ export function OrderCard({ order }: OrderCardProps) {
   } = useOrderCardActions(order);
 
   const detailHref = `/user/orders/${order.order_id}`;
-  const router = useRouter();
 
   return (
-    <div
-      className="block group cursor-pointer"
-      onClick={() => router.push(detailHref)}
-      role="link"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === "Enter" && router.push(detailHref)}
-    >
-      <Card className="w-full transition-all duration-200 group-hover:shadow-lg border-border group-hover:border-primary/30">
-        <CardContent className="p-4 sm:p-6 space-y-4">
-          {/* Row 1: org + status */}
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <OrgAvatar name={order.org_name} logoUrl={order.org_logo_url} />
-              <div className="min-w-0 space-y-0.5">
-                <p className="text-sm font-semibold text-foreground truncate leading-tight">
-                  {order.org_name}
-                </p>
-                <CopyableOrderNumber orderNumber={order.order_number} />
+    <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+      <Card
+        className={cn(
+          "w-full transition-all duration-200 border-border",
+          isExpanded
+            ? "shadow-lg border-primary/30"
+            : "shadow-sm hover:shadow-md hover:border-primary/20",
+        )}
+      >
+        <CardContent className="p-0">
+          {/* Collapsed header - always visible */}
+          <CollapsibleTrigger asChild>
+            <button
+              className="w-full p-4 sm:p-5 text-left cursor-pointer hover:bg-muted/30 transition-colors rounded-t-xl"
+              aria-label={`${isExpanded ? "Collapse" : "Expand"} order details`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                {/* Left: Org avatar + order number (primary) + org name (secondary) */}
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <OrgAvatar
+                    name={order.org_name}
+                    logoUrl={order.org_logo_url}
+                  />
+                  <div className="min-w-0 flex-1">
+                    <CopyableOrderNumber
+                      orderNumber={order.order_number}
+                      prominent
+                    />
+                    <p className="text-sm text-muted-foreground truncate leading-tight mt-0.5">
+                      {order.org_name} · {formattedDate}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Right: Status badge + expand chevron */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge
+                    className={cn(
+                      "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border",
+                      STATUS_BADGE_CLASSES[statusBadgeVariant],
+                    )}
+                  >
+                    {STATUS_LABELS[order.status]}
+                  </Badge>
+                  {isExpanded ? (
+                    <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom row when collapsed */}
+              {!isExpanded && (
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    {itemCountLabel}
+                  </span>
+                  <span className="text-lg font-bold text-foreground">
+                    {formattedTotal}
+                  </span>
+                </div>
+              )}
+            </button>
+          </CollapsibleTrigger>
+
+          {/* Expanded content */}
+          <CollapsibleContent className="px-4 sm:px-5 pb-5 space-y-4">
+            {/* Order details grid */}
+            <div className="pt-2 border-t border-border/50">
+              <div className="grid grid-cols-2 gap-4">
+                {/* Items count */}
+                <div className="flex items-start gap-2">
+                  <Package className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Items</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {itemCountLabel}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Fulfillment method */}
+                <div className="flex items-start gap-2">
+                  {order.fulfillment_method === "pickup" ? (
+                    <Store className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  ) : (
+                    <Truck className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  )}
+                  <div>
+                    <p className="text-xs text-muted-foreground">Fulfillment</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {FULFILLMENT_LABELS[order.fulfillment_method]}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Payment method */}
+                <div className="flex items-start gap-2">
+                  <Wallet className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Payment Method
+                    </p>
+                    <p className="text-sm font-medium text-foreground">
+                      {PAYMENT_METHOD_LABELS[order.payment_method]}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Payment status */}
+                <div className="flex items-start gap-2">
+                  <PaymentStatusIcon status={order.payment_status} />
+                  <div>
+                    <p className="text-xs text-muted-foreground">
+                      Payment Status
+                    </p>
+                    <p className="text-sm font-medium text-foreground">
+                      {PAYMENT_STATUS_LABELS[order.payment_status]}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-            <Badge
-              className={cn(
-                "inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border shrink-0",
-                STATUS_BADGE_CLASSES[statusBadgeVariant],
-              )}
-            >
-              {STATUS_LABELS[order.status]}
-            </Badge>
-          </div>
 
-          {/* Row 2: meta info */}
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2.5 text-muted-foreground">
-              {order.fulfillment_method === "pickup" ? (
-                <Store className="h-4 w-4 shrink-0" />
-              ) : (
-                <Truck className="h-4 w-4 shrink-0" />
-              )}
-              <span className="text-sm">{itemCountLabel}</span>
-              <span className="text-muted-foreground/50">•</span>
-              <span className="font-semibold text-foreground">
-                {formattedTotal}
-              </span>
-            </div>
-            <span className="text-xs text-muted-foreground">
-              {formattedDate}
-            </span>
-          </div>
-
-          {/* Row 3: payment status + CTA */}
-          <div className="flex items-center justify-between gap-3 pt-1 border-t border-border/50">
-            <Badge
-              variant="secondary"
-              className="text-xs font-normal px-2.5 py-0.5"
-            >
-              {PAYMENT_STATUS_LABELS[order.payment_status]}
-            </Badge>
-
-            <div
-              className="flex items-center gap-2"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {showUploadProof && (
-                <Button size="sm" className="h-8" asChild>
-                  <Link href={detailHref}>Upload Proof</Link>
-                </Button>
-              )}
-              {showReuploadProof && (
-                <Button size="sm" variant="destructive" className="h-8" asChild>
-                  <Link href={detailHref}>Re-upload</Link>
-                </Button>
-              )}
-              {showAwaitingReview && (
-                <span className="text-xs text-amber-600 dark:text-amber-400 font-medium">
-                  Under Review
+            {/* Total amount - prominent */}
+            <div className="pt-3 border-t border-border/50">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-muted-foreground">
+                  Total Amount
                 </span>
-              )}
-              {showCancel && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                  asChild
-                >
-                  <Link href={detailHref}>Cancel</Link>
-                </Button>
+                <span className="text-2xl font-bold text-foreground">
+                  {formattedTotal}
+                </span>
+              </div>
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+              {/* Primary actions - flex row on desktop */}
+              <div className="flex flex-col sm:flex-row gap-2 flex-1">
+                {showUploadProof && (
+                  <Button
+                    className="w-full sm:flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = detailHref;
+                    }}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload Proof
+                  </Button>
+                )}
+
+                {showReuploadProof && (
+                  <Button
+                    variant="destructive"
+                    className="w-full sm:flex-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = detailHref;
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Re-upload Proof
+                  </Button>
+                )}
+
+                {showCancel && (
+                  <Button
+                    variant="outline"
+                    className="w-full sm:flex-1 text-destructive hover:bg-destructive hover:text-primary-foreground border-destructive/30 hover:border-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      window.location.href = detailHref;
+                    }}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel Order
+                  </Button>
+                )}
+              </div>
+
+              {showAwaitingReview && (
+                <div className="flex items-center justify-center gap-2 text-sm text-amber-600 dark:text-amber-400 font-medium px-3 py-2.5 bg-amber-50 dark:bg-amber-950/30 rounded-md border border-amber-200 dark:border-amber-800/40">
+                  <Clock className="h-4 w-4 shrink-0" />
+                  <span>Under Review</span>
+                </div>
               )}
             </div>
-          </div>
+
+            {/* View details link - styled as text link on desktop */}
+            <button
+              className="flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group pt-2 cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = detailHref;
+              }}
+            >
+              <span className="font-medium">View Full Details</span>
+              <ExternalLink className="h-3.5 w-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            </button>
+          </CollapsibleContent>
         </CardContent>
       </Card>
-    </div>
+    </Collapsible>
   );
 }

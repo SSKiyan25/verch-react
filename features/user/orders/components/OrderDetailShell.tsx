@@ -60,7 +60,7 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
   const statusLabel = STATUS_LABELS[order.status];
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-6 space-y-6">
+    <div className="w-full max-w-4xl mx-auto px-4 py-6 sm:py-8 space-y-8">
       {/* Back navigation */}
       <Button
         variant="ghost"
@@ -75,10 +75,10 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       </Button>
 
       {/* Order header */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold tracking-tight">
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
               {order.org_name}
             </h1>
             <button
@@ -106,7 +106,7 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
             {statusLabel}
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">{formattedDate}</p>
+        <p className="text-base text-muted-foreground">{formattedDate}</p>
       </div>
 
       {/* Status timeline */}
@@ -119,7 +119,7 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       {/* Order items */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">Order Items</CardTitle>
+          <CardTitle className="text-xl font-semibold">Order Items</CardTitle>
         </CardHeader>
         <CardContent>
           <OrderItemsTable items={order.items} />
@@ -129,7 +129,7 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       {/* Financial summary */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">Order Summary</CardTitle>
+          <CardTitle className="text-xl font-semibold">Order Summary</CardTitle>
         </CardHeader>
         <CardContent>
           <OrderFinancialSummary
@@ -146,7 +146,7 @@ export function OrderDetailShell({ order }: OrderDetailShellProps) {
       {/* Payment section */}
       <Card className="shadow-sm">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold">
+          <CardTitle className="text-xl font-semibold">
             Payment Information
           </CardTitle>
         </CardHeader>

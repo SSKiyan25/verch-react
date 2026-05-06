@@ -34,9 +34,9 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
   const activeStepIndex = STATUS_STEP_INDEX[order.status] ?? 0;
 
   return (
-    <div className="py-4">
+    <div className="py-6">
       {/* Horizontal on desktop, vertical on mobile */}
-      <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-0">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-0">
         {STEPS.map((step, idx) => {
           const isCompleted = idx < activeStepIndex;
           const isActive = idx === activeStepIndex && !isCancelled;
@@ -47,14 +47,14 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
           return (
             <div
               key={step.key}
-              className="flex sm:flex-col sm:flex-1 sm:items-center gap-3 sm:gap-0"
+              className="flex sm:flex-col sm:flex-1 sm:items-center gap-4 sm:gap-0"
             >
               {/* Step indicator */}
               <div className="flex sm:flex-col sm:items-center sm:w-full">
                 {/* Connector line — left side (before step) */}
                 <div
                   className={cn(
-                    "hidden sm:block h-0.5 flex-1",
+                    "hidden sm:block h-0.5 flex-1 transition-colors duration-500",
                     idx === 0 ? "invisible" : "",
                     isCompleted || isActive ? "bg-primary" : "bg-muted",
                   )}
@@ -63,14 +63,14 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
                 {/* Circle */}
                 <div
                   className={cn(
-                    "flex items-center justify-center rounded-full shrink-0 z-10",
+                    "flex items-center justify-center rounded-full shrink-0 z-10 transition-all duration-300",
                     isCompleted
-                      ? "w-7 h-7 bg-primary text-primary-foreground"
+                      ? "w-8 h-8 bg-primary text-primary-foreground shadow-md"
                       : isActive
-                        ? "w-7 h-7 bg-primary text-primary-foreground ring-4 ring-primary/20 animate-pulse"
+                        ? "w-8 h-8 bg-primary text-primary-foreground ring-4 ring-primary/20 shadow-lg animate-pulse"
                         : isLastCompletedBeforeCancel
-                          ? "w-7 h-7 bg-destructive text-destructive-foreground"
-                          : "w-7 h-7 bg-muted text-muted-foreground",
+                          ? "w-8 h-8 bg-destructive text-destructive-foreground shadow-md"
+                          : "w-8 h-8 bg-muted text-muted-foreground",
                   )}
                 >
                   {isCompleted ? (
@@ -78,14 +78,14 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
                   ) : isLastCompletedBeforeCancel ? (
                     <X className="w-4 h-4" />
                   ) : (
-                    <span className="text-xs font-medium">{idx + 1}</span>
+                    <span className="text-xs font-semibold">{idx + 1}</span>
                   )}
                 </div>
 
                 {/* Connector line — right side (after step) */}
                 <div
                   className={cn(
-                    "hidden sm:block h-0.5 flex-1",
+                    "hidden sm:block h-0.5 flex-1 transition-colors duration-500",
                     idx === STEPS.length - 1 ? "invisible" : "",
                     isCompleted ? "bg-primary" : "bg-muted",
                   )}
@@ -94,7 +94,7 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
                 {/* Vertical connector (mobile) */}
                 <div
                   className={cn(
-                    "sm:hidden w-0.5 flex-1 min-h-[1.5rem] ml-3.5",
+                    "sm:hidden w-0.5 flex-1 min-h-[2rem] ml-4 transition-colors duration-500",
                     idx === STEPS.length - 1 ? "invisible" : "",
                     isCompleted ? "bg-primary" : "bg-muted",
                   )}
@@ -102,10 +102,10 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
               </div>
 
               {/* Label */}
-              <div className="sm:text-center pt-1 sm:pt-2 min-w-0 flex-1 sm:flex-none">
+              <div className="sm:text-center pt-1 sm:pt-3 min-w-0 flex-1 sm:flex-none">
                 <p
                   className={cn(
-                    "text-xs font-medium",
+                    "text-sm font-medium transition-colors duration-300",
                     isCompleted || isActive
                       ? "text-foreground"
                       : isLastCompletedBeforeCancel
@@ -125,8 +125,9 @@ export function OrderStatusTimeline({ order }: OrderStatusTimelineProps) {
 
       {/* Cancellation reason */}
       {isCancelled && order.cancellation_reason && (
-        <p className="mt-3 text-xs text-destructive/80 bg-destructive/5 border border-destructive/20 rounded-md px-3 py-2">
-          Reason: {order.cancellation_reason}
+        <p className="mt-6 text-sm text-destructive/90 bg-destructive/5 border border-destructive/20 rounded-lg px-4 py-3 animate-in fade-in duration-300">
+          <span className="font-semibold">Cancellation Reason:</span>{" "}
+          {order.cancellation_reason}
         </p>
       )}
     </div>

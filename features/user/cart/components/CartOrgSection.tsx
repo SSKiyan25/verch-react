@@ -44,9 +44,9 @@ export function CartOrgSection({
     org.fulfillment_method === "delivery" ? "Delivery" : "Pickup";
 
   return (
-    <div className="rounded-lg border">
+    <div className="rounded-lg border hover:shadow-sm transition-shadow duration-200">
       {/* Org header */}
-      <div className="flex items-center justify-between gap-3 p-4">
+      <div className="flex items-center justify-between gap-3 p-4 bg-muted/30">
         <div className="flex items-center gap-3 min-w-0">
           <Checkbox
             checked={isAllOrgSelected}
@@ -55,7 +55,7 @@ export function CartOrgSection({
             }
             aria-label={`Select all items from ${org.organization_name}`}
           />
-          <StoreIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+          <StoreIcon className="h-4 w-4 text-emerald-600 shrink-0" />
           <span className="text-sm font-semibold truncate">
             {org.organization_name}
           </span>
@@ -64,7 +64,7 @@ export function CartOrgSection({
           <Button
             variant="outline"
             size="sm"
-            className="shrink-0 gap-1.5 cursor-disabled:hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-50"
+            className="shrink-0 gap-1.5 cursor-disabled:hover:bg-transparent disabled:cursor-not-allowed disabled:opacity-50 transition-colors duration-200"
             onClick={() => onOpenFulfillment(org)}
             disabled
             aria-label="Fulfillment method (coming soon)"
@@ -77,7 +77,7 @@ export function CartOrgSection({
             {fulfillmentLabel}
           </Button>
           <span
-            className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-max -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity"
+            className="pointer-events-none absolute left-1/2 top-full z-10 mt-2 w-max -translate-x-1/2 rounded bg-black px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200"
             role="tooltip"
           >
             Will be available soon

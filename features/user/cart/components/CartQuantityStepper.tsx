@@ -69,6 +69,7 @@ export function CartQuantityStepper({
           disabled={disabled || currentQuantity <= 1}
           onClick={() => handleStep(-1)}
           aria-label="Decrease quantity"
+          className="cursor-pointer hover:bg-muted hover:border-emerald-300 transition-all duration-200"
         >
           <Minus className="h-3 w-3" />
         </Button>
@@ -81,7 +82,7 @@ export function CartQuantityStepper({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          className="h-8 w-12 text-center px-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="h-8 w-12 text-center px-1 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none focus:border-emerald-500 focus:ring-emerald-500 transition-colors duration-200"
         />
         <Button
           variant="outline"
@@ -89,6 +90,7 @@ export function CartQuantityStepper({
           disabled={disabled}
           onClick={() => handleStep(1)}
           aria-label="Increase quantity"
+          className="cursor-pointer hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition-all duration-200"
         >
           <Plus className="h-3 w-3" />
         </Button>

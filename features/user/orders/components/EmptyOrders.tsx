@@ -36,15 +36,15 @@ export function EmptyOrders({ status }: EmptyOrdersProps) {
     : "When you place an order, it will appear here.";
 
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-      <div className="flex items-center justify-center w-16 h-16 bg-muted rounded-full mb-4">
-        <ShoppingBag className="h-8 w-8 text-muted-foreground" />
+    <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+      <div className="flex items-center justify-center w-20 h-20 bg-muted rounded-full mb-6 animate-in fade-in duration-500">
+        <ShoppingBag className="h-10 w-10 text-muted-foreground" />
       </div>
-      <h3 className="text-base font-semibold text-foreground mb-1">{title}</h3>
-      <p className="text-sm text-muted-foreground mb-6 max-w-xs">
+      <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+      <p className="text-sm text-muted-foreground mb-8 max-w-md">
         {description}
       </p>
-      <Button asChild variant="default" size="sm">
+      <Button asChild variant="default" size="default" className="min-h-[44px]">
         <Link href="/stores">Browse Stores</Link>
       </Button>
     </div>

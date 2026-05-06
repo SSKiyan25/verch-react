@@ -55,11 +55,11 @@ export function OrdersPageShell({
     });
 
   return (
-    <div className="container max-w-5xl w-full py-6 px-4 sm:px-6 space-y-6">
+    <div className="container max-w-5xl w-full py-8 px-4 sm:px-6 space-y-8">
       {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">My Orders</h1>
-        <p className="text-sm text-muted-foreground">
+      <div className="space-y-2">
+        <h1 className="text-4xl font-bold tracking-tight">My Orders</h1>
+        <p className="text-base text-muted-foreground">
           Track and manage all your orders in one place
         </p>
       </div>
@@ -85,7 +85,7 @@ export function OrdersPageShell({
       {orders.length === 0 ? (
         <EmptyOrders status={currentStatus} />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {orders.map((order) => (
             <OrderCard key={order.order_id} order={order} />
           ))}
@@ -94,13 +94,13 @@ export function OrdersPageShell({
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-between pt-6 border-t">
           <Button
             variant="outline"
             size="sm"
             onClick={goToPrevPage}
             disabled={!hasPrevPage}
-            className="gap-1"
+            className="gap-1 min-h-[44px]"
           >
             <ChevronLeft className="h-4 w-4" />
             Previous
@@ -113,7 +113,7 @@ export function OrdersPageShell({
             size="sm"
             onClick={goToNextPage}
             disabled={!hasNextPage}
-            className="gap-1"
+            className="gap-1 min-h-[44px]"
           >
             Next
             <ChevronRight className="h-4 w-4" />

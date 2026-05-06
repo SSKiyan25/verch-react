@@ -89,14 +89,14 @@ export function CartPageClient({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-in fade-in duration-300">
       <h1 className="text-2xl font-bold">Cart</h1>
 
       <div className="flex flex-col gap-6 lg:flex-row">
         {/* Left column — cart items */}
         <div className="flex-1 space-y-4">
           {/* Global select all */}
-          <div className="flex items-center gap-3 rounded-lg border px-4 py-3">
+          <div className="flex items-center gap-3 rounded-lg border px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors duration-200">
             <Checkbox
               checked={isAllSelected}
               onCheckedChange={(checked) => handleSelectAll(checked === true)}
