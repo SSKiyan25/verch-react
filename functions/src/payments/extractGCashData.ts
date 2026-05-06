@@ -122,58 +122,64 @@ export function extractAmount(rawText: string): number | null {
   }
 
   // Strategy 1: Look for "Total Amount Sent" followed by currency amount
-  // Matches: "Total Amount Sent ₱99.00", "Total Amount Sent 99.00"
+  // This is the most reliable pattern for GCash receipts
+  // Matches: "Total Amount Sent ₱750.00", "Total Amount Sent\nP750.00"
   const totalAmountPattern =
-    /total\s+amount\s+sent[:\s]*[₱\$]?\s*(\d+(?:[,\.]\d+)*)/i;
+    /total\s+amount\s+sent[\s\n:]*[₱\$P]?\s*(\d+(?:[,\.]\d{2}))/is;
   const totalMatch = rawText.match(totalAmountPattern);
   if (totalMatch) {
-    return parseAmount(totalMatch[1]);
+    const parsed = parseAmount(totalMatch[1]);
+    if (parsed !== null && parsed >= 1) {
+      return parsed;
+    }
   }
 
-  // Strategy 2: Look for "Amount" label followed by currency amount
-  // Matches: "Amount ₱99.00", "Amount: 99.00", "Amount 99.00"
-  const amountLabelPattern = /\bamount[:\s]+[₱\$]?\s*(\d+(?:[,\.]\d+)*)/i;
-  const amountMatch = rawText.match(amountLabelPattern);
-  if (amountMatch) {
-    return parseAmount(amountMatch[1]);
-  }
-
-  // Strategy 3: Look for currency symbol followed by amount
-  // Matches: "₱99.00", "₱ 99.00", "PHP 99.00"
-  const currencyAmountPattern = /[₱\$]|php\s*(\d+(?:[,\.]\d+)*)/gi;
+  // Strategy 2: Look for standalone amount with currency symbol and decimals
+  // Matches: "₱750.00", "P 750.00", "$ 99.00"
+  // Must have exactly 2 decimal places to avoid matching other numbers
+  const currencyAmountPattern = /[₱\$P]\s*(\d+(?:[,\.]\d{2}))/gi;
   const currencyMatches = Array.from(rawText.matchAll(currencyAmountPattern));
 
   if (currencyMatches.length > 0) {
     // Take the largest amount found (most likely the total)
     const amounts = currencyMatches
       .map((match) => parseAmount(match[1]))
-      .filter((amt): amt is number => amt !== null);
+      .filter((amt): amt is number => amt !== null && amt >= 1);
 
     if (amounts.length > 0) {
       return Math.max(...amounts);
     }
   }
 
-  // Strategy 4: Look for standalone large numbers (likely amounts)
-  // Only consider if near amount-related keywords
-  const amountKeywords = /amount|total|sent|paid|payment/i;
-  if (amountKeywords.test(rawText)) {
-    // Find all numbers that look like currency amounts (with decimals)
-    const numberPattern = /\b(\d{1,6}(?:[,\.]\d{2})?)\b/g;
-    const numberMatches = Array.from(rawText.matchAll(numberPattern));
+  // Strategy 3: Look for "Amount" label ONLY if followed by currency symbol
+  // This prevents matching timestamps like "Amount\n21:13"
+  // Matches: "Amount: ₱99.00", "Amount ₱99.00"
+  // Does NOT match: "Amount\n21:13" (no currency symbol)
+  const amountWithCurrencyPattern =
+    /\bamount[:\s]*[₱\$P]\s*(\d+(?:[,\.]\d{2}))/i;
+  const amountMatch = rawText.match(amountWithCurrencyPattern);
+  if (amountMatch) {
+    const parsed = parseAmount(amountMatch[1]);
+    if (parsed !== null && parsed >= 1) {
+      return parsed;
+    }
+  }
 
-    const amounts = numberMatches
+  // Strategy 4: Look for standalone numbers with 2 decimal places near keywords
+  // Only as last resort, and must have decimals to avoid matching dates/times
+  const amountKeywords = /total|sent|paid|payment/i;
+  if (amountKeywords.test(rawText)) {
+    // Only match numbers with exactly 2 decimal places
+    const decimalPattern = /\b(\d{1,6}\.\d{2})\b/g;
+    const decimalMatches = Array.from(rawText.matchAll(decimalPattern));
+
+    const amounts = decimalMatches
       .map((match) => parseAmount(match[1]))
       .filter(
         (amt): amt is number => amt !== null && amt >= 1 && amt <= 100000,
-      ); // Reasonable amount range
+      );
 
     if (amounts.length > 0) {
-      // Return the most likely amount (largest with 2 decimal places)
-      const amountsWithDecimals = amounts.filter((amt) => amt % 1 !== 0);
-      if (amountsWithDecimals.length > 0) {
-        return Math.max(...amountsWithDecimals);
-      }
       return Math.max(...amounts);
     }
   }
