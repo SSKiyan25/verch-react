@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Upload, X, Loader2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ interface PaymentUploadFormProps {
   orderId: string;
   onUploadComplete?: (path: string, url: string) => void;
   disabled?: boolean;
-  paymentStatus?: "pending" | "proof_submitted" | "confirmed" | "rejected" | "verifying";
+  shouldResetUpload?: boolean;
 }
 
 /**
@@ -34,7 +34,7 @@ export function PaymentUploadForm({
   orderId,
   onUploadComplete,
   disabled = false,
-  paymentStatus = "pending",
+  shouldResetUpload = false,
 }: PaymentUploadFormProps) {
   const {
     uploadPaymentProof,
@@ -148,10 +148,21 @@ export function PaymentUploadForm({
 
   const hasUploadedFile = uploadedPath && uploadedUrl;
   
-  // Show "Processing..." only when actively verifying
-  const isActivelyVerifying = 
-    hasUploadedFile && 
-    (paymentStatus === "verifying" || paymentStatus === "proof_submitted");
+  // Reset upload state when parent signals completion
+  useEffect(() => {
+    if (shouldResetUpload && hasUploadedFile) {
+      // Clear the upload state after a brief delay to allow UI transition
+      const timer = setTimeout(() => {
+        resetUpload();
+        setSelectedFile(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldResetUpload, hasUploadedFile, resetUpload]);
 
   return (
     <div className="space-y-4">
@@ -160,7 +171,7 @@ export function PaymentUploadForm({
       </Label>
 
       {/* Upload Area */}
-      {!selectedFile && !isActivelyVerifying && (
+      {!selectedFile && !hasUploadedFile && (
         <div
           className={`relative flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
             dragActive
@@ -193,7 +204,7 @@ export function PaymentUploadForm({
       )}
 
       {/* Preview & Upload Button */}
-      {selectedFile && previewUrl && !isActivelyVerifying && (
+      {selectedFile && previewUrl && !hasUploadedFile && (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -236,7 +247,7 @@ export function PaymentUploadForm({
       )}
 
       {/* Upload Success - Verification In Progress */}
-      {isActivelyVerifying && (
+      {hasUploadedFile && (
         <div className="space-y-3">
           <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />

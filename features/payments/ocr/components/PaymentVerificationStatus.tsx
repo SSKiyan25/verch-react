@@ -14,6 +14,7 @@ interface PaymentVerificationStatusProps {
   orderAmount?: number; // Order total amount for mismatch detection
   onVerified?: (refNo: string) => void;
   onRejected?: (reason: OcrStatus) => void;
+  onVerificationStarted?: () => void;
 }
 
 /**
@@ -30,6 +31,7 @@ export function PaymentVerificationStatus({
   orderAmount,
   onVerified,
   onRejected,
+  onVerificationStarted,
 }: PaymentVerificationStatusProps) {
   const {
     paymentStatus,
@@ -51,8 +53,15 @@ export function PaymentVerificationStatus({
       onVerified(gcashRefNo);
     } else if (paymentStatus === "rejected" && ocrStatus && onRejected) {
       onRejected(ocrStatus);
+    } else if (
+      (paymentStatus === "verifying" || 
+       paymentStatus === "proof_submitted" ||
+       ocrStatus === "success") && 
+      onVerificationStarted
+    ) {
+      onVerificationStarted();
     }
-  }, [paymentStatus, gcashRefNo, ocrStatus, onVerified, onRejected]);
+  }, [paymentStatus, gcashRefNo, ocrStatus, onVerified, onRejected, onVerificationStarted]);
 
   // Loading skeleton
   if (loading) {

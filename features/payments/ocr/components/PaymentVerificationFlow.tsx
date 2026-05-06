@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaymentUploadForm } from "./PaymentUploadForm";
 import { PaymentVerificationStatus } from "./PaymentVerificationStatus";
-import { usePaymentVerification } from "../hooks/usePaymentVerification";
 import type { OcrStatus } from "../types";
 
 interface PaymentVerificationFlowProps {
@@ -37,9 +36,7 @@ export function PaymentVerificationFlow({
 }: PaymentVerificationFlowProps) {
   const [showReuploadForm, setShowReuploadForm] = useState(false);
   const [verificationAttempts, setVerificationAttempts] = useState(0);
-  
-  // Get real-time verification status
-  const { paymentStatus, ocrStatus } = usePaymentVerification(orderId);
+  const [uploadCompleted, setUploadCompleted] = useState(false);
 
   const handleVerified = (refNo: string) => {
     console.log(`[PaymentVerificationFlow] Payment verified: ${refNo}`);
@@ -56,21 +53,16 @@ export function PaymentVerificationFlow({
   };
 
   const handleUploadComplete = () => {
-    // Hide re-upload form after successful upload
+    // Mark upload as completed so form can clear its state
+    setUploadCompleted(true);
     setShowReuploadForm(false);
   };
-
-  // Determine if upload form should be shown
-  const showUploadForm = 
-    paymentStatus === "pending" || 
-    paymentStatus === "rejected" || 
-    showReuploadForm;
   
-  // Hide upload form once verification succeeds
-  const isVerificationComplete = 
-    paymentStatus === "proof_submitted" || 
-    paymentStatus === "confirmed" || 
-    ocrStatus === "success";
+  const handleVerificationStarted = () => {
+    // Called when PaymentVerificationStatus detects verification started
+    // This hides the upload form's "Processing" state
+    setUploadCompleted(true);
+  };
 
   return (
     <Card>
@@ -78,14 +70,12 @@ export function PaymentVerificationFlow({
         <CardTitle>Payment Verification</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Upload Form — Only show when pending, rejected, or re-upload requested */}
-        {showUploadForm && !isVerificationComplete && (
-          <PaymentUploadForm
-            orderId={orderId}
-            onUploadComplete={handleUploadComplete}
-            paymentStatus={paymentStatus}
-          />
-        )}
+        {/* Upload Form — Always shown, but internally manages its states */}
+        <PaymentUploadForm
+          orderId={orderId}
+          onUploadComplete={handleUploadComplete}
+          shouldResetUpload={uploadCompleted}
+        />
 
         {/* Verification Status — Real-time updates via Supabase Realtime */}
         <div className="space-y-4">
@@ -94,6 +84,7 @@ export function PaymentVerificationFlow({
             orderAmount={orderAmount}
             onVerified={handleVerified}
             onRejected={handleRejected}
+            onVerificationStarted={handleVerificationStarted}
           />
 
           {/* Re-upload suggestion for rejected payments */}
