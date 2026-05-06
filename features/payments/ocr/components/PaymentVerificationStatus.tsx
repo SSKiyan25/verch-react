@@ -84,12 +84,12 @@ export function PaymentVerificationStatus({
             <p className="font-medium">
               {isTimeout
                 ? "Verification is taking longer than expected..."
-                : "Verifying your payment screenshot..."}
+                : "Processing your payment screenshot..."}
             </p>
             <p className="text-sm text-blue-700 dark:text-blue-300">
               {isTimeout
                 ? "This is unusual. The verification may still complete, or you can try refreshing the status."
-                : "This usually takes 10-30 seconds. Please don't close this page."}
+                : "Our system is automatically verifying your GCash payment. This usually takes 10-30 seconds."}
             </p>
             {isTimeout && (
               <Button
@@ -116,7 +116,14 @@ export function PaymentVerificationStatus({
   }
 
   // Status: Verified (Success) - OCR completed successfully or manually confirmed
-  if ((paymentStatus === "proof_submitted" || paymentStatus === "confirmed") && gcashRefNo) {
+  // Show success when:
+  // 1. Payment status is "proof_submitted" or "confirmed" (regardless of gcashRefNo)
+  // 2. OCR status is "success"
+  if (
+    paymentStatus === "proof_submitted" ||
+    paymentStatus === "confirmed" ||
+    ocrStatus === "success"
+  ) {
     return (
       <div className="space-y-3">
         <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
@@ -125,16 +132,18 @@ export function PaymentVerificationStatus({
             <p className="font-medium">Payment Verified Successfully!</p>
           </AlertDescription>
         </Alert>
-        <PaymentOcrSummary
-          refNo={gcashRefNo}
-          amount={gcashAmount}
-          orderAmount={orderAmount}
-          confidence={ocrConfidence}
-          verifiedAt={ocrVerifiedAt}
-          rawText={ocrRawText}
-          ocrStatus={ocrStatus}
-          isSuccess={true}
-        />
+        {(gcashRefNo || gcashAmount || ocrVerifiedAt) && (
+          <PaymentOcrSummary
+            refNo={gcashRefNo}
+            amount={gcashAmount}
+            orderAmount={orderAmount}
+            confidence={ocrConfidence}
+            verifiedAt={ocrVerifiedAt}
+            rawText={ocrRawText}
+            ocrStatus={ocrStatus}
+            isSuccess={true}
+          />
+        )}
       </div>
     );
   }

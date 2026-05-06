@@ -156,10 +156,8 @@ export function usePaymentVerification(orderId: string) {
 
   // Timeout handler - if verification takes too long
   useEffect(() => {
-    if (
-      paymentStatus === "verifying" ||
-      paymentStatus === "proof_submitted"
-    ) {
+    // Only set timeout for "verifying" status (active processing)
+    if (paymentStatus === "verifying") {
       const timeoutId = setTimeout(() => {
         console.warn(
           "[usePaymentVerification] Verification timeout - no update after 60 seconds"
@@ -167,9 +165,11 @@ export function usePaymentVerification(orderId: string) {
         setIsTimeout(true);
       }, 60000); // 60 seconds
 
-      return () => clearTimeout(timeoutId);
+      return () => {
+        clearTimeout(timeoutId);
+      };
     }
-    // isTimeout will be reset when paymentStatus changes to confirmed/rejected
+    // Timeout flag will naturally reset when component re-renders with new status
   }, [paymentStatus]);
 
   return {
