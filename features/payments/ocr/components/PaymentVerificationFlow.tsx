@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaymentUploadForm } from "./PaymentUploadForm";
 import { PaymentVerificationStatus } from "./PaymentVerificationStatus";
@@ -38,31 +38,31 @@ export function PaymentVerificationFlow({
   const [verificationAttempts, setVerificationAttempts] = useState(0);
   const [uploadCompleted, setUploadCompleted] = useState(false);
 
-  const handleVerified = (refNo: string) => {
+  const handleVerified = useCallback((refNo: string) => {
     console.log(`[PaymentVerificationFlow] Payment verified: ${refNo}`);
     if (onPaymentConfirmed) {
       onPaymentConfirmed(refNo);
     }
-  };
+  }, [onPaymentConfirmed]);
 
-  const handleRejected = (reason: OcrStatus) => {
+  const handleRejected = useCallback((reason: OcrStatus) => {
     console.log(`[PaymentVerificationFlow] Payment rejected: ${reason}`);
     setVerificationAttempts((prev) => prev + 1);
     // Automatically allow re-upload
     setShowReuploadForm(true);
-  };
+  }, []);
 
-  const handleUploadComplete = () => {
+  const handleUploadComplete = useCallback(() => {
     // Mark upload as completed so form can clear its state
     setUploadCompleted(true);
     setShowReuploadForm(false);
-  };
+  }, []);
   
-  const handleVerificationStarted = () => {
+  const handleVerificationStarted = useCallback(() => {
     // Called when PaymentVerificationStatus detects verification started
     // This hides the upload form's "Processing" state
     setUploadCompleted(true);
-  };
+  }, []);
 
   return (
     <Card>
