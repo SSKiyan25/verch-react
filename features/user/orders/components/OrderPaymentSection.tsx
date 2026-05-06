@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   Banknote,
   Smartphone,
@@ -12,6 +13,7 @@ import {
   Loader2,
   XCircle,
   ShieldCheck,
+  Eye,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,6 +31,8 @@ import { usePaymentRealtime } from "@/features/user/orders/hooks/usePaymentRealt
 import { createClient } from "@/lib/supabase/client";
 import type { OrderDetail } from "@/lib/supabase/queries/orders";
 import Image from "next/image";
+import { PaymentScreenshotPreview } from "@/features/payments/ocr/components/PaymentScreenshotPreview";
+import { getPaymentProofPreviewUrl } from "@/features/payments/ocr/actions/getPaymentProofPreviewUrl";
 
 interface OrderPaymentSectionProps {
   order: OrderDetail;
@@ -100,6 +104,11 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
   );
   const supabase = createClient();
 
+  // Preview modal state
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
+
   // Real-time payment updates
   const { paymentData, isLoading: isPaymentLoading } = usePaymentRealtime(
     order.order_id,
@@ -115,6 +124,34 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
   const needsPayment =
     payment_method === "gcash" &&
     (payment_status === "pending" || payment_status === "rejected");
+
+  const hasUploadedProof =
+    payment_method === "gcash" &&
+    (payment_status === "proof_submitted" ||
+      payment_status === "confirmed" ||
+      payment_status === "rejected");
+
+  const handlePreviewClick = async () => {
+    setIsLoadingPreview(true);
+    try {
+      const result = await getPaymentProofPreviewUrl(order.order_id);
+
+      if (result.success) {
+        setPreviewUrl(result.url);
+        setIsPreviewOpen(true);
+      } else {
+        toast.error("Preview unavailable", {
+          description: result.error,
+        });
+      }
+    } catch {
+      toast.error("Preview failed", {
+        description: "An unexpected error occurred",
+      });
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
 
   return (
     <div className="space-y-3">
@@ -228,6 +265,25 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
                 )}
               </div>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviewClick}
+              disabled={isLoadingPreview}
+              className="w-full mt-2"
+            >
+              {isLoadingPreview ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading Preview...
+                </>
+              ) : (
+                <>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview Uploaded Screenshot
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -266,6 +322,25 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
                 )}
               </div>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handlePreviewClick}
+              disabled={isLoadingPreview}
+              className="w-full mt-2"
+            >
+              {isLoadingPreview ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading Preview...
+                </>
+              ) : (
+                <>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Preview Uploaded Screenshot
+                </>
+              )}
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -433,6 +508,15 @@ export function OrderPaymentSection({ order }: OrderPaymentSectionProps) {
             <Skeleton className="h-4 w-32" />
           </CardContent>
         </Card>
+      )}
+
+      {/* Preview Modal */}
+      {hasUploadedProof && (
+        <PaymentScreenshotPreview
+          isOpen={isPreviewOpen}
+          onClose={() => setIsPreviewOpen(false)}
+          proofUrl={previewUrl}
+        />
       )}
     </div>
   );

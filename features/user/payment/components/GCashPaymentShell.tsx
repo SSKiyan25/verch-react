@@ -57,7 +57,7 @@ export function GCashPaymentShell({
 
       {/* Amount to Pay - Prominent Display */}
       <Card className="border-2 border-emerald-300 bg-gradient-to-br from-emerald-50 to-white shadow-lg">
-        <CardContent className="pt-6">
+        <CardContent className="pt-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100">
