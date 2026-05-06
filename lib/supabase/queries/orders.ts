@@ -90,6 +90,13 @@ export type OrderDetail = {
   proof_amount: number | null;
   proof_reference_code: string | null;
   rejection_note: string | null;
+  // GCash OCR fields
+  gcash_ref_no: string | null;
+  gcash_amount: number | null;
+  ocr_status: string | null;
+  ocr_raw_text: string | null;
+  ocr_confidence: number | null;
+  ocr_verified_at: string | null;
   invoice_id: string | null;
   invoice_number: string | null;
   invoice_status: InvoiceStatus | null;
@@ -269,6 +276,15 @@ export async function fetchOrderDetail(
       row.out_proof_amount != null ? Number(row.out_proof_amount) : null,
     proof_reference_code: (row.out_proof_reference_code as string) ?? null,
     rejection_note: (row.out_rejection_note as string) ?? null,
+    // GCash OCR fields
+    gcash_ref_no: (row.out_gcash_ref_no as string) ?? null,
+    gcash_amount:
+      row.out_gcash_amount != null ? Number(row.out_gcash_amount) : null,
+    ocr_status: (row.out_ocr_status as string) ?? null,
+    ocr_raw_text: (row.out_ocr_raw_text as string) ?? null,
+    ocr_confidence:
+      row.out_ocr_confidence != null ? Number(row.out_ocr_confidence) : null,
+    ocr_verified_at: (row.out_ocr_verified_at as string) ?? null,
     invoice_id: (row.out_invoice_id as string) ?? null,
     invoice_number: (row.out_invoice_number as string) ?? null,
     invoice_status: (row.out_invoice_status as InvoiceStatus) ?? null,
