@@ -179,6 +179,31 @@ export async function onPaymentScreenshotUploaded(
       },
     });
 
+    // Step 2.5: Fetch expected payment amount from order_payments
+    console.log(
+      `[onPaymentScreenshotUploaded] 💰 FETCHING EXPECTED AMOUNT - From order_payments`,
+    );
+    const { data: paymentRow, error: paymentFetchError } = await supabase
+      .from("order_payments")
+      .select("amount")
+      .eq("order_id", orderId)
+      .single();
+
+    if (paymentFetchError || !paymentRow) {
+      console.error(
+        `[onPaymentScreenshotUploaded] ❌ FAILED TO FETCH PAYMENT - Error:`,
+        paymentFetchError,
+      );
+      throw new Error(
+        `Failed to fetch payment record for order ${orderId}: ${paymentFetchError?.message || "Not found"}`,
+      );
+    }
+
+    const expectedAmount = paymentRow.amount;
+    console.log(
+      `[onPaymentScreenshotUploaded] ✅ EXPECTED AMOUNT - ₱${expectedAmount.toFixed(2)}`,
+    );
+
     // Step 3: Update payment status to 'verifying' (OCR in progress)
     console.log(
       `[onPaymentScreenshotUploaded] 🔄 UPDATING STATUS - Setting to 'verifying'`,
@@ -236,6 +261,48 @@ export async function onPaymentScreenshotUploaded(
     console.log(
       `[onPaymentScreenshotUploaded] ${amount !== null ? "✅" : "⚠️"} AMOUNT EXTRACTION - Result: ${amount !== null ? `₱${amount.toFixed(2)}` : "NOT FOUND (optional)"}`,
     );
+
+    // Step 6.5: Validate extracted amount matches expected amount
+    // Use 0.01 tolerance for floating-point comparison
+    if (amount !== null) {
+      const amountDifference = Math.abs(amount - expectedAmount);
+      console.log(
+        `[onPaymentScreenshotUploaded] 💵 AMOUNT COMPARISON - Extracted: ₱${amount.toFixed(2)}, Expected: ₱${expectedAmount.toFixed(2)}, Difference: ₱${amountDifference.toFixed(2)}`,
+      );
+
+      if (amountDifference > 0.01) {
+        // Amount mismatch — reject payment
+        console.error(
+          `[onPaymentScreenshotUploaded] ❌ AMOUNT MISMATCH - Extracted ₱${amount.toFixed(2)} does not match expected ₱${expectedAmount.toFixed(2)}`,
+        );
+
+        const update: PaymentVerificationUpdate = {
+          gcash_ref_no: refNo,
+          gcash_amount: amount,
+          ocr_status: "amount_mismatch",
+          ocr_raw_text: rawText,
+          ocr_confidence: confidence,
+          ocr_verified_at: new Date().toISOString(),
+          payment_status: "rejected",
+        };
+
+        await updatePaymentWithOcrResult(supabase, orderId, update);
+
+        const duration = Date.now() - startTime;
+        console.log(
+          `[onPaymentScreenshotUploaded] ✅ COMPLETED - Payment rejected due to amount mismatch, Duration: ${duration}ms`,
+        );
+        return; // Exit early — no need to continue validation
+      }
+
+      console.log(
+        `[onPaymentScreenshotUploaded] ✅ AMOUNT MATCH - Extracted amount matches expected amount`,
+      );
+    } else {
+      console.warn(
+        `[onPaymentScreenshotUploaded] ⚠️ AMOUNT NOT EXTRACTED - Proceeding with validation (amount extraction is optional)`,
+      );
+    }
 
     // Step 7: Validate and determine OCR status
     let ocrStatus: OcrStatus;

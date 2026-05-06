@@ -11,6 +11,7 @@
  * - no_ref_found: No 13-digit Reference Number detected in image
  * - invalid_format: Reference Number found but invalid format
  * - duplicate_ref: Reference Number already exists in database
+ * - amount_mismatch: Extracted amount doesn't match expected order total
  * - api_error: Google Cloud Vision API call failed
  */
 export type OcrStatus =
@@ -18,6 +19,7 @@ export type OcrStatus =
   | "no_ref_found"
   | "invalid_format"
   | "duplicate_ref"
+  | "amount_mismatch"
   | "api_error";
 
 /**
