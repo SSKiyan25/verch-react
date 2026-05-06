@@ -142,6 +142,8 @@ export function PaymentVerificationStatus({
   // Status: Rejected (OCR failed)
   if (paymentStatus === "rejected") {
     const errorMessage = getErrorMessage(ocrStatus);
+    const isRetryable = ocrStatus === "no_ref_found" || ocrStatus === "api_error" || ocrStatus === "invalid_format";
+    const needsSupport = ocrStatus === "duplicate_ref" || ocrStatus === "amount_mismatch";
 
     return (
       <div className="space-y-3">
@@ -151,10 +153,26 @@ export function PaymentVerificationStatus({
             <div className="space-y-2">
               <p className="font-medium">Payment Verification Failed</p>
               <p className="text-sm">{errorMessage}</p>
-              <p className="text-xs text-muted-foreground">
-                Please upload a clear screenshot of your GCash receipt with the
-                Reference Number visible.
-              </p>
+              {isRetryable && (
+                <div className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950">
+                  <p className="text-xs font-medium text-red-900 dark:text-red-100">
+                    Tips for a successful upload:
+                  </p>
+                  <ul className="mt-1 list-inside list-disc space-y-0.5 text-xs text-red-700 dark:text-red-300">
+                    <li>Take a clear, well-lit photo of your entire GCash receipt</li>
+                    <li>Ensure the 13-digit Reference Number is fully visible</li>
+                    <li>Avoid blurry, cropped, or dark images</li>
+                    <li>Use your phone&apos;s camera app for best quality</li>
+                  </ul>
+                </div>
+              )}
+              {needsSupport && (
+                <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950">
+                  <p className="text-xs font-medium text-amber-900 dark:text-amber-100">
+                    Need help? Contact support with your order number and transaction details.
+                  </p>
+                </div>
+              )}
             </div>
           </AlertDescription>
         </Alert>
@@ -188,19 +206,21 @@ export function PaymentVerificationStatus({
 }
 
 /**
- * Maps OCR status codes to user-friendly error messages
+ * Maps OCR status codes to user-friendly error messages with actionable guidance
  */
 function getErrorMessage(ocrStatus: OcrStatus | null): string {
   switch (ocrStatus) {
     case "no_ref_found":
-      return "No GCash Reference Number detected in the image. Please ensure your screenshot shows the 13-digit Reference Number clearly.";
+      return "No GCash Reference Number detected in your screenshot. Please retake the photo ensuring the 13-digit Reference Number (Ref No.) is clearly visible and well-lit.";
     case "invalid_format":
-      return "Invalid Reference Number format detected. GCash Reference Numbers must be exactly 13 digits.";
+      return "Invalid Reference Number format detected. GCash Reference Numbers must be exactly 13 digits. Please verify you uploaded a GCash receipt and not a different payment screenshot.";
     case "duplicate_ref":
-      return "This Reference Number has already been used for another payment. Please check your receipt or contact support if you believe this is an error.";
+      return "This Reference Number has already been used for another order. Each payment must have a unique reference number. If you believe this is an error, please contact support with your transaction details.";
+    case "amount_mismatch":
+      return "The amount shown in your GCash receipt doesn't match the order total. Please verify you sent the correct amount and upload the matching receipt. Contact support if you need assistance.";
     case "api_error":
-      return "Verification service temporarily unavailable. Please try uploading again in a few moments.";
+      return "Verification service is temporarily unavailable. This is usually a brief issue. Please wait 30 seconds and try uploading your screenshot again.";
     default:
-      return "Payment verification failed. Please ensure your screenshot is clear and shows the complete GCash receipt.";
+      return "Payment verification failed. Please ensure your screenshot is clear, well-lit, and shows the complete GCash receipt with the Reference Number visible.";
   }
 }

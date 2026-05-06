@@ -29,6 +29,10 @@ export interface PaymentVerificationState {
   status: OcrStatus | "pending" | "processing";
   refNo: string | null;
   amount: number | null; // Extracted GCash payment amount
+  /**
+   * @deprecated Confidence score is no longer displayed in UI due to inaccurate calculation.
+   * Field kept for backward compatibility but should not be shown to users.
+   */
   confidence: number | null;
   verifiedAt: string | null;
   rawText?: string;
@@ -44,6 +48,10 @@ export interface PaymentRowUpdate {
   gcash_amount: number | null; // Extracted payment amount from GCash receipt
   ocr_status: OcrStatus | null;
   ocr_raw_text: string | null;
+  /**
+   * @deprecated OCR confidence is no longer displayed in UI. 
+   * Field kept for backward compatibility with Cloud Function writes.
+   */
   ocr_confidence: number | null;
   ocr_verified_at: string | null;
   status: "pending" | "proof_submitted" | "confirmed" | "rejected" | "verifying";

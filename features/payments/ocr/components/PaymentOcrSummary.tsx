@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, CheckCircle2, Info, ChevronDown, ChevronUp } from "lucide-react";
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +31,7 @@ interface PaymentOcrSummaryProps {
 
   /**
    * OCR confidence score (0-1)
+   * @deprecated No longer displayed in UI due to inaccurate calculation
    */
   confidence: number | null;
 
@@ -58,7 +59,7 @@ interface PaymentOcrSummaryProps {
 /**
  * Component: PaymentOcrSummary
  *
- * Displays OCR extraction results including amount, reference number, and confidence.
+ * Displays OCR extraction results including amount and reference number.
  * Shows in green card for success, yellow warning for failure.
  * Includes amount mismatch detection and expandable raw text.
  *
@@ -68,7 +69,7 @@ interface PaymentOcrSummaryProps {
  *   refNo="1234567890123"
  *   amount={99.00}
  *   orderAmount={99.00}
- *   confidence={0.95}
+ *   confidence={null}
  *   verifiedAt="2026-05-06T01:19:48.732Z"
  *   ocrStatus="success"
  *   isSuccess={true}
@@ -79,7 +80,7 @@ export function PaymentOcrSummary({
   refNo,
   amount,
   orderAmount,
-  confidence,
+  confidence: _confidence, // eslint-disable-line @typescript-eslint/no-unused-vars -- Accept but don't use (for backward compatibility)
   verifiedAt,
   rawText,
   isSuccess,
@@ -91,16 +92,6 @@ export function PaymentOcrSummary({
     amount !== null &&
     orderAmount !== undefined &&
     Math.abs(amount - orderAmount) > 0.01; // Allow 1 cent tolerance for rounding
-
-  // Determine confidence level
-  const confidenceLevel =
-    confidence === null
-      ? "unknown"
-      : confidence >= 0.8
-        ? "high"
-        : confidence >= 0.5
-          ? "medium"
-          : "low";
 
   // Card styling based on success/failure
   const cardClass = isSuccess
@@ -185,34 +176,6 @@ export function PaymentOcrSummary({
           </div>
         )}
 
-        {/* Confidence Score */}
-        {confidence !== null && (
-          <div className="flex items-center justify-between">
-            <span className={`text-sm font-medium ${textClass}`}>
-              Confidence:
-            </span>
-            <div className="flex items-center gap-2">
-              <span className={`text-sm ${textClass}`}>
-                {Math.round(confidence * 100)}%
-              </span>
-              {confidenceLevel === "low" && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 text-yellow-600" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-sm">
-                        Low confidence - please verify the data carefully
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Verification Timestamp */}
         {verifiedAt && (
           <div className="flex items-center justify-between">
@@ -266,7 +229,7 @@ export function PaymentOcrSummary({
         {/* Missing Data Warning */}
         {!isSuccess && (
           <div className="flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-100 p-3 dark:border-yellow-800 dark:bg-yellow-900">
-            <Info className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+            <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
             <p className="text-xs text-yellow-800 dark:text-yellow-200">
               {amount === null && refNo === null
                 ? "Could not extract payment details from the screenshot. Please ensure the GCash receipt is clear and complete."
