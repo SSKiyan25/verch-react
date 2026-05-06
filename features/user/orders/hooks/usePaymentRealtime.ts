@@ -29,7 +29,12 @@ export interface PaymentData {
   id: string;
   order_id: string;
   method: "cash" | "gcash";
-  status: "pending" | "proof_submitted" | "confirmed" | "rejected" | "verifying";
+  status:
+    | "pending"
+    | "proof_submitted"
+    | "confirmed"
+    | "rejected"
+    | "verifying";
   amount: number;
   proof_url: string | null;
   proof_path: string | null;
@@ -98,21 +103,22 @@ export function usePaymentRealtime(orderId: string): UsePaymentRealtimeReturn {
               filter: `order_id=eq.${orderId}`,
             },
             (payload) => {
-              console.log(
-                `[usePaymentRealtime] Received update for order ${orderId}:`,
-                payload,
-              );
+              // console.log(
+              //   `[usePaymentRealtime] Received update for order ${orderId}:`,
+              //   payload,
+              // );
               setPaymentData(payload.new as PaymentData);
             },
           )
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           .subscribe((status) => {
-            console.log(
-              `[usePaymentRealtime] Subscription status for order ${orderId}:`,
-              status,
-            );
+            // console.log(
+            //   `[usePaymentRealtime] Subscription status for order ${orderId}:`,
+            //   status,
+            // );
           });
       } catch (err) {
-        console.error(`[usePaymentRealtime] Unexpected error:`, err);
+        // console.error(`[usePaymentRealtime] Unexpected error:`, err);
         setError(err instanceof Error ? err.message : "Unknown error");
         setIsLoading(false);
       }
@@ -123,9 +129,9 @@ export function usePaymentRealtime(orderId: string): UsePaymentRealtimeReturn {
     // Cleanup subscription on unmount
     return () => {
       if (channel) {
-        console.log(
-          `[usePaymentRealtime] Unsubscribing from payment updates for order ${orderId}`,
-        );
+        // console.log(
+        //   `[usePaymentRealtime] Unsubscribing from payment updates for order ${orderId}`,
+        // );
         void supabase.removeChannel(channel);
       }
     };

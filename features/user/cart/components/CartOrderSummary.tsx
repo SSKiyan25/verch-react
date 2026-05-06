@@ -43,7 +43,7 @@ export function CartOrderSummary({
 
   const checkoutButton = (
     <Button
-      className="w-full"
+      className="w-full bg-emerald-600 hover:bg-emerald-700 transition-all duration-200 cursor-pointer"
       size="lg"
       disabled={isDisabled}
       asChild={!isDisabled}

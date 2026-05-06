@@ -38,28 +38,29 @@ export function CartItemRow({
   const [dismissedPriceChange, setDismissedPriceChange] = useState(false);
 
   const showPriceWarning = item.price_changed && !dismissedPriceChange;
-  console.log("Rendering CartItemRow", {
-    item: {
-      id: item.item_id,
-      name: item.product_name,
-      variation: item.variation_name,
-      currentPrice: item.current_price,
-      unitPriceSnapshot: item.unit_price_snapshot,
-      itemUnavailable: item.is_unavailable,
-      isPreOrder: item.is_pre_order,
-      isOverStock: item.is_over_stock,
-    },
-    itemId: item.item_id,
-    priceChanged: item.price_changed,
-    dismissedPriceChange,
-    showPriceWarning,
-  });
+  // console.log("Rendering CartItemRow", {
+  //   item: {
+  //     id: item.item_id,
+  //     name: item.product_name,
+  //     variation: item.variation_name,
+  //     currentPrice: item.current_price,
+  //     unitPriceSnapshot: item.unit_price_snapshot,
+  //     itemUnavailable: item.is_unavailable,
+  //     isPreOrder: item.is_pre_order,
+  //     isOverStock: item.is_over_stock,
+  //   },
+  //   itemId: item.item_id,
+  //   priceChanged: item.price_changed,
+  //   dismissedPriceChange,
+  //   showPriceWarning,
+  // });
   return (
     <div
       className={cn(
-        "space-y-2 rounded-md p-3 transition-opacity",
+        "space-y-2 rounded-md p-3 transition-all duration-200",
         item.is_unavailable && "opacity-60",
         item.is_pre_order && !item.is_unavailable && "bg-amber-50/40",
+        !item.is_unavailable && "hover:bg-muted/50",
       )}
     >
       <div className="flex items-start gap-3">
@@ -143,7 +144,7 @@ export function CartItemRow({
         <Button
           variant="ghost"
           size="icon-sm"
-          className="text-muted-foreground hover:text-destructive shrink-0"
+          className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors duration-200 shrink-0 cursor-pointer"
           onClick={() => onRemove(item.item_id, quantity)}
           aria-label={`Remove ${item.product_name}`}
         >

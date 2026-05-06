@@ -3,38 +3,27 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export function OrderCardSkeleton() {
   return (
-    <Card className="w-full">
+    <Card className="w-full shadow-sm">
       <CardContent className="p-4 sm:p-5">
-        {/* Header row: org info + status */}
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="flex items-center gap-2.5">
-            {/* Org avatar */}
+        <div className="flex items-start justify-between gap-3">
+          {/* Left: Org info skeleton */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <Skeleton className="h-9 w-9 rounded-full shrink-0" />
-            <div className="space-y-1.5">
-              {/* Org name */}
+            <div className="flex-1 space-y-2 min-w-0">
               <Skeleton className="h-4 w-32" />
-              {/* Order ID */}
-              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-3 w-24" />
             </div>
           </div>
-          {/* Status badge */}
-          <Skeleton className="h-6 w-20 rounded-full" />
-        </div>
-
-        {/* Middle row: items + total */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-4 w-4 rounded-sm" />
-            <Skeleton className="h-4 w-20" />
+          {/* Right: Status badge + chevron skeleton */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Skeleton className="h-6 w-20 rounded-full" />
+            <Skeleton className="h-5 w-5 rounded" />
           </div>
-          <Skeleton className="h-4 w-24" />
         </div>
-
-        {/* Footer row: date + payment badge */}
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-5 w-24 rounded-full" />
+        {/* Bottom row skeleton - item count and total */}
+        <div className="mt-4 flex items-center justify-between">
+          <Skeleton className="h-4 w-16" />
+          <Skeleton className="h-6 w-20" />
         </div>
       </CardContent>
     </Card>
