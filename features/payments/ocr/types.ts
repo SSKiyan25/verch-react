@@ -26,6 +26,7 @@ export type OcrStatus =
 export interface PaymentVerificationState {
   status: OcrStatus | "pending" | "processing";
   refNo: string | null;
+  amount: number | null; // Extracted GCash payment amount
   confidence: number | null;
   verifiedAt: string | null;
   rawText?: string;
@@ -38,6 +39,7 @@ export interface PaymentVerificationState {
 export interface PaymentRowUpdate {
   id: string;
   gcash_ref_no: string | null;
+  gcash_amount: number | null; // Extracted payment amount from GCash receipt
   ocr_status: OcrStatus | null;
   ocr_raw_text: string | null;
   ocr_confidence: number | null;

@@ -76,6 +76,35 @@ npm run deploy
 firebase deploy --only functions:handlePaymentScreenshotUpload
 ```
 
+### 6. Pre-Deployment Checklist
+
+**Before deploying to production, verify:**
+
+1. **Environment Variables in `firebase.json`:**
+   - `SUPABASE_URL` set to production URL (e.g., `https://wfyssjznhrgevviyfqgj.supabase.co`)
+   - **NOT** `http://127.0.0.1:54321` (local development URL)
+
+2. **Firebase Secrets Manager:**
+   - `SUPABASE_SERVICE_ROLE_KEY` set via `firebase functions:secrets:set SUPABASE_SERVICE_ROLE_KEY`
+   - Verify with: `firebase functions:secrets:access SUPABASE_SERVICE_ROLE_KEY`
+
+3. **`.gcloudignore` File:**
+   - Exists in `functions/` directory
+   - Contains `.env` to prevent local config from being deployed
+   - Cloud Functions will use `firebase.json` environment variables instead
+
+4. **Cloud Vision API Enabled:**
+   - Verify in GCP Console that Cloud Vision API is enabled for your project
+
+5. **Build Succeeds:**
+   - Run `npm run build` and verify no TypeScript errors
+
+**Common Deployment Issues:**
+
+- **ECONNREFUSED 127.0.0.1:54321**: Local `.env` was deployed. Add `.env` to `.gcloudignore` and redeploy.
+- **Missing SUPABASE_SERVICE_ROLE_KEY**: Set via Firebase Secrets Manager, not environment variables.
+- **Vision API 403 Error**: Cloud Vision API not enabled in GCP Console.
+
 ## Local Development
 
 ### Run with Firebase Emulator

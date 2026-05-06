@@ -88,6 +88,7 @@ export function GCashPaymentShell({
               <CardContent>
                 <PaymentVerificationFlow
                   orderId={order.order_id}
+                  orderAmount={order.total_amount}
                   onPaymentConfirmed={handlePaymentConfirmed}
                 />
               </CardContent>

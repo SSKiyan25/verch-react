@@ -1,0 +1,57 @@
+# Google Cloud Platform .gcloudignore
+
+# This file specifies files that will NOT be uploaded when deploying
+
+# functions to GCP/Firebase. Follows .gitignore syntax.
+
+#
+
+# More info: https://cloud.google.com/sdk/gcloud/reference/topic/gcloudignore
+
+# Exclude .env file to prevent local development URLs from being deployed
+
+# Firebase Functions should use environment variables from firebase.json
+
+# and secrets from Firebase Secrets Manager
+
+.env
+.env.local
+.env.\*.local
+
+# Node modules (handled by Cloud Build)
+
+node_modules/
+node_modules
+
+# TypeScript source (only deploy compiled JS)
+
+src/
+
+# Development files
+
+tsconfig.json
+_.ts
+_.map
+
+# IDE files
+
+.vscode/
+.idea/
+_.swp
+_.swo
+\*~
+
+# Git files
+
+.git
+.gitignore
+
+# Test files
+
+\*.test.js
+**tests**/
+
+# Documentation
+
+README.md
+\*.md

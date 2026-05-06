@@ -3,14 +3,15 @@
 import { useEffect } from "react";
 import { CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePaymentVerification } from "../hooks/usePaymentVerification";
+import { PaymentOcrSummary } from "./PaymentOcrSummary";
 import type { OcrStatus } from "../types";
 
 interface PaymentVerificationStatusProps {
   orderId: string;
+  orderAmount?: number; // Order total amount for mismatch detection
   onVerified?: (refNo: string) => void;
   onRejected?: (reason: OcrStatus) => void;
 }
@@ -26,6 +27,7 @@ interface PaymentVerificationStatusProps {
  */
 export function PaymentVerificationStatus({
   orderId,
+  orderAmount,
   onVerified,
   onRejected,
 }: PaymentVerificationStatusProps) {
@@ -33,7 +35,10 @@ export function PaymentVerificationStatus({
     paymentStatus,
     ocrStatus,
     gcashRefNo,
+    gcashAmount,
+    ocrRawText,
     ocrConfidence,
+    ocrVerifiedAt,
     loading,
     error: fetchError,
     isTimeout,
@@ -113,30 +118,24 @@ export function PaymentVerificationStatus({
   // Status: Verified (Success)
   if (paymentStatus === "confirmed" && gcashRefNo) {
     return (
-      <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
-        <CheckCircle2 className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-900 dark:text-green-100">
-          <div className="space-y-3">
+      <div className="space-y-3">
+        <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
+          <CheckCircle2 className="h-4 w-4 text-green-600" />
+          <AlertDescription className="text-green-900 dark:text-green-100">
             <p className="font-medium">Payment Verified Successfully!</p>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-green-700 dark:text-green-300">
-                GCash Reference Number:
-              </span>
-              <Badge
-                variant="outline"
-                className="border-green-600 bg-green-100 font-mono text-green-900 dark:bg-green-900 dark:text-green-100"
-              >
-                {gcashRefNo}
-              </Badge>
-            </div>
-            {ocrConfidence && (
-              <p className="text-xs text-green-600 dark:text-green-400">
-                Confidence: {Math.round(ocrConfidence * 100)}%
-              </p>
-            )}
-          </div>
-        </AlertDescription>
-      </Alert>
+          </AlertDescription>
+        </Alert>
+        <PaymentOcrSummary
+          refNo={gcashRefNo}
+          amount={gcashAmount}
+          orderAmount={orderAmount}
+          confidence={ocrConfidence}
+          verifiedAt={ocrVerifiedAt}
+          rawText={ocrRawText}
+          ocrStatus={ocrStatus}
+          isSuccess={true}
+        />
+      </div>
     );
   }
 
@@ -145,19 +144,33 @@ export function PaymentVerificationStatus({
     const errorMessage = getErrorMessage(ocrStatus);
 
     return (
-      <Alert variant="destructive">
-        <XCircle className="h-4 w-4" />
-        <AlertDescription>
-          <div className="space-y-2">
-            <p className="font-medium">Payment Verification Failed</p>
-            <p className="text-sm">{errorMessage}</p>
-            <p className="text-xs text-muted-foreground">
-              Please upload a clear screenshot of your GCash receipt with the
-              Reference Number visible.
-            </p>
-          </div>
-        </AlertDescription>
-      </Alert>
+      <div className="space-y-3">
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-2">
+              <p className="font-medium">Payment Verification Failed</p>
+              <p className="text-sm">{errorMessage}</p>
+              <p className="text-xs text-muted-foreground">
+                Please upload a clear screenshot of your GCash receipt with the
+                Reference Number visible.
+              </p>
+            </div>
+          </AlertDescription>
+        </Alert>
+        {ocrVerifiedAt && (
+          <PaymentOcrSummary
+            refNo={gcashRefNo}
+            amount={gcashAmount}
+            orderAmount={orderAmount}
+            confidence={ocrConfidence}
+            verifiedAt={ocrVerifiedAt}
+            rawText={ocrRawText}
+            ocrStatus={ocrStatus}
+            isSuccess={false}
+          />
+        )}
+      </div>
     );
   }
 
