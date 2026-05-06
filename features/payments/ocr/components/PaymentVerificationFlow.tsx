@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PaymentUploadForm } from "./PaymentUploadForm";
 import { PaymentVerificationStatus } from "./PaymentVerificationStatus";
+import { usePaymentVerification } from "../hooks/usePaymentVerification";
 import type { OcrStatus } from "../types";
 
 interface PaymentVerificationFlowProps {
@@ -36,6 +37,9 @@ export function PaymentVerificationFlow({
 }: PaymentVerificationFlowProps) {
   const [showReuploadForm, setShowReuploadForm] = useState(false);
   const [verificationAttempts, setVerificationAttempts] = useState(0);
+  
+  // Get real-time verification status
+  const { paymentStatus, ocrStatus } = usePaymentVerification(orderId);
 
   const handleVerified = (refNo: string) => {
     console.log(`[PaymentVerificationFlow] Payment verified: ${refNo}`);
@@ -56,17 +60,32 @@ export function PaymentVerificationFlow({
     setShowReuploadForm(false);
   };
 
+  // Determine if upload form should be shown
+  const showUploadForm = 
+    paymentStatus === "pending" || 
+    paymentStatus === "rejected" || 
+    showReuploadForm;
+  
+  // Hide upload form once verification succeeds
+  const isVerificationComplete = 
+    paymentStatus === "proof_submitted" || 
+    paymentStatus === "confirmed" || 
+    ocrStatus === "success";
+
   return (
     <Card>
       <CardHeader>
         <CardTitle>Payment Verification</CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Upload Form — Always shown on initial upload or when re-upload requested */}
-        <PaymentUploadForm
-          orderId={orderId}
-          onUploadComplete={handleUploadComplete}
-        />
+        {/* Upload Form — Only show when pending, rejected, or re-upload requested */}
+        {showUploadForm && !isVerificationComplete && (
+          <PaymentUploadForm
+            orderId={orderId}
+            onUploadComplete={handleUploadComplete}
+            paymentStatus={paymentStatus}
+          />
+        )}
 
         {/* Verification Status — Real-time updates via Supabase Realtime */}
         <div className="space-y-4">

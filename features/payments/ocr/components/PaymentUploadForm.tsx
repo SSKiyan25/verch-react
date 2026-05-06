@@ -14,6 +14,7 @@ interface PaymentUploadFormProps {
   orderId: string;
   onUploadComplete?: (path: string, url: string) => void;
   disabled?: boolean;
+  paymentStatus?: "pending" | "proof_submitted" | "confirmed" | "rejected" | "verifying";
 }
 
 /**
@@ -33,6 +34,7 @@ export function PaymentUploadForm({
   orderId,
   onUploadComplete,
   disabled = false,
+  paymentStatus = "pending",
 }: PaymentUploadFormProps) {
   const {
     uploadPaymentProof,
@@ -145,6 +147,11 @@ export function PaymentUploadForm({
   };
 
   const hasUploadedFile = uploadedPath && uploadedUrl;
+  
+  // Show "Processing..." only when actively verifying
+  const isActivelyVerifying = 
+    hasUploadedFile && 
+    (paymentStatus === "verifying" || paymentStatus === "proof_submitted");
 
   return (
     <div className="space-y-4">
@@ -153,7 +160,7 @@ export function PaymentUploadForm({
       </Label>
 
       {/* Upload Area */}
-      {!selectedFile && !hasUploadedFile && (
+      {!selectedFile && !isActivelyVerifying && (
         <div
           className={`relative flex min-h-[200px] cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
             dragActive
@@ -186,7 +193,7 @@ export function PaymentUploadForm({
       )}
 
       {/* Preview & Upload Button */}
-      {selectedFile && previewUrl && !hasUploadedFile && (
+      {selectedFile && previewUrl && !isActivelyVerifying && (
         <div className="space-y-3">
           <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -229,7 +236,7 @@ export function PaymentUploadForm({
       )}
 
       {/* Upload Success - Verification In Progress */}
-      {hasUploadedFile && (
+      {isActivelyVerifying && (
         <div className="space-y-3">
           <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
             <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
